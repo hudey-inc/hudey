@@ -47,9 +47,17 @@ export default function Home() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900 mb-6">
-        Campaigns
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-stone-900">
+          Campaigns
+        </h1>
+        <Link
+          href="/campaigns/new"
+          className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 transition-colors"
+        >
+          New Campaign
+        </Link>
+      </div>
 
       {campaigns.length === 0 ? (
         <div className="rounded-lg border border-stone-200 bg-white p-8 text-center text-stone-500">
