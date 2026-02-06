@@ -1,0 +1,21 @@
+# WAT framework - core dependencies
+python-dotenv>=1.0.0
+requests>=2.28.0
+
+# Hudey agent
+anthropic>=0.18.0
+pydantic>=2.0
+resend>=2.0.0
+
+# API stubs (response intake)
+flask>=3.0.0
+
+# Backend + Supabase
+supabase>=2.0.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+
+# Add project-specific packages as needed, e.g.:
+# google-api-python-client
+# google-auth-oauthlib
+# google-auth-httplib2

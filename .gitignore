@@ -1,0 +1,30 @@
+# Secrets - NEVER commit these
+.env
+credentials.json
+token.json
+
+# Temporary/intermediate files (regenerated as needed)
+.tmp/*
+!.tmp/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Next.js / frontend
+frontend/.next/
+frontend/node_modules/
+frontend/.env*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
