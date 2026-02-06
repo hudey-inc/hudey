@@ -28,6 +28,47 @@ export async function getCampaign(id: string): Promise<Campaign | null> {
   return res.json();
 }
 
+// ── Approvals ─────────────────────────────────────────────────
+
+export type Approval = {
+  id: string;
+  campaign_id: string;
+  approval_type: string;
+  subject: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: Record<string, any>;
+  reasoning?: string;
+  status: "pending" | "approved" | "rejected";
+  feedback?: string;
+  created_at: string;
+  decided_at?: string;
+};
+
+export async function listApprovals(campaignId: string): Promise<Approval[]> {
+  const res = await fetch(`${API_URL}/api/campaigns/${campaignId}/approvals`);
+  if (!res.ok) throw new Error("Failed to fetch approvals");
+  return res.json();
+}
+
+export async function decideApproval(
+  approvalId: string,
+  status: "approved" | "rejected",
+  feedback?: string
+): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_URL}/api/approvals/${approvalId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status, feedback }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to submit decision");
+  }
+  return res.json();
+}
+
+// ── Campaigns ─────────────────────────────────────────────────
+
 export async function createCampaign(body: {
   brief?: Record<string, unknown>;
   strategy?: Record<string, unknown>;
