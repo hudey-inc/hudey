@@ -14,8 +14,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(campaigns.router)
 app.include_router(approvals.router)
+app.include_router(campaigns.router)
 
 
 @app.get("/health")
