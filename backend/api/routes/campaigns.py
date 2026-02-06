@@ -12,6 +12,7 @@ from backend.db.repositories.campaign_repo import (
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
 
+@router.get("/")
 @router.get("")
 def list_campaigns():
     """List campaigns, newest first."""
