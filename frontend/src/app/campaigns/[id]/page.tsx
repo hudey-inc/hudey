@@ -47,7 +47,8 @@ export default function CampaignDetail() {
   }
 
   const result = campaign.result_json;
-  const brief = campaign.brief || result?.brief;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const brief = (campaign.brief || result?.brief) as Record<string, any> | undefined;
   const strategy = campaign.strategy || result?.strategy;
 
   return (
@@ -73,9 +74,88 @@ export default function CampaignDetail() {
       {brief ? (
         <section className="mb-6">
           <h2 className="text-lg font-medium text-stone-800 mb-2">Brief</h2>
-          <pre className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm overflow-x-auto">
-            {JSON.stringify(brief, null, 2)}
-          </pre>
+          <div className="rounded-lg border border-stone-200 bg-white p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              {brief.brand_name && (
+                <div>
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Brand</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.brand_name)}</p>
+                </div>
+              )}
+              {brief.industry && (
+                <div>
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Industry</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.industry)}</p>
+                </div>
+              )}
+              {brief.objective && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Objective</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.objective)}</p>
+                </div>
+              )}
+              {brief.target_audience && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Target Audience</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.target_audience)}</p>
+                </div>
+              )}
+              {brief.key_message && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Key Message</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.key_message)}</p>
+                </div>
+              )}
+              {Array.isArray(brief.platforms) && (
+                <div>
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Platforms</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(brief.platforms as string[]).map((p) => (
+                      <span key={p} className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-700 capitalize">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {Array.isArray(brief.follower_range) && (
+                <div>
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Follower Range</p>
+                  <p className="text-sm text-stone-900 mt-0.5">
+                    {Number(brief.follower_range[0]).toLocaleString()} – {Number(brief.follower_range[1]).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {brief.budget_gbp != null && (
+                <div>
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Budget</p>
+                  <p className="text-sm text-stone-900 mt-0.5">£{Number(brief.budget_gbp).toLocaleString()}</p>
+                </div>
+              )}
+              {brief.timeline && (
+                <div>
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Timeline</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.timeline)}</p>
+                </div>
+              )}
+              {Array.isArray(brief.deliverables) && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Deliverables</p>
+                  <ul className="mt-1 space-y-0.5">
+                    {(brief.deliverables as string[]).map((d, i) => (
+                      <li key={i} className="text-sm text-stone-900">• {d}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {brief.brand_voice && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Brand Voice</p>
+                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.brand_voice)}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </section>
       ) : null}
 
