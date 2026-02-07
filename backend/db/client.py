@@ -19,3 +19,9 @@ def get_supabase():
         return _SUPABASE_CLIENT
     except Exception:
         return None
+
+
+def reset_supabase():
+    """Force re-creation of the Supabase client (e.g. after a connection error)."""
+    global _SUPABASE_CLIENT
+    _SUPABASE_CLIENT = None

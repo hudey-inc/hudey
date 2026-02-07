@@ -183,22 +183,41 @@ class WebApprovalTool(ApprovalTool):
             "agent_state": context.state.value,
         })
 
-        # Poll for decision
+        # Poll for decision (with retry on transient connection errors)
+        consecutive_errors = 0
         while True:
-            row = get_approval(approval_id)
-            if row and row["status"] != "pending":
-                granted = row["status"] == "approved"
-                # Update campaign status back to running
-                if granted:
-                    update_campaign(self.campaign_db_id, {"status": "running"})
-                return ToolResult(
-                    success=True,
-                    output={
-                        "approval_granted": granted,
-                        "feedback": row.get("feedback"),
-                        "request_id": approval_id,
-                    },
-                )
+            try:
+                row = get_approval(approval_id)
+                consecutive_errors = 0  # Reset on success
+                if row and row["status"] != "pending":
+                    granted = row["status"] == "approved"
+                    # Update campaign status back to running
+                    if granted:
+                        update_campaign(self.campaign_db_id, {"status": "running"})
+                    return ToolResult(
+                        success=True,
+                        output={
+                            "approval_granted": granted,
+                            "feedback": row.get("feedback"),
+                            "request_id": approval_id,
+                        },
+                    )
+            except Exception:
+                consecutive_errors += 1
+                if consecutive_errors > 20:
+                    return ToolResult(
+                        success=False,
+                        error="Lost connection to database after multiple retries",
+                    )
+                # Reset Supabase client to get a fresh connection
+                try:
+                    from backend.db.client import reset_supabase
+                    reset_supabase()
+                except Exception:
+                    pass
+                # Back off on errors
+                time.sleep(min(5 * consecutive_errors, 30))
+                continue
             time.sleep(3)
 
     def execute(
