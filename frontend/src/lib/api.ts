@@ -12,6 +12,7 @@ export type Campaign = CampaignSummary & {
   brief?: Record<string, unknown>;
   strategy?: Record<string, unknown>;
   result_json?: Record<string, unknown>;
+  agent_state?: string;
   completed_at?: string;
 };
 
@@ -63,6 +64,19 @@ export async function decideApproval(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "Failed to submit decision");
+  }
+  return res.json();
+}
+
+// ── Run Campaign ──────────────────────────────────────────────
+
+export async function runCampaign(campaignId: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_URL}/api/campaigns/${campaignId}/run`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to start campaign");
   }
   return res.json();
 }
