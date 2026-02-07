@@ -456,13 +456,13 @@ export default function CampaignDetail() {
               )}
             </div>
           </div>
-          {campaign.status === "draft" && (
+          {(campaign.status === "draft" || campaign.status === "failed") && (
             <button
               onClick={handleRun}
               disabled={starting}
               className="rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {starting ? "Starting…" : "Run Campaign"}
+              {starting ? "Starting…" : campaign.status === "failed" ? "Retry Campaign" : "Run Campaign"}
             </button>
           )}
         </div>
