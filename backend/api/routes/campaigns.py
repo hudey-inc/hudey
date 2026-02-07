@@ -88,7 +88,16 @@ def run_campaign(campaign_id: str):
             agent.tool_map[AgentActionType.REQUEST_TERMS_APPROVAL] = web_approval
 
             def _on_step(ctx):
-                db_update(campaign_id, {"agent_state": ctx.state.value})
+                try:
+                    db_update(campaign_id, {"agent_state": ctx.state.value})
+                except Exception:
+                    # Reset client on connection errors and retry once
+                    try:
+                        from backend.db.client import reset_supabase
+                        reset_supabase()
+                        db_update(campaign_id, {"agent_state": ctx.state.value})
+                    except Exception:
+                        pass
 
             context = agent.execute_campaign(brief, approve_all=False, on_step=_on_step)
 
