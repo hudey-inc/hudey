@@ -112,6 +112,105 @@ class ApprovalTool:
         return self.request_approval(context, action, approve_all)
 
 
+class WebApprovalTool(ApprovalTool):
+    """Approval tool that writes to Supabase and polls for decisions (web UI flow)."""
+
+    action_type = "request_approval"
+
+    def __init__(self, campaign_db_id: str):
+        super().__init__()
+        self.campaign_db_id = campaign_db_id
+
+    def _build_payload(self, context: CampaignContext, approval_type: str) -> dict:
+        """Build structured payload from context for the frontend renderers."""
+        if approval_type == "strategy" and context.strategy:
+            return context.strategy.model_dump() if hasattr(context.strategy, "model_dump") else vars(context.strategy)
+        if approval_type == "creators" and context.creators:
+            return {
+                "creators": [
+                    c.model_dump() if hasattr(c, "model_dump") else vars(c)
+                    for c in context.creators
+                ]
+            }
+        if approval_type == "outreach" and context.outreach_drafts:
+            return {"drafts": context.outreach_drafts}
+        if approval_type == "terms":
+            counter = context.pending_counter_offer or {}
+            return counter
+        return {"raw": "No structured data available"}
+
+    def request_approval(
+        self,
+        context: CampaignContext,
+        action: AgentAction,
+        approve_all: bool = False,
+    ) -> ToolResult:
+        """Create approval in Supabase and poll until decided."""
+        import time
+
+        if approve_all:
+            return ToolResult(
+                success=True,
+                output={"approval_granted": True, "request_id": "auto"},
+            )
+
+        action_input = action.input or {}
+        approval_type = action_input.get("approval_type", "general")
+        subject = action_input.get("subject", f"{approval_type.replace('_', ' ').title()} approval")
+        payload = self._build_payload(context, approval_type)
+
+        # Create approval in Supabase
+        from backend.db.repositories.approval_repo import create_approval, get_approval
+        from backend.db.repositories.campaign_repo import update_campaign
+
+        approval_id = create_approval(
+            campaign_id=self.campaign_db_id,
+            approval_type=approval_type,
+            payload=payload,
+            subject=subject,
+            reasoning=action.reasoning,
+        )
+
+        if not approval_id:
+            return ToolResult(
+                success=False,
+                error="Failed to create approval in database",
+            )
+
+        # Update campaign status
+        update_campaign(self.campaign_db_id, {
+            "status": "awaiting_approval",
+            "agent_state": context.state.value,
+        })
+
+        # Poll for decision
+        while True:
+            row = get_approval(approval_id)
+            if row and row["status"] != "pending":
+                granted = row["status"] == "approved"
+                # Update campaign status back to running
+                if granted:
+                    update_campaign(self.campaign_db_id, {"status": "running"})
+                return ToolResult(
+                    success=True,
+                    output={
+                        "approval_granted": granted,
+                        "feedback": row.get("feedback"),
+                        "request_id": approval_id,
+                    },
+                )
+            time.sleep(3)
+
+    def execute(
+        self,
+        context: CampaignContext,
+        action: AgentAction,
+        approve_all: bool = False,
+    ) -> ToolResult:
+        """Execute approval request via web UI."""
+        return self.request_approval(context, action, approve_all)
+
+
 def main() -> int:
     """CLI for checking approval status."""
     import argparse

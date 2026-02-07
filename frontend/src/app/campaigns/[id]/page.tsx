@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { Campaign, Approval } from "@/lib/api";
-import { getCampaign, listApprovals, decideApproval } from "@/lib/api";
+import { getCampaign, listApprovals, decideApproval, runCampaign } from "@/lib/api";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -320,6 +320,22 @@ function ApprovalCard({
 
 // ── Main Page ───────────────────────────────────────────────
 
+const STATE_LABELS: Record<string, string> = {
+  brief_received: "Starting…",
+  strategy_draft: "Generating strategy…",
+  awaiting_brief_approval: "Awaiting strategy approval",
+  creator_discovery: "Discovering creators…",
+  awaiting_creator_approval: "Awaiting creator approval",
+  outreach_draft: "Drafting outreach…",
+  awaiting_outreach_approval: "Awaiting outreach approval",
+  outreach_in_prog: "Sending outreach…",
+  negotiation: "Negotiating with creators…",
+  awaiting_terms_approval: "Awaiting terms approval",
+  payment_pending: "Processing payments…",
+  campaign_active: "Monitoring campaign…",
+  completed: "Completed",
+};
+
 export default function CampaignDetail() {
   const params = useParams();
   const id = params.id as string;
@@ -327,11 +343,21 @@ export default function CampaignDetail() {
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchApprovals = useCallback(() => {
-    listApprovals(id).then(setApprovals).catch(() => {});
+  const fetchAll = useCallback(() => {
+    Promise.all([
+      getCampaign(id),
+      listApprovals(id).catch(() => [] as Approval[]),
+    ]).then(([c, a]) => {
+      if (c) setCampaign(c);
+      setApprovals(a);
+    }).catch(() => {});
   }, [id]);
 
+  // Initial load
   useEffect(() => {
     Promise.all([
       getCampaign(id),
@@ -345,10 +371,41 @@ export default function CampaignDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Auto-poll when campaign is active
+  useEffect(() => {
+    const isActive = campaign?.status === "running" || campaign?.status === "awaiting_approval";
+    if (isActive && !pollingRef.current) {
+      pollingRef.current = setInterval(fetchAll, 4000);
+    } else if (!isActive && pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [campaign?.status, fetchAll]);
+
+  async function handleRun() {
+    setStarting(true);
+    setRunError(null);
+    try {
+      await runCampaign(id);
+      // Refresh to pick up status change
+      fetchAll();
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : "Failed to start");
+    } finally {
+      setStarting(false);
+    }
+  }
+
   async function handleDecide(approvalId: string, status: "approved" | "rejected", feedback?: string) {
     try {
       await decideApproval(approvalId, status, feedback);
-      fetchApprovals();
+      fetchAll();
     } catch {
       // silently fail — could add toast later
     }
@@ -388,14 +445,59 @@ export default function CampaignDetail() {
       </Link>
 
       <div className="rounded-lg border border-stone-200 bg-white p-6 mb-6">
-        <h1 className="text-2xl font-semibold text-stone-900">{campaign.name}</h1>
-        <div className="mt-2 flex gap-4 text-sm text-stone-500">
-          <span>Status: {campaign.status}</span>
-          <span>Created: {formatDate(campaign.created_at)}</span>
-          {campaign.completed_at && (
-            <span>Completed: {formatDate(campaign.completed_at)}</span>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-stone-900">{campaign.name}</h1>
+            <div className="mt-2 flex flex-wrap gap-4 text-sm text-stone-500">
+              <span>Status: {campaign.status}</span>
+              <span>Created: {formatDate(campaign.created_at)}</span>
+              {campaign.completed_at && (
+                <span>Completed: {formatDate(campaign.completed_at)}</span>
+              )}
+            </div>
+          </div>
+          {campaign.status === "draft" && (
+            <button
+              onClick={handleRun}
+              disabled={starting}
+              className="rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {starting ? "Starting…" : "Run Campaign"}
+            </button>
           )}
         </div>
+
+        {/* Running status indicator */}
+        {(campaign.status === "running" || campaign.status === "awaiting_approval") && (
+          <div className="mt-4 flex items-center gap-3 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-sm font-medium text-blue-800">
+              {STATE_LABELS[campaign.agent_state || ""] || campaign.agent_state || "Running…"}
+            </span>
+          </div>
+        )}
+
+        {campaign.status === "completed" && (
+          <div className="mt-4 flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+            <span className="text-sm font-medium text-green-800">Campaign completed</span>
+          </div>
+        )}
+
+        {campaign.status === "failed" && (
+          <div className="mt-4 flex items-center gap-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            <span className="text-sm font-medium text-red-800">
+              Campaign failed{campaign.agent_state?.startsWith("error:") ? `: ${campaign.agent_state.slice(7)}` : ""}
+            </span>
+          </div>
+        )}
+
+        {runError && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            {runError}
+          </div>
+        )}
       </div>
 
       {/* Pending Approvals — shown prominently */}

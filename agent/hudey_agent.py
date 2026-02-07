@@ -314,6 +314,7 @@ class HudeyAgent:
         self,
         brief: CampaignBrief,
         approve_all: bool = False,
+        on_step: callable = None,
     ) -> CampaignContext:
         """Run the full campaign loop: reason -> approve (if needed) -> execute -> update -> learn."""
         context = CampaignContext.from_brief(brief)
@@ -323,8 +324,12 @@ class HudeyAgent:
 
             if next_action.requires_approval:
                 self._set_awaiting_approval(context)
+                if on_step:
+                    on_step(context)
                 result = self.execute_action(next_action, context, approve_all)
                 context.update(result)
+                if on_step:
+                    on_step(context)
                 if not result.output.get("approval_granted", True):
                     self.update_memory(context, result)
                     continue
@@ -332,6 +337,8 @@ class HudeyAgent:
 
             result = self.execute_action(next_action, context, approve_all)
             context.update(result)
+            if on_step:
+                on_step(context)
             self.update_memory(context, result)
 
         return context
