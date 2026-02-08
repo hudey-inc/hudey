@@ -1,4 +1,30 @@
+import { createClient } from "@/lib/supabase/client";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// ── Auth-aware fetch wrapper ─────────────────────────────────
+
+async function authFetch(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const headers = new Headers(options.headers);
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
+  if (!headers.has("Content-Type") && options.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  return fetch(url, { ...options, headers });
+}
+
+// ── Types ────────────────────────────────────────────────────
 
 export type CampaignSummary = {
   id: string;
@@ -17,13 +43,13 @@ export type Campaign = CampaignSummary & {
 };
 
 export async function listCampaigns(): Promise<CampaignSummary[]> {
-  const res = await fetch(`${API_URL}/api/campaigns`);
+  const res = await authFetch(`${API_URL}/api/campaigns`);
   if (!res.ok) throw new Error("Failed to fetch campaigns");
   return res.json();
 }
 
 export async function getCampaign(id: string): Promise<Campaign | null> {
-  const res = await fetch(`${API_URL}/api/campaigns/${id}`);
+  const res = await authFetch(`${API_URL}/api/campaigns/${id}`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("Failed to fetch campaign");
   return res.json();
@@ -46,7 +72,9 @@ export type Approval = {
 };
 
 export async function listApprovals(campaignId: string): Promise<Approval[]> {
-  const res = await fetch(`${API_URL}/api/campaigns/${campaignId}/approvals`);
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/approvals`
+  );
   if (!res.ok) throw new Error("Failed to fetch approvals");
   return res.json();
 }
@@ -56,7 +84,7 @@ export async function decideApproval(
   status: "approved" | "rejected",
   feedback?: string
 ): Promise<{ ok: boolean }> {
-  const res = await fetch(`${API_URL}/api/approvals/${approvalId}`, {
+  const res = await authFetch(`${API_URL}/api/approvals/${approvalId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status, feedback }),
@@ -70,10 +98,13 @@ export async function decideApproval(
 
 // ── Run Campaign ──────────────────────────────────────────────
 
-export async function runCampaign(campaignId: string): Promise<{ ok: boolean }> {
-  const res = await fetch(`${API_URL}/api/campaigns/${campaignId}/run`, {
-    method: "POST",
-  });
+export async function runCampaign(
+  campaignId: string
+): Promise<{ ok: boolean }> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/run`,
+    { method: "POST" }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "Failed to start campaign");
@@ -98,9 +129,21 @@ export type EmailDeliverySummary = {
   }[];
 };
 
-export async function getEmailEvents(campaignId: string): Promise<EmailDeliverySummary> {
-  const res = await fetch(`${API_URL}/api/campaigns/${campaignId}/email-events`);
-  if (!res.ok) return { total_sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, per_creator: [] };
+export async function getEmailEvents(
+  campaignId: string
+): Promise<EmailDeliverySummary> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/email-events`
+  );
+  if (!res.ok)
+    return {
+      total_sent: 0,
+      delivered: 0,
+      opened: 0,
+      clicked: 0,
+      bounced: 0,
+      per_creator: [],
+    };
   return res.json();
 }
 
@@ -112,7 +155,7 @@ export async function createCampaign(body: {
   name?: string;
   short_id?: string;
 }): Promise<{ id: string }> {
-  const res = await fetch(`${API_URL}/api/campaigns`, {
+  const res = await authFetch(`${API_URL}/api/campaigns`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

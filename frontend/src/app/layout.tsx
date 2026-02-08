@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { AuthNav } from "@/components/auth-nav";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -38,6 +39,7 @@ export default function RootLayout({
                 Campaigns
               </a>
             </nav>
+            <AuthNav />
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

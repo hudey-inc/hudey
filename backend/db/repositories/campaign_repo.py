@@ -3,7 +3,7 @@
 from backend.db.client import get_supabase
 
 
-def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: str = None):
+def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: str = None, brand_id: str = None):
     """Insert campaign; return campaign id (UUID string)."""
     sb = get_supabase()
     if not sb:
@@ -15,6 +15,8 @@ def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: 
     }
     if short_id:
         row["short_id"] = short_id
+    if brand_id:
+        row["brand_id"] = brand_id
     if strategy:
         row["target_audience"] = strategy.get("target_audience")
         row["deliverables"] = strategy.get("deliverables")
@@ -25,17 +27,20 @@ def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: 
     return str(r.data[0]["id"])
 
 
-def list_campaigns(limit: int = 50):
-    """List campaigns, newest first. Returns list of dicts."""
+def list_campaigns(limit: int = 50, brand_id: str = None):
+    """List campaigns, newest first. Optionally filter by brand_id."""
     sb = get_supabase()
     if not sb:
         return []
-    r = sb.table("campaigns").select("id, short_id, name, status, created_at").order("created_at", desc=True).limit(limit).execute()
+    query = sb.table("campaigns").select("id, short_id, name, status, created_at")
+    if brand_id:
+        query = query.eq("brand_id", brand_id)
+    r = query.order("created_at", desc=True).limit(limit).execute()
     return r.data or []
 
 
-def get_campaign(campaign_id: str):
-    """Get campaign by UUID or short_id. Returns dict or None."""
+def get_campaign(campaign_id: str, brand_id: str = None):
+    """Get campaign by UUID or short_id. Optionally verify brand ownership."""
     sb = get_supabase()
     if not sb:
         return None
@@ -46,7 +51,11 @@ def get_campaign(campaign_id: str):
         r = sb.table("campaigns").select("*").eq("short_id", campaign_id).execute()
     if not r.data or len(r.data) == 0:
         return None
-    return r.data[0]
+    row = r.data[0]
+    # If brand_id provided, verify ownership
+    if brand_id and row.get("brand_id") and row["brand_id"] != brand_id:
+        return None
+    return row
 
 
 def update_campaign(campaign_id: str, updates: dict):
