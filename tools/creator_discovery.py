@@ -21,33 +21,52 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 def _map_phyllo_to_creator(raw: dict) -> Creator:
-    """Map Phyllo API response to Creator model."""
-    # Phyllo may use various field names; support common variants
+    """Map InsightIQ API response to Creator model.
+
+    InsightIQ returns fields like:
+      platform_username, full_name, external_id, url, follower_count,
+      engagement_rate, average_likes, creator_location, contact_details,
+      work_platform: {id, name}, introduction, is_verified, gender, language
+    """
+    # Username: InsightIQ uses platform_username
     username = (
-        raw.get("username")
+        raw.get("platform_username")
+        or raw.get("username")
         or raw.get("handle")
-        or raw.get("user_name")
-        or str(raw.get("id", "unknown"))
+        or str(raw.get("external_id", "unknown"))
     )
+
+    # Platform: extract from work_platform object or fall back
+    wp = raw.get("work_platform") or {}
     platform = (
-        (raw.get("platform") or raw.get("work_platform_id") or "instagram")
-        .lower()
-        .replace(" ", "_")
-    )
-    followers = raw.get("follower_count") or raw.get("followers") or raw.get("followers_count") or 0
-    eng = raw.get("engagement_rate") or raw.get("avg_engagement") or raw.get("engagement")
-    categories = raw.get("categories") or raw.get("interests") or raw.get("content_categories") or []
+        (wp.get("name") if isinstance(wp, dict) else None)
+        or raw.get("platform")
+        or "instagram"
+    ).lower().replace(" ", "_")
+
+    followers = raw.get("follower_count") or raw.get("subscriber_count") or 0
+    eng = raw.get("engagement_rate") or raw.get("avg_engagement")
+
+    # Categories not directly returned by InsightIQ search; use introduction as hint
+    categories = raw.get("categories") or []
     if isinstance(categories, str):
         categories = [categories]
-    location = raw.get("location") or raw.get("geo_location") or raw.get("country")
-    ext_id = raw.get("id") or raw.get("profile_id") or raw.get("account_id")
+
+    # Location from creator_location or contact_details
+    location = raw.get("creator_location")
+    if not location:
+        contact = raw.get("contact_details")
+        if isinstance(contact, dict):
+            location = contact.get("country") or contact.get("city")
+
+    ext_id = raw.get("external_id") or raw.get("id")
 
     return Creator(
         id=str(ext_id) if ext_id else None,
         external_id=str(ext_id) if ext_id else None,
         username=str(username),
         platform=platform,
-        display_name=raw.get("display_name") or raw.get("name") or username,
+        display_name=raw.get("full_name") or raw.get("display_name") or username,
         follower_count=int(followers) if followers else 0,
         engagement_rate=float(eng) if eng is not None else None,
         categories=categories,
