@@ -15,6 +15,9 @@ supabase>=2.0.0
 fastapi>=0.100.0
 uvicorn[standard]>=0.22.0
 
+# Auth (JWT validation)
+python-jose[cryptography]>=3.3.0
+
 # Add project-specific packages as needed, e.g.:
 # google-api-python-client
 # google-auth-oauthlib
