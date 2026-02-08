@@ -16,6 +16,149 @@ function formatDate(iso: string) {
   });
 }
 
+// ── Dashboard components ────────────────────────────────────
+
+function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="rounded-lg border border-stone-200 bg-white p-4">
+      <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">{label}</p>
+      <p className="text-2xl font-bold text-stone-900 mt-1">{typeof value === "number" ? value.toLocaleString() : value}</p>
+      {sub && <p className="text-xs text-stone-500 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CampaignReport({ result }: { result: Record<string, any> }) {
+  // Extract report data — may be nested under result.report
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const report = (result.report || result) as Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const metrics = (report.metrics || result.metrics || {}) as Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insights = (report.insights || result.insights || {}) as Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const outreachSent = (result.outreach_sent || {}) as Record<string, any>;
+
+  const creatorsTotal = metrics.creators_total || result.creators_count || 0;
+  const postsLive = metrics.posts_live || 0;
+  const likes = metrics.likes || 0;
+  const comments = metrics.comments || 0;
+  const shares = metrics.shares || 0;
+  const saves = metrics.saves || 0;
+  const sentCount = outreachSent.sent_count || 0;
+
+  const hasMetrics = creatorsTotal > 0 || postsLive > 0 || likes > 0;
+  const hasInsights = insights.executive_summary || insights.highlights || insights.recommendations;
+
+  return (
+    <div className="space-y-6">
+      {/* Metrics grid */}
+      {hasMetrics && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <MetricCard label="Creators" value={creatorsTotal} />
+          <MetricCard label="Posts Live" value={postsLive} sub={creatorsTotal > 0 ? `${Math.round((postsLive / creatorsTotal) * 100)}% posted` : undefined} />
+          <MetricCard label="Likes" value={likes} />
+          <MetricCard label="Comments" value={comments} />
+          <MetricCard label="Shares" value={shares} />
+          <MetricCard label="Saves" value={saves} />
+        </div>
+      )}
+
+      {/* Outreach summary */}
+      {sentCount > 0 && (
+        <div className="rounded-lg border border-stone-200 bg-white p-4">
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">Outreach</p>
+          <div className="flex items-baseline gap-4">
+            <span className="text-lg font-semibold text-stone-900">{sentCount} emails sent</span>
+            {outreachSent.skipped_count > 0 && (
+              <span className="text-sm text-stone-500">{outreachSent.skipped_count} skipped</span>
+            )}
+            {outreachSent.simulated && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Simulated</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* AI Insights */}
+      {hasInsights && (
+        <div className="space-y-4">
+          {/* Executive Summary */}
+          {Array.isArray(insights.executive_summary) && insights.executive_summary.length > 0 && (
+            <div className="rounded-lg border border-stone-200 bg-white p-5">
+              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-3">Executive Summary</p>
+              <ul className="space-y-2">
+                {(insights.executive_summary as string[]).map((item, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-stone-800">
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-stone-400 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Highlights */}
+            {Array.isArray(insights.highlights) && insights.highlights.length > 0 && (
+              <div className="rounded-lg border border-green-200 bg-green-50/50 p-5">
+                <p className="text-xs font-medium text-green-600 uppercase tracking-wide mb-3">What Worked Well</p>
+                <ul className="space-y-2">
+                  {(insights.highlights as string[]).map((item, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-stone-700">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Improvements */}
+            {Array.isArray(insights.improvements) && insights.improvements.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-5">
+                <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-3">Areas to Improve</p>
+                <ul className="space-y-2">
+                  {(insights.improvements as string[]).map((item, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-stone-700">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* ROI */}
+          {insights.roi && String(insights.roi) !== "N/A" && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-5">
+              <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-2">ROI / Impact</p>
+              <p className="text-sm text-stone-800 leading-relaxed">{String(insights.roi)}</p>
+            </div>
+          )}
+
+          {/* Recommendations */}
+          {Array.isArray(insights.recommendations) && insights.recommendations.length > 0 && (
+            <div className="rounded-lg border border-stone-200 bg-white p-5">
+              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-3">Recommendations</p>
+              <ul className="space-y-2">
+                {(insights.recommendations as string[]).map((item, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-stone-700">
+                    <span className="mt-0.5 text-stone-400 font-medium text-xs w-4">{i + 1}.</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Approval payload renderers ──────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -677,23 +820,8 @@ export default function CampaignDetail() {
 
       {result ? (
         <section className="mb-6">
-          <h2 className="text-lg font-medium text-stone-800 mb-2">
-            Result summary
-          </h2>
-          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm space-y-2">
-            {"creators_count" in result && result.creators_count != null ? (
-              <p>Creators: {String(result.creators_count)}</p>
-            ) : null}
-            {"outreach_sent" in result && result.outreach_sent && typeof result.outreach_sent === "object" ? (
-              <p>
-                Outreach: {String((result.outreach_sent as { sent_count?: number }).sent_count ?? 0)} sent,{" "}
-                {String((result.outreach_sent as { skipped_count?: number }).skipped_count ?? 0)} skipped
-              </p>
-            ) : null}
-            {"payment_summaries" in result && Array.isArray(result.payment_summaries) && result.payment_summaries.length > 0 ? (
-              <p>Payments: {result.payment_summaries.length} recorded</p>
-            ) : null}
-          </div>
+          <h2 className="text-lg font-medium text-stone-800 mb-3">Campaign Report</h2>
+          <CampaignReport result={result} />
         </section>
       ) : null}
 

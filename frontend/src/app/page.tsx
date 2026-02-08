@@ -13,6 +13,26 @@ function formatDate(iso: string) {
   });
 }
 
+const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
+  draft: { bg: "bg-stone-100", text: "text-stone-600", dot: "bg-stone-400" },
+  running: { bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-500" },
+  awaiting_approval: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-500" },
+  completed: { bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500" },
+  failed: { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const style = STATUS_STYLES[status] || STATUS_STYLES.draft;
+  const label = status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const isAnimated = status === "running" || status === "awaiting_approval";
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg} ${style.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${style.dot} ${isAnimated ? "animate-pulse" : ""}`} />
+      {label}
+    </span>
+  );
+}
+
 export default function Home() {
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,15 +97,16 @@ export default function Home() {
                 className="block px-4 py-3 hover:bg-stone-50 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="min-w-0 mr-4">
                     <span className="font-medium text-stone-900">{c.name}</span>
                     <span className="ml-2 text-xs text-stone-400">
                       {c.short_id || c.id.slice(0, 8)}
                     </span>
                   </div>
-                  <span className="text-sm text-stone-500">
-                    {formatDate(c.created_at)} · {c.status}
-                  </span>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-stone-400">{formatDate(c.created_at)}</span>
+                    <StatusBadge status={c.status} />
+                  </div>
                 </div>
               </Link>
             </li>
