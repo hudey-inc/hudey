@@ -21,45 +21,73 @@ function formatDate(iso: string) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StrategyPayload({ payload }: { payload: Record<string, any> }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+    <div className="space-y-5 text-sm">
       {payload.approach && (
-        <div className="sm:col-span-2">
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Approach</p>
-          <p className="text-stone-900 mt-0.5">{String(payload.approach)}</p>
-        </div>
-      )}
-      {payload.creator_count != null && (
         <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Creator Count</p>
-          <p className="text-stone-900 mt-0.5">{String(payload.creator_count)}</p>
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Approach</p>
+          <p className="text-stone-900 leading-relaxed">{String(payload.approach)}</p>
         </div>
       )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {payload.creator_count != null && (
+          <div className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-center">
+            <p className="text-2xl font-bold text-stone-900">{String(payload.creator_count)}</p>
+            <p className="text-xs text-stone-500 mt-0.5">Creators</p>
+          </div>
+        )}
+        {payload.platform_priority && (
+          <div className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-center">
+            <div className="flex justify-center gap-1.5 flex-wrap">
+              {(Array.isArray(payload.platform_priority)
+                ? (payload.platform_priority as string[])
+                : [String(payload.platform_priority)]
+              ).map((p) => (
+                <span key={p} className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700 capitalize">
+                  {p}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-stone-500 mt-1.5">Platforms</p>
+          </div>
+        )}
+        {payload.budget_per_creator && (
+          <div className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-center">
+            <p className="text-2xl font-bold text-stone-900">£{Number(payload.budget_per_creator).toLocaleString()}</p>
+            <p className="text-xs text-stone-500 mt-0.5">Per Creator</p>
+          </div>
+        )}
+      </div>
+
       {payload.messaging_angle && (
         <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Messaging Angle</p>
-          <p className="text-stone-900 mt-0.5">{String(payload.messaging_angle)}</p>
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Messaging Angle</p>
+          <p className="text-stone-900 leading-relaxed">{String(payload.messaging_angle)}</p>
         </div>
       )}
-      {payload.platform_priority && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Platform Priority</p>
-          <p className="text-stone-900 mt-0.5">
-            {Array.isArray(payload.platform_priority)
-              ? (payload.platform_priority as string[]).join(", ")
-              : String(payload.platform_priority)}
-          </p>
-        </div>
-      )}
+
       {payload.rationale && (
-        <div className="sm:col-span-2">
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Rationale</p>
-          <p className="text-stone-900 mt-0.5">{String(payload.rationale)}</p>
+        <div>
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Rationale</p>
+          <p className="text-stone-700 leading-relaxed">{String(payload.rationale)}</p>
         </div>
       )}
+
       {payload.risks && (
-        <div className="sm:col-span-2">
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Risks</p>
-          <p className="text-stone-900 mt-0.5">{String(payload.risks)}</p>
+        <div>
+          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Risks</p>
+          {Array.isArray(payload.risks) ? (
+            <ul className="space-y-1.5">
+              {(payload.risks as string[]).map((r, i) => (
+                <li key={i} className="flex items-start gap-2 text-stone-600">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                  {r}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-stone-600">{String(payload.risks)}</p>
+          )}
         </div>
       )}
     </div>
@@ -114,17 +142,49 @@ function OutreachPayload({ payload }: { payload: Record<string, any> }) {
   if (!Array.isArray(drafts)) {
     return <pre className="text-xs text-stone-600 overflow-x-auto">{JSON.stringify(payload, null, 2)}</pre>;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getCreatorName = (d: Record<string, any>) => {
+    if (typeof d.creator === "object" && d.creator) {
+      return String(d.creator.display_name || d.creator.username || "Creator");
+    }
+    return String(d.creator || d.to || d.username || "Creator");
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <p className="text-xs text-stone-500">{drafts.length} outreach emails drafted</p>
       {drafts.map((d, i) => (
-        <div key={i} className="rounded-lg border border-stone-100 bg-stone-50 p-4">
-          <p className="text-xs font-medium text-stone-400 mb-1">
-            To: {String(d.creator || d.to || d.username || `Creator ${i + 1}`)}
-          </p>
-          <p className="text-sm text-stone-900 whitespace-pre-wrap">
-            {String(d.message || d.body || d.content || JSON.stringify(d))}
-          </p>
-        </div>
+        <details key={i} className="rounded-lg border border-stone-100 bg-stone-50 group">
+          <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-stone-100 transition-colors rounded-lg">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex-shrink-0 h-8 w-8 rounded-full bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-600">
+                {getCreatorName(d).charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-stone-900 truncate">{getCreatorName(d)}</p>
+                <p className="text-xs text-stone-500 truncate">
+                  {d.subject ? String(d.subject) : "No subject"}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs text-stone-400 group-open:rotate-90 transition-transform ml-2">▶</span>
+          </summary>
+          <div className="px-4 pb-4 border-t border-stone-100">
+            {d.subject && (
+              <div className="mt-3 mb-2">
+                <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Subject</p>
+                <p className="text-sm font-medium text-stone-900 mt-0.5">{String(d.subject)}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Message</p>
+              <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
+                {String(d.message || d.body || d.content || JSON.stringify(d))}
+              </p>
+            </div>
+          </div>
+        </details>
       ))}
     </div>
   );
@@ -605,12 +665,12 @@ export default function CampaignDetail() {
         </section>
       ) : null}
 
-      {strategy ? (
+      {strategy && typeof strategy === "object" ? (
         <section className="mb-6">
           <h2 className="text-lg font-medium text-stone-800 mb-2">Strategy</h2>
-          <pre className="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm overflow-x-auto">
-            {JSON.stringify(strategy, null, 2)}
-          </pre>
+          <div className="rounded-lg border border-stone-200 bg-white p-6">
+            <StrategyPayload payload={strategy as Record<string, unknown>} />
+          </div>
         </section>
       ) : null}
 
