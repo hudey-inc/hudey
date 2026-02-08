@@ -16,6 +16,7 @@ import {
   PastApprovalRow,
   EmailTracking,
 } from "@/components/campaign";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -128,6 +129,7 @@ function StrategySection({ strategy }: { strategy: Record<string, any> }) {
 // ── Main Page ────────────────────────────────────────────────
 
 export default function CampaignDetail() {
+  const { user, checking } = useRequireAuth();
   const params = useParams();
   const id = params.id as string;
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -149,6 +151,7 @@ export default function CampaignDetail() {
   }, [id]);
 
   useEffect(() => {
+    if (!user) return;
     Promise.all([
       getCampaign(id),
       listApprovals(id).catch(() => [] as Approval[]),
@@ -156,7 +159,7 @@ export default function CampaignDetail() {
       .then(([c, a]) => { setCampaign(c); setApprovals(a); })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, user]);
 
   useEffect(() => {
     const isActive = campaign?.status === "running" || campaign?.status === "awaiting_approval";
@@ -182,7 +185,7 @@ export default function CampaignDetail() {
 
   // ── Loading / Error states ──
 
-  if (loading) {
+  if (checking || (loading && !error)) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-5 w-5 rounded-full border-2 border-stone-200 border-t-stone-500 animate-spin" />

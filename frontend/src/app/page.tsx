@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CampaignSummary } from "@/lib/api";
 import { listCampaigns } from "@/lib/api";
 import { StatusBadge } from "@/components/campaign";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -15,18 +16,20 @@ function formatDate(iso: string) {
 }
 
 export default function Home() {
+  const { user, checking } = useRequireAuth();
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     listCampaigns()
       .then(setCampaigns)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
-  if (loading) {
+  if (checking || (!user && loading)) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-5 w-5 rounded-full border-2 border-stone-200 border-t-stone-500 animate-spin" />
