@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routes import approvals, campaigns
+from backend.api.routes import approvals, campaigns, webhooks
 
 app = FastAPI(title="Hudey API")
 app.add_middleware(
@@ -16,6 +16,7 @@ app.add_middleware(
 
 app.include_router(approvals.router)
 app.include_router(campaigns.router)
+app.include_router(webhooks.router)
 
 
 @app.get("/health")

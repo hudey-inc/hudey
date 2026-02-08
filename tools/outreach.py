@@ -1,6 +1,7 @@
 """Outreach tool - draft and send personalized creator messages."""
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -15,8 +16,11 @@ from models.actions import AgentAction, AgentActionType, ToolResult
 from models.campaign import Creator
 from models.context import CampaignContext
 from tools.base import BaseTool
+from tools.email_template import render_email_html
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+logger = logging.getLogger(__name__)
 
 
 OUTREACH_PROMPT = """Write a personalized outreach message for this creator.
@@ -135,6 +139,21 @@ class OutreachTool(BaseTool):
 
         return drafts
 
+    def _log_email_events(self, campaign_id: str, messages: list[dict]) -> None:
+        """Log sent events to Supabase for webhook tracking."""
+        try:
+            from backend.db.repositories.email_event_repo import create_event
+            for m in messages:
+                create_event(
+                    email_id=m.get("message_id", ""),
+                    event_type="sent",
+                    recipient=m.get("email", ""),
+                    campaign_id=campaign_id,
+                    creator_id=m.get("creator_id", ""),
+                )
+        except Exception as e:
+            logger.warning("Failed to log email events to Supabase: %s", e)
+
     def send_outreach_batch(
         self,
         context: CampaignContext,
@@ -150,7 +169,9 @@ class OutreachTool(BaseTool):
 
         api_key = os.getenv("RESEND_API_KEY")
         from_email = os.getenv("OUTREACH_FROM_EMAIL", "Hudey <onboarding@resend.dev>")
+        reply_to = os.getenv("OUTREACH_REPLY_TO", "")
         simulate = not api_key or self.no_send
+        brand_name = context.brief.brand_name if context.brief else "Hudey"
 
         sent_count = 0
         skipped_count = 0
@@ -165,6 +186,11 @@ class OutreachTool(BaseTool):
                 if isinstance(creator, dict)
                 else getattr(creator, "id", None) or getattr(creator, "username", "")
             )
+            creator_name = (
+                creator.get("display_name") or creator.get("username", "")
+                if isinstance(creator, dict)
+                else getattr(creator, "display_name", None) or getattr(creator, "username", "")
+            )
             email = creator.get("email") if isinstance(creator, dict) else getattr(creator, "email", None)
             if not email or not str(email).strip():
                 skipped_count += 1
@@ -172,7 +198,11 @@ class OutreachTool(BaseTool):
 
             subject = draft.get("subject", "")
             body = draft.get("body", "")
-            html_body = body.replace("\n", "<br>") if body else ""
+            html_body = render_email_html(
+                body=body,
+                brand_name=brand_name,
+                creator_name=creator_name,
+            )
 
             if simulate:
                 message_id = f"sim_{context.campaign_id}_{creator_id}"
@@ -184,18 +214,26 @@ class OutreachTool(BaseTool):
             try:
                 import resend
                 resend.api_key = api_key
-                resp = resend.Emails.send({
+                send_params = {
                     "from": from_email,
                     "to": [email],
                     "subject": subject,
                     "html": html_body,
-                })
+                    "headers": {
+                        "X-Entity-Ref-ID": context.campaign_id,
+                    },
+                }
+                if reply_to:
+                    send_params["reply_to"] = reply_to
+                resp = resend.Emails.send(send_params)
                 msg_id = resp.get("id", "") if isinstance(resp, dict) else getattr(resp, "id", "")
                 sent_count += 1
                 sent_to.append(email)
                 messages.append({"email": email, "message_id": msg_id, "creator_id": str(creator_id)})
+                logger.info("Sent email to %s (creator: %s, msg_id: %s)", email, creator_id, msg_id)
             except Exception as e:
-                failed.append({"email": email, "error": str(e)})
+                logger.error("Failed to send email to %s (creator: %s): %s", email, creator_id, e)
+                failed.append({"email": email, "creator_id": str(creator_id), "error": str(e)})
 
         summary = {
             "sent_count": sent_count,
@@ -206,11 +244,20 @@ class OutreachTool(BaseTool):
             "simulated": simulate,
         }
 
+        # Log to disk (backwards compat) and Supabase (for webhook lookups)
         self._log_message_ids(context.campaign_id, messages)
+        self._log_email_events(context.campaign_id, messages)
 
         path = self.output_dir / f"outreach_sent_{context.campaign_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(summary, indent=2))
+
+        # Build descriptive result message
+        result_note = f"{sent_count} emails sent"
+        if skipped_count > 0:
+            result_note += f", {skipped_count} skipped (no email address)"
+        if failed:
+            result_note += f", {len(failed)} failed"
 
         return ToolResult(
             success=True,
@@ -218,6 +265,7 @@ class OutreachTool(BaseTool):
                 "outreach_sent": summary,
                 "sent_path": str(path),
                 "state": "negotiation",
+                "note": result_note,
             },
         )
 
