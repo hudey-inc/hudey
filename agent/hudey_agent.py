@@ -1,8 +1,12 @@
 """Hudey AI Agent - Claude-powered campaign orchestration."""
 
 import json
+import logging
 import os
+import re
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
@@ -60,12 +64,23 @@ Return ONLY the JSON object."""
 
 
 def _parse_json_response(text: str) -> dict:
-    """Extract and parse JSON from Claude response."""
+    """Extract and parse JSON from Claude response, with fallback extraction."""
     text = text.strip()
     if text.startswith("```"):
         lines = text.split("\n")
         text = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Try to extract the first JSON object from the text
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+        logger.warning("Failed to parse JSON from Claude response: %s", text[:300])
+        raise
 
 
 class HudeyAgent:
