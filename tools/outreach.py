@@ -202,6 +202,7 @@ class OutreachTool(BaseTool):
                 body=body,
                 brand_name=brand_name,
                 creator_name=creator_name,
+                reply_to=reply_to or from_email,
             )
 
             if simulate:
