@@ -66,13 +66,21 @@ class CampaignMonitorTool(BaseTool):
         return action_type == self.action_type
 
     def _fetch_from_phyllo(self, context: CampaignContext) -> Optional[list[dict]]:
-        """Fetch real content metrics from Phyllo. Returns None to trigger mock fallback."""
+        """Fetch real content metrics from Phyllo. Returns None to trigger mock fallback.
+
+        Skips content fetching on sandbox (endpoints unavailable).
+        Limits to first 5 creators to avoid long timeouts.
+        """
         phyllo = self._get_phyllo()
         if not phyllo.is_configured:
             return None
 
+        # Sandbox doesn't support content endpoints — fall back to mock
+        if "sandbox" in phyllo.base_url:
+            return None
+
         updates = []
-        for creator in context.creators:
+        for creator in context.creators[:5]:
             ext_id = getattr(creator, "external_id", None) or (
                 (creator.profile_data or {}).get("phyllo_id")
                 if creator.profile_data
