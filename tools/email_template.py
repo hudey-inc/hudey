@@ -7,6 +7,7 @@ def render_email_html(
     body: str,
     brand_name: str = "Hudey",
     creator_name: str = "",
+    reply_to: str = "",
 ) -> str:
     """Render an outreach email body into a clean, mobile-responsive HTML template.
 
@@ -14,6 +15,7 @@ def render_email_html(
         body: Plain text email body (newlines become paragraphs)
         brand_name: Brand name shown in header
         creator_name: Creator's name (used for greeting if not already in body)
+        reply_to: Email address for the reply button
 
     Returns:
         Complete HTML string ready for Resend
@@ -35,6 +37,8 @@ def render_email_html(
     body_html = "\n".join(paragraphs)
 
     safe_brand = html.escape(brand_name)
+    safe_reply = html.escape(reply_to) if reply_to else ""
+    mailto_href = f"mailto:{safe_reply}" if safe_reply else "mailto:"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -69,7 +73,7 @@ def render_email_html(
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background-color:#1c1917;border-radius:8px;">
-                    <a href="mailto:" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:500;text-decoration:none;">
+                    <a href="{mailto_href}" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:500;text-decoration:none;">
                       Reply to discuss
                     </a>
                   </td>
