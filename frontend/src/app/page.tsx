@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { CampaignSummary } from "@/lib/api";
 import { listCampaigns } from "@/lib/api";
+import { StatusBadge } from "@/components/campaign";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -11,26 +12,6 @@ function formatDate(iso: string) {
     month: "short",
     year: "numeric",
   });
-}
-
-const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-  draft: { bg: "bg-stone-100", text: "text-stone-600", dot: "bg-stone-400" },
-  running: { bg: "bg-blue-100", text: "text-blue-700", dot: "bg-blue-500" },
-  awaiting_approval: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-500" },
-  completed: { bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500" },
-  failed: { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500" },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const style = STATUS_STYLES[status] || STATUS_STYLES.draft;
-  const label = status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  const isAnimated = status === "running" || status === "awaiting_approval";
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg} ${style.text}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${style.dot} ${isAnimated ? "animate-pulse" : ""}`} />
-      {label}
-    </span>
-  );
 }
 
 export default function Home() {
@@ -47,19 +28,21 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="text-stone-500">Loading campaigns…</div>
+      <div className="flex items-center justify-center py-20">
+        <div className="h-5 w-5 rounded-full border-2 border-stone-200 border-t-stone-500 animate-spin" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-        <p className="font-medium">Could not reach API</p>
-        <p className="text-sm mt-1">{error}</p>
-        <p className="text-sm mt-2">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
+        <p className="font-medium text-sm">Could not reach API</p>
+        <p className="text-[13px] mt-1">{error}</p>
+        <p className="text-[13px] mt-2">
           Ensure the backend is running and{" "}
-          <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_API_URL</code>{" "}
-          points to it (e.g. your Railway URL).
+          <code className="bg-amber-100 px-1 rounded text-[12px]">NEXT_PUBLIC_API_URL</code>{" "}
+          points to it.
         </p>
       </div>
     );
@@ -68,50 +51,41 @@ export default function Home() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-stone-900">
-          Campaigns
-        </h1>
+        <h1 className="text-xl font-semibold text-stone-900">Campaigns</h1>
         <Link
           href="/campaigns/new"
-          className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 transition-colors"
+          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
         >
           New Campaign
         </Link>
       </div>
 
       {campaigns.length === 0 ? (
-        <div className="rounded-lg border border-stone-200 bg-white p-8 text-center text-stone-500">
-          <p>No campaigns yet.</p>
-          <p className="text-sm mt-2">
-            Create campaigns via the API or CLI. Campaigns from{" "}
-            <code className="bg-stone-100 px-1 rounded">run_campaign</code> will
-            appear here when Supabase is configured.
+        <div className="rounded-xl border border-stone-100 bg-white p-10 text-center">
+          <p className="text-stone-500 text-sm">No campaigns yet.</p>
+          <p className="text-[13px] text-stone-400 mt-1">
+            Click <span className="font-medium text-stone-600">New Campaign</span> to get started.
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
+        <div className="rounded-xl border border-stone-100 bg-white divide-y divide-stone-50">
           {campaigns.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/campaigns/${c.short_id || c.id}`}
-                className="block px-4 py-3 hover:bg-stone-50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 mr-4">
-                    <span className="font-medium text-stone-900">{c.name}</span>
-                    <span className="ml-2 text-xs text-stone-400">
-                      {c.short_id || c.id.slice(0, 8)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs text-stone-400">{formatDate(c.created_at)}</span>
-                    <StatusBadge status={c.status} />
-                  </div>
-                </div>
-              </Link>
-            </li>
+            <Link
+              key={c.id}
+              href={`/campaigns/${c.short_id || c.id}`}
+              className="flex items-center justify-between px-5 py-4 hover:bg-stone-50/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+            >
+              <div className="min-w-0 mr-4">
+                <p className="font-medium text-stone-900 text-sm truncate">{c.name}</p>
+                <p className="text-[11px] text-stone-400 mt-0.5">{c.short_id || c.id.slice(0, 8)}</p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-[11px] text-stone-400 hidden sm:block">{formatDate(c.created_at)}</span>
+                <StatusBadge status={c.status} />
+              </div>
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

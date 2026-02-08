@@ -5,6 +5,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { Campaign, Approval } from "@/lib/api";
 import { getCampaign, listApprovals, decideApproval, runCampaign } from "@/lib/api";
+import {
+  StatusBadge,
+  StepProgress,
+  Section,
+  Card,
+  CampaignReport,
+  BriefSection,
+  PendingApprovalCard,
+  PastApprovalRow,
+} from "@/components/campaign";
+
+// ── Helpers ──────────────────────────────────────────────────
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -15,514 +27,6 @@ function formatDate(iso: string) {
     minute: "2-digit",
   });
 }
-
-// ── Dashboard components ────────────────────────────────────
-
-function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-stone-200 bg-white p-4">
-      <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">{label}</p>
-      <p className="text-2xl font-bold text-stone-900 mt-1">{typeof value === "number" ? value.toLocaleString() : value}</p>
-      {sub && <p className="text-xs text-stone-500 mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CampaignReport({ result }: { result: Record<string, any> }) {
-  // Extract report data — may be nested under result.report
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const report = (result.report || result) as Record<string, any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const metrics = (report.metrics || result.metrics || {}) as Record<string, any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insights = (report.insights || result.insights || {}) as Record<string, any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const outreachSent = (result.outreach_sent || {}) as Record<string, any>;
-
-  const creatorsTotal = metrics.creators_total || result.creators_count || 0;
-  const postsLive = metrics.posts_live || 0;
-  const likes = metrics.likes || 0;
-  const comments = metrics.comments || 0;
-  const shares = metrics.shares || 0;
-  const saves = metrics.saves || 0;
-  const sentCount = outreachSent.sent_count || 0;
-
-  const hasMetrics = creatorsTotal > 0 || postsLive > 0 || likes > 0;
-  const hasInsights = insights.executive_summary || insights.highlights || insights.recommendations;
-
-  return (
-    <div className="space-y-6">
-      {/* Metrics grid */}
-      {hasMetrics && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <MetricCard label="Creators" value={creatorsTotal} />
-          <MetricCard label="Posts Live" value={postsLive} sub={creatorsTotal > 0 ? `${Math.round((postsLive / creatorsTotal) * 100)}% posted` : undefined} />
-          <MetricCard label="Likes" value={likes} />
-          <MetricCard label="Comments" value={comments} />
-          <MetricCard label="Shares" value={shares} />
-          <MetricCard label="Saves" value={saves} />
-        </div>
-      )}
-
-      {/* Outreach summary */}
-      {sentCount > 0 && (
-        <div className="rounded-lg border border-stone-200 bg-white p-4">
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">Outreach</p>
-          <div className="flex items-baseline gap-4">
-            <span className="text-lg font-semibold text-stone-900">{sentCount} emails sent</span>
-            {outreachSent.skipped_count > 0 && (
-              <span className="text-sm text-stone-500">{outreachSent.skipped_count} skipped</span>
-            )}
-            {outreachSent.simulated && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Simulated</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* AI Insights */}
-      {hasInsights && (
-        <div className="space-y-4">
-          {/* Executive Summary */}
-          {Array.isArray(insights.executive_summary) && insights.executive_summary.length > 0 && (
-            <div className="rounded-lg border border-stone-200 bg-white p-5">
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-3">Executive Summary</p>
-              <ul className="space-y-2">
-                {(insights.executive_summary as string[]).map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-stone-800">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-stone-400 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Highlights */}
-            {Array.isArray(insights.highlights) && insights.highlights.length > 0 && (
-              <div className="rounded-lg border border-green-200 bg-green-50/50 p-5">
-                <p className="text-xs font-medium text-green-600 uppercase tracking-wide mb-3">What Worked Well</p>
-                <ul className="space-y-2">
-                  {(insights.highlights as string[]).map((item, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm text-stone-700">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Improvements */}
-            {Array.isArray(insights.improvements) && insights.improvements.length > 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-5">
-                <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-3">Areas to Improve</p>
-                <ul className="space-y-2">
-                  {(insights.improvements as string[]).map((item, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm text-stone-700">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* ROI */}
-          {insights.roi && String(insights.roi) !== "N/A" && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-5">
-              <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-2">ROI / Impact</p>
-              <p className="text-sm text-stone-800 leading-relaxed">{String(insights.roi)}</p>
-            </div>
-          )}
-
-          {/* Recommendations */}
-          {Array.isArray(insights.recommendations) && insights.recommendations.length > 0 && (
-            <div className="rounded-lg border border-stone-200 bg-white p-5">
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-3">Recommendations</p>
-              <ul className="space-y-2">
-                {(insights.recommendations as string[]).map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-stone-700">
-                    <span className="mt-0.5 text-stone-400 font-medium text-xs w-4">{i + 1}.</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Approval payload renderers ──────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function StrategyPayload({ payload }: { payload: Record<string, any> }) {
-  return (
-    <div className="space-y-5 text-sm">
-      {payload.approach && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Approach</p>
-          <p className="text-stone-900 leading-relaxed">{String(payload.approach)}</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {payload.creator_count != null && (
-          <div className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-center">
-            <p className="text-2xl font-bold text-stone-900">{String(payload.creator_count)}</p>
-            <p className="text-xs text-stone-500 mt-0.5">Creators</p>
-          </div>
-        )}
-        {payload.platform_priority && (
-          <div className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-center">
-            <div className="flex justify-center gap-1.5 flex-wrap">
-              {(Array.isArray(payload.platform_priority)
-                ? (payload.platform_priority as string[])
-                : [String(payload.platform_priority)]
-              ).map((p) => (
-                <span key={p} className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-700 capitalize">
-                  {p}
-                </span>
-              ))}
-            </div>
-            <p className="text-xs text-stone-500 mt-1.5">Platforms</p>
-          </div>
-        )}
-        {payload.budget_per_creator && (
-          <div className="rounded-lg bg-stone-50 border border-stone-100 p-3 text-center">
-            <p className="text-2xl font-bold text-stone-900">£{Number(payload.budget_per_creator).toLocaleString()}</p>
-            <p className="text-xs text-stone-500 mt-0.5">Per Creator</p>
-          </div>
-        )}
-      </div>
-
-      {payload.messaging_angle && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Messaging Angle</p>
-          <p className="text-stone-900 leading-relaxed">{String(payload.messaging_angle)}</p>
-        </div>
-      )}
-
-      {payload.rationale && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Rationale</p>
-          <p className="text-stone-700 leading-relaxed">{String(payload.rationale)}</p>
-        </div>
-      )}
-
-      {payload.risks && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Risks</p>
-          {Array.isArray(payload.risks) ? (
-            <ul className="space-y-1.5">
-              {(payload.risks as string[]).map((r, i) => (
-                <li key={i} className="flex items-start gap-2 text-stone-600">
-                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-                  {r}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-stone-600">{String(payload.risks)}</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CreatorsPayload({ payload }: { payload: Record<string, any> }) {
-  const creators = (payload.creators || payload) as Record<string, unknown>[];
-  if (!Array.isArray(creators)) {
-    return <pre className="text-xs text-stone-600 overflow-x-auto">{JSON.stringify(payload, null, 2)}</pre>;
-  }
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-stone-200 text-left text-xs font-medium text-stone-400 uppercase tracking-wide">
-            <th className="pb-2 pr-4">Creator</th>
-            <th className="pb-2 pr-4">Platform</th>
-            <th className="pb-2 pr-4">Followers</th>
-            <th className="pb-2">Engagement</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-stone-100">
-          {creators.map((c, i) => (
-            <tr key={i}>
-              <td className="py-2 pr-4 font-medium text-stone-900">
-                {String(c.username || c.display_name || `Creator ${i + 1}`)}
-              </td>
-              <td className="py-2 pr-4 text-stone-600 capitalize">
-                {String(c.platform || "—")}
-              </td>
-              <td className="py-2 pr-4 text-stone-600">
-                {c.follower_count != null ? Number(c.follower_count).toLocaleString() : "—"}
-              </td>
-              <td className="py-2 text-stone-600">
-                {c.engagement_rate != null
-                  ? `${(Number(c.engagement_rate) * 100).toFixed(1)}%`
-                  : "—"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function OutreachPayload({ payload }: { payload: Record<string, any> }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const drafts = (payload.drafts || payload) as Record<string, any>[];
-  if (!Array.isArray(drafts)) {
-    return <pre className="text-xs text-stone-600 overflow-x-auto">{JSON.stringify(payload, null, 2)}</pre>;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getCreatorName = (d: Record<string, any>) => {
-    if (typeof d.creator === "object" && d.creator) {
-      return String(d.creator.display_name || d.creator.username || "Creator");
-    }
-    return String(d.creator || d.to || d.username || "Creator");
-  };
-
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-stone-500">{drafts.length} outreach emails drafted</p>
-      {drafts.map((d, i) => (
-        <details key={i} className="rounded-lg border border-stone-100 bg-stone-50 group">
-          <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-stone-100 transition-colors rounded-lg">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="flex-shrink-0 h-8 w-8 rounded-full bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-600">
-                {getCreatorName(d).charAt(0).toUpperCase()}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-stone-900 truncate">{getCreatorName(d)}</p>
-                <p className="text-xs text-stone-500 truncate">
-                  {d.subject ? String(d.subject) : "No subject"}
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-stone-400 group-open:rotate-90 transition-transform ml-2">▶</span>
-          </summary>
-          <div className="px-4 pb-4 border-t border-stone-100">
-            {d.subject && (
-              <div className="mt-3 mb-2">
-                <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Subject</p>
-                <p className="text-sm font-medium text-stone-900 mt-0.5">{String(d.subject)}</p>
-              </div>
-            )}
-            <div>
-              <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Message</p>
-              <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">
-                {String(d.message || d.body || d.content || JSON.stringify(d))}
-              </p>
-            </div>
-          </div>
-        </details>
-      ))}
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function TermsPayload({ payload }: { payload: Record<string, any> }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const terms = (payload.proposed_terms || payload.terms || payload) as Record<string, any>;
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-      {terms.fee_gbp != null && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Fee</p>
-          <p className="text-stone-900 mt-0.5 text-lg font-semibold">£{Number(terms.fee_gbp).toLocaleString()}</p>
-        </div>
-      )}
-      {terms.deadline && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Deadline</p>
-          <p className="text-stone-900 mt-0.5">{String(terms.deadline)}</p>
-        </div>
-      )}
-      {Array.isArray(terms.deliverables) && (
-        <div>
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Deliverables</p>
-          <ul className="mt-0.5 space-y-0.5">
-            {(terms.deliverables as string[]).map((d, i) => (
-              <li key={i} className="text-stone-900">• {d}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function GenericPayload({ payload }: { payload: Record<string, any> }) {
-  return (
-    <pre className="text-xs text-stone-600 overflow-x-auto bg-stone-50 rounded-lg p-3">
-      {JSON.stringify(payload, null, 2)}
-    </pre>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ApprovalPayload({ type, payload }: { type: string; payload: Record<string, any> }) {
-  switch (type) {
-    case "strategy":
-      return <StrategyPayload payload={payload} />;
-    case "creators":
-      return <CreatorsPayload payload={payload} />;
-    case "outreach":
-      return <OutreachPayload payload={payload} />;
-    case "terms":
-      return <TermsPayload payload={payload} />;
-    default:
-      return <GenericPayload payload={payload} />;
-  }
-}
-
-// ── Approval Card ───────────────────────────────────────────
-
-function ApprovalCard({
-  approval,
-  onDecide,
-}: {
-  approval: Approval;
-  onDecide: (id: string, status: "approved" | "rejected", feedback?: string) => Promise<void>;
-}) {
-  const [feedback, setFeedback] = useState("");
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const isPending = approval.status === "pending";
-
-  async function handleApprove() {
-    setSubmitting(true);
-    await onDecide(approval.id, "approved");
-    setSubmitting(false);
-  }
-
-  async function handleReject() {
-    if (!showFeedback) {
-      setShowFeedback(true);
-      return;
-    }
-    setSubmitting(true);
-    await onDecide(approval.id, "rejected", feedback || undefined);
-    setSubmitting(false);
-  }
-
-  const borderColor = isPending
-    ? "border-blue-200"
-    : approval.status === "approved"
-    ? "border-green-200"
-    : "border-red-200";
-
-  const bgColor = isPending
-    ? "bg-blue-50/50"
-    : approval.status === "approved"
-    ? "bg-green-50/50"
-    : "bg-red-50/50";
-
-  const statusBadge = isPending ? (
-    <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-      Pending
-    </span>
-  ) : approval.status === "approved" ? (
-    <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-      Approved
-    </span>
-  ) : (
-    <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-      Rejected
-    </span>
-  );
-
-  return (
-    <div className={`rounded-lg border ${borderColor} ${bgColor} p-5`}>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-medium text-stone-900">{approval.subject}</h3>
-          <p className="text-xs text-stone-400 mt-0.5">{formatDate(approval.created_at)}</p>
-        </div>
-        {statusBadge}
-      </div>
-
-      {approval.reasoning && (
-        <p className="text-sm text-stone-600 mb-3 italic">
-          &ldquo;{approval.reasoning}&rdquo;
-        </p>
-      )}
-
-      <div className="mb-4">
-        <ApprovalPayload type={approval.approval_type} payload={approval.payload} />
-      </div>
-
-      {!isPending && approval.feedback && (
-        <div className="rounded-lg bg-white border border-stone-200 p-3 mb-3">
-          <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-1">Feedback</p>
-          <p className="text-sm text-stone-700">{approval.feedback}</p>
-        </div>
-      )}
-
-      {!isPending && approval.decided_at && (
-        <p className="text-xs text-stone-400">
-          Decided: {formatDate(approval.decided_at)}
-        </p>
-      )}
-
-      {isPending && (
-        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-stone-200">
-          {showFeedback && (
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Why are you rejecting? Any modifications needed?"
-              rows={2}
-              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
-            />
-          )}
-          <div className="flex gap-3">
-            <button
-              onClick={handleApprove}
-              disabled={submitting}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-            >
-              {submitting ? "Submitting…" : "Approve"}
-            </button>
-            <button
-              onClick={handleReject}
-              disabled={submitting}
-              className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-            >
-              {showFeedback ? "Confirm Reject" : "Reject"}
-            </button>
-            {showFeedback && (
-              <button
-                onClick={() => setShowFeedback(false)}
-                className="text-sm text-stone-500 hover:text-stone-700"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main Page ───────────────────────────────────────────────
 
 const STATE_LABELS: Record<string, string> = {
   brief_received: "Starting…",
@@ -539,6 +43,88 @@ const STATE_LABELS: Record<string, string> = {
   campaign_active: "Monitoring campaign…",
   completed: "Completed",
 };
+
+// ── Strategy inline display (for strategy section) ──────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function StrategySection({ strategy }: { strategy: Record<string, any> }) {
+  return (
+    <Card>
+      <div className="space-y-4 text-sm">
+        {strategy.approach && (
+          <div>
+            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Approach</p>
+            <p className="text-stone-800 leading-relaxed">{String(strategy.approach)}</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {strategy.creator_count != null && (
+            <div className="rounded-lg bg-stone-50 p-3 text-center">
+              <p className="text-xl font-semibold text-stone-900">{String(strategy.creator_count)}</p>
+              <p className="text-[11px] text-stone-400 mt-0.5">Creators</p>
+            </div>
+          )}
+          {strategy.platform_priority && (
+            <div className="rounded-lg bg-stone-50 p-3 text-center">
+              <div className="flex justify-center gap-1.5 flex-wrap">
+                {(Array.isArray(strategy.platform_priority)
+                  ? (strategy.platform_priority as string[])
+                  : [String(strategy.platform_priority)]
+                ).map((p) => (
+                  <span key={p} className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] font-medium text-stone-600 capitalize">
+                    {p}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[11px] text-stone-400 mt-1.5">Platforms</p>
+            </div>
+          )}
+          {strategy.budget_per_creator && (
+            <div className="rounded-lg bg-stone-50 p-3 text-center">
+              <p className="text-xl font-semibold text-stone-900">£{Number(strategy.budget_per_creator).toLocaleString()}</p>
+              <p className="text-[11px] text-stone-400 mt-0.5">Per Creator</p>
+            </div>
+          )}
+        </div>
+
+        {strategy.messaging_angle && (
+          <div>
+            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Messaging Angle</p>
+            <p className="text-stone-800 leading-relaxed">{String(strategy.messaging_angle)}</p>
+          </div>
+        )}
+
+        {strategy.rationale && (
+          <div>
+            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Rationale</p>
+            <p className="text-stone-600 leading-relaxed">{String(strategy.rationale)}</p>
+          </div>
+        )}
+
+        {strategy.risks && (
+          <div>
+            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Risks</p>
+            {Array.isArray(strategy.risks) ? (
+              <ul className="space-y-1.5">
+                {(strategy.risks as string[]).map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-stone-600 text-[13px]">
+                    <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-stone-600 text-[13px]">{String(strategy.risks)}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
 
 export default function CampaignDetail() {
   const params = useParams();
@@ -561,21 +147,16 @@ export default function CampaignDetail() {
     }).catch(() => {});
   }, [id]);
 
-  // Initial load
   useEffect(() => {
     Promise.all([
       getCampaign(id),
       listApprovals(id).catch(() => [] as Approval[]),
     ])
-      .then(([c, a]) => {
-        setCampaign(c);
-        setApprovals(a);
-      })
+      .then(([c, a]) => { setCampaign(c); setApprovals(a); })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Auto-poll when campaign is active
   useEffect(() => {
     const isActive = campaign?.status === "running" || campaign?.status === "awaiting_approval";
     if (isActive && !pollingRef.current) {
@@ -584,257 +165,174 @@ export default function CampaignDetail() {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
+    return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
   }, [campaign?.status, fetchAll]);
 
   async function handleRun() {
-    setStarting(true);
-    setRunError(null);
-    try {
-      await runCampaign(id);
-      // Refresh to pick up status change
-      fetchAll();
-    } catch (err) {
-      setRunError(err instanceof Error ? err.message : "Failed to start");
-    } finally {
-      setStarting(false);
-    }
+    setStarting(true); setRunError(null);
+    try { await runCampaign(id); fetchAll(); }
+    catch (err) { setRunError(err instanceof Error ? err.message : "Failed to start"); }
+    finally { setStarting(false); }
   }
 
   async function handleDecide(approvalId: string, status: "approved" | "rejected", feedback?: string) {
-    try {
-      await decideApproval(approvalId, status, feedback);
-      fetchAll();
-    } catch {
-      // silently fail — could add toast later
-    }
+    try { await decideApproval(approvalId, status, feedback); fetchAll(); } catch { /* noop */ }
   }
+
+  // ── Loading / Error states ──
 
   if (loading) {
-    return <div className="text-stone-500">Loading campaign…</div>;
-  }
-
-  if (error || !campaign) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
-        <p className="font-medium">Campaign not found</p>
-        <p className="text-sm mt-1">{error || "Could not load campaign."}</p>
-        <Link href="/" className="text-sm mt-2 inline-block hover:underline">
-          ← Back to campaigns
-        </Link>
+      <div className="flex items-center justify-center py-20">
+        <div className="h-5 w-5 rounded-full border-2 border-stone-200 border-t-stone-500 animate-spin" />
       </div>
     );
   }
 
+  if (error || !campaign) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
+        <p className="font-medium text-sm">Campaign not found</p>
+        <p className="text-[13px] mt-1">{error || "Could not load campaign."}</p>
+        <Link href="/" className="text-[13px] mt-3 inline-block text-amber-700 hover:underline">← Back to campaigns</Link>
+      </div>
+    );
+  }
+
+  // ── Data extraction ──
+
   const result = campaign.result_json;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const brief = (campaign.brief || result?.brief) as Record<string, any> | undefined;
-  const strategy = campaign.strategy || result?.strategy;
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const strategy = (campaign.strategy || result?.strategy) as Record<string, any> | undefined;
   const pendingApprovals = approvals.filter((a) => a.status === "pending");
   const pastApprovals = approvals.filter((a) => a.status !== "pending");
+  const isRunning = campaign.status === "running" || campaign.status === "awaiting_approval";
+  const isCompleted = campaign.status === "completed";
+  const isFailed = campaign.status === "failed";
+  const isDraft = campaign.status === "draft";
 
   return (
     <div>
-      <Link
-        href="/"
-        className="text-sm text-stone-500 hover:text-stone-900 mb-4 inline-block"
-      >
-        ← Campaigns
+      {/* ── Back link ── */}
+      <Link href="/" className="inline-flex items-center gap-1 text-[13px] text-stone-400 hover:text-stone-700 transition-colors mb-6">
+        <span>←</span> Campaigns
       </Link>
 
-      <div className="rounded-lg border border-stone-200 bg-white p-6 mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-stone-900">{campaign.name}</h1>
-            <div className="mt-2 flex flex-wrap gap-4 text-sm text-stone-500">
-              <span>Status: {campaign.status}</span>
-              <span>Created: {formatDate(campaign.created_at)}</span>
+      {/* ── Header ── */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-stone-900 truncate">{campaign.name}</h1>
+            <div className="flex items-center gap-3 mt-2">
+              <StatusBadge status={campaign.status} />
+              <span className="text-[11px] text-stone-400">Created {formatDate(campaign.created_at)}</span>
               {campaign.completed_at && (
-                <span>Completed: {formatDate(campaign.completed_at)}</span>
+                <span className="text-[11px] text-stone-400">Completed {formatDate(campaign.completed_at)}</span>
               )}
             </div>
           </div>
-          {(campaign.status === "draft" || campaign.status === "failed") && (
+          {(isDraft || isFailed) && (
             <button
               onClick={handleRun}
               disabled={starting}
-              className="rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-shrink-0 rounded-lg bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {starting ? "Starting…" : campaign.status === "failed" ? "Retry Campaign" : "Run Campaign"}
+              {starting ? "Starting…" : isFailed ? "Retry" : "Run Campaign"}
             </button>
           )}
         </div>
 
-        {/* Running status indicator */}
-        {(campaign.status === "running" || campaign.status === "awaiting_approval") && (
-          <div className="mt-4 flex items-center gap-3 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
-            <div className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-sm font-medium text-blue-800">
-              {STATE_LABELS[campaign.agent_state || ""] || campaign.agent_state || "Running…"}
+        {/* Progress bar for active campaigns */}
+        {(isRunning || isCompleted) && (
+          <div className="mt-5">
+            <StepProgress agentState={campaign.agent_state} status={campaign.status} />
+          </div>
+        )}
+
+        {/* Running state label */}
+        {isRunning && campaign.agent_state && (
+          <div className="mt-3 flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-[13px] text-blue-700">
+              {STATE_LABELS[campaign.agent_state] || campaign.agent_state}
             </span>
           </div>
         )}
 
-        {campaign.status === "completed" && (
-          <div className="mt-4 flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
-            <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-            <span className="text-sm font-medium text-green-800">Campaign completed</span>
-          </div>
-        )}
-
-        {campaign.status === "failed" && (
-          <div className="mt-4 flex items-center gap-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-            <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-            <span className="text-sm font-medium text-red-800">
+        {/* Failed message */}
+        {isFailed && (
+          <div className="mt-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0" />
+            <span className="text-[13px] text-red-700">
               Campaign failed{campaign.agent_state?.startsWith("error:") ? `: ${campaign.agent_state.slice(7)}` : ""}
             </span>
           </div>
         )}
 
         {runError && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] text-amber-700">
             {runError}
           </div>
         )}
       </div>
 
-      {/* Pending Approvals — shown prominently */}
+      {/* ── Pending Approvals ── */}
       {pendingApprovals.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-lg font-medium text-stone-800 mb-2">
-            Action Required
-            <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+        <Section
+          title="Action Required"
+          badge={
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
               {pendingApprovals.length}
             </span>
-          </h2>
+          }
+        >
           <div className="space-y-4">
             {pendingApprovals.map((a) => (
-              <ApprovalCard key={a.id} approval={a} onDecide={handleDecide} />
+              <PendingApprovalCard key={a.id} approval={a} onDecide={handleDecide} />
             ))}
           </div>
-        </section>
+        </Section>
       )}
 
-      {brief ? (
-        <section className="mb-6">
-          <h2 className="text-lg font-medium text-stone-800 mb-2">Brief</h2>
-          <div className="rounded-lg border border-stone-200 bg-white p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-              {brief.brand_name && (
-                <div>
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Brand</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.brand_name)}</p>
-                </div>
-              )}
-              {brief.industry && (
-                <div>
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Industry</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.industry)}</p>
-                </div>
-              )}
-              {brief.objective && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Objective</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.objective)}</p>
-                </div>
-              )}
-              {brief.target_audience && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Target Audience</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.target_audience)}</p>
-                </div>
-              )}
-              {brief.key_message && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Key Message</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.key_message)}</p>
-                </div>
-              )}
-              {Array.isArray(brief.platforms) && (
-                <div>
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Platforms</p>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(brief.platforms as string[]).map((p) => (
-                      <span key={p} className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs text-stone-700 capitalize">
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {Array.isArray(brief.follower_range) && (
-                <div>
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Follower Range</p>
-                  <p className="text-sm text-stone-900 mt-0.5">
-                    {Number(brief.follower_range[0]).toLocaleString()} – {Number(brief.follower_range[1]).toLocaleString()}
-                  </p>
-                </div>
-              )}
-              {brief.budget_gbp != null && (
-                <div>
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Budget</p>
-                  <p className="text-sm text-stone-900 mt-0.5">£{Number(brief.budget_gbp).toLocaleString()}</p>
-                </div>
-              )}
-              {brief.timeline && (
-                <div>
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Timeline</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.timeline)}</p>
-                </div>
-              )}
-              {Array.isArray(brief.deliverables) && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Deliverables</p>
-                  <ul className="mt-1 space-y-0.5">
-                    {(brief.deliverables as string[]).map((d, i) => (
-                      <li key={i} className="text-sm text-stone-900">• {d}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {brief.brand_voice && (
-                <div className="sm:col-span-2">
-                  <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Brand Voice</p>
-                  <p className="text-sm text-stone-900 mt-0.5">{String(brief.brand_voice)}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {strategy && typeof strategy === "object" ? (
-        <section className="mb-6">
-          <h2 className="text-lg font-medium text-stone-800 mb-2">Strategy</h2>
-          <div className="rounded-lg border border-stone-200 bg-white p-6">
-            <StrategyPayload payload={strategy as Record<string, unknown>} />
-          </div>
-        </section>
-      ) : null}
-
-      {result ? (
-        <section className="mb-6">
-          <h2 className="text-lg font-medium text-stone-800 mb-3">Campaign Report</h2>
+      {/* ── Campaign Report (completed campaigns) ── */}
+      {result && isCompleted && (
+        <Section title="Report">
           <CampaignReport result={result} />
-        </section>
-      ) : null}
+        </Section>
+      )}
 
-      {/* Past Approvals */}
+      {/* ── Brief ── */}
+      {brief && (
+        <Section title="Brief">
+          <BriefSection brief={brief} />
+        </Section>
+      )}
+
+      {/* ── Strategy ── */}
+      {strategy && typeof strategy === "object" && (
+        <Section title="Strategy">
+          <StrategySection strategy={strategy} />
+        </Section>
+      )}
+
+      {/* ── In-progress result (running campaigns) ── */}
+      {result && !isCompleted && (
+        <Section title="Progress">
+          <CampaignReport result={result} />
+        </Section>
+      )}
+
+      {/* ── Approval History ── */}
       {pastApprovals.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-lg font-medium text-stone-800 mb-2">Approval History</h2>
-          <div className="space-y-3">
+        <Section title="Approval History">
+          <Card className="divide-y divide-stone-50">
             {pastApprovals.map((a) => (
-              <ApprovalCard key={a.id} approval={a} onDecide={handleDecide} />
+              <PastApprovalRow key={a.id} approval={a} />
             ))}
-          </div>
-        </section>
+          </Card>
+        </Section>
       )}
     </div>
   );
