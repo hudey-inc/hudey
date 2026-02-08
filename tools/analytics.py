@@ -107,7 +107,24 @@ class AnalyticsTool(BaseTool):
         if text.startswith("```"):
             lines = text.split("\n")
             text = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
-        return json.loads(text)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Try extracting JSON object from response
+            import re
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group())
+                except json.JSONDecodeError:
+                    pass
+            return {
+                "executive_summary": ["Campaign completed."],
+                "highlights": ["Report generation encountered a formatting issue."],
+                "improvements": ["Review raw metrics for details."],
+                "roi": "See metrics above",
+                "recommendations": ["Re-run report for full analysis."],
+            }
 
     def execute(
         self,
