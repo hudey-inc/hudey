@@ -138,7 +138,8 @@ function CreatorsPayload({ payload }: { payload: Record<string, any> }) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function OutreachPayload({ payload }: { payload: Record<string, any> }) {
-  const drafts = (payload.drafts || payload) as Record<string, unknown>[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const drafts = (payload.drafts || payload) as Record<string, any>[];
   if (!Array.isArray(drafts)) {
     return <pre className="text-xs text-stone-600 overflow-x-auto">{JSON.stringify(payload, null, 2)}</pre>;
   }
