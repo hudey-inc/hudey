@@ -1,13 +1,16 @@
-"""Phyllo API client for creator discovery and content monitoring."""
+"""InsightIQ (formerly Phyllo) API client for creator discovery and content monitoring."""
 
+import logging
 import os
 from typing import Any, Optional
 
 import requests
 from requests.auth import HTTPBasicAuth
 
-# Phyllo API endpoints - confirm from https://docs.getphyllo.com/docs/api-reference/api/ref
-DEFAULT_BASE_URL = "https://api.getphyllo.com/v1"
+logger = logging.getLogger(__name__)
+
+# InsightIQ (formerly Phyllo) API - https://docs.insightiq.ai
+DEFAULT_BASE_URL = "https://api.insightiq.ai/v1"
 
 
 class PhylloClient:
@@ -60,7 +63,10 @@ class PhylloClient:
             )
             r.raise_for_status()
             return r.json()
-        except (requests.RequestException, ValueError):
+        except requests.RequestException as e:
+            logger.warning("InsightIQ GET %s failed: %s", path, e)
+            return None
+        except ValueError:
             return None
 
     def _post(self, path: str, body: dict) -> Optional[dict]:
@@ -76,8 +82,25 @@ class PhylloClient:
             )
             r.raise_for_status()
             return r.json()
-        except (requests.RequestException, ValueError):
+        except requests.RequestException as e:
+            logger.warning("InsightIQ POST %s failed: %s", path, e)
+            if hasattr(e, "response") and e.response is not None:
+                logger.warning("Response body: %s", e.response.text[:500])
             return None
+        except ValueError:
+            return None
+
+    # InsightIQ work_platform_id mapping
+    PLATFORM_IDS: dict[str, str] = {
+        "instagram": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "tiktok": "de55aeec-0dc8-4119-bf90-16b3d1f0c987",
+        "youtube": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+        "x": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+        "twitter": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+        "twitch": "e4de6c01-5b78-4fc0-a651-24f44134457b",
+        "facebook": "ad2fec62-2987-40a0-89fb-23485972598c",
+        "snapchat": "ee3c8d7a-3207-4f56-945f-f942b34c96e1",
+    }
 
     def search_creators(
         self,
@@ -92,36 +115,43 @@ class PhylloClient:
         Search creators matching criteria.
 
         Returns list of raw creator dicts, or empty list on failure.
-        Phyllo endpoint: POST /v1/social/creator-profile/search (confirm from docs)
+        InsightIQ endpoint: POST /v1/social/creators/profiles/search
         """
         if not self.is_configured:
             return []
 
-        # Map our platform names to Phyllo's expected values
-        platform_map = {"instagram": "instagram", "tiktok": "tiktok", "youtube": "youtube"}
-        phyllo_platforms = [
-            platform_map.get(p.lower(), p) for p in platforms
-        ] if platforms else ["instagram", "tiktok"]
+        # Resolve platform names to InsightIQ work_platform_ids
+        resolved = [
+            self.PLATFORM_IDS.get(p.lower().strip())
+            for p in (platforms or ["instagram"])
+        ]
+        # Default to Instagram if no valid platform found
+        platform_ids = [pid for pid in resolved if pid]
+        if not platform_ids:
+            platform_ids = [self.PLATFORM_IDS["instagram"]]
 
-        body: dict[str, Any] = {
-            "platforms": phyllo_platforms,
-            "follower_count": {"min": follower_min, "max": follower_max},
-            "limit": min(limit, 50),
-        }
-        if categories:
-            body["categories"] = categories
-        if locations:
-            body["locations"] = locations
+        all_results: list[dict[str, Any]] = []
+        per_platform_limit = max(limit // len(platform_ids), 5)
 
-        resp = self._post("/social/creator-profile/search", body)
-        if not resp:
-            return []
+        for platform_id in platform_ids:
+            body: dict[str, Any] = {
+                "work_platform_id": platform_id,
+                "sort_by": {"field": "FOLLOWER_COUNT", "order": "DESCENDING"},
+                "follower_count": {"min": follower_min, "max": follower_max},
+                "limit": min(per_platform_limit, 50),
+            }
+            if categories:
+                body["topic_relevance"] = categories
+            if locations:
+                body["creator_locations"] = locations
 
-        # Phyllo may return { "data": [...], "next_cursor": "..." } or direct array
-        data = resp.get("data", resp) if isinstance(resp, dict) else resp
-        if isinstance(data, list):
-            return data[:limit]
-        return []
+            resp = self._post("/social/creators/profiles/search", body)
+            if resp:
+                data = resp.get("data", resp) if isinstance(resp, dict) else resp
+                if isinstance(data, list):
+                    all_results.extend(data)
+
+        return all_results[:limit]
 
     def get_creator_content(
         self,
