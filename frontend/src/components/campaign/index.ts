@@ -5,3 +5,4 @@ export { Section, Card } from "./section";
 export { CampaignReport } from "./campaign-report";
 export { BriefSection } from "./brief-section";
 export { PendingApprovalCard, PastApprovalRow } from "./approval-card";
+export { EmailTracking } from "./email-tracking";

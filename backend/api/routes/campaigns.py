@@ -131,6 +131,16 @@ def run_campaign(campaign_id: str):
     return {"ok": True, "status": "running"}
 
 
+@router.get("/{campaign_id}/email-events")
+def campaign_email_events(campaign_id: str):
+    """Get email delivery tracking summary for a campaign."""
+    from backend.db.repositories.email_event_repo import get_delivery_summary
+    campaign = repo_get(campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return get_delivery_summary(campaign["id"])
+
+
 @router.put("/{campaign_id}")
 def update_campaign(campaign_id: str, body: dict):
     """Update campaign status/fields."""

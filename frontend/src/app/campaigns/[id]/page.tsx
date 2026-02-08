@@ -14,6 +14,7 @@ import {
   BriefSection,
   PendingApprovalCard,
   PastApprovalRow,
+  EmailTracking,
 } from "@/components/campaign";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -300,6 +301,13 @@ export default function CampaignDetail() {
       {result && isCompleted && (
         <Section title="Report">
           <CampaignReport result={result} />
+        </Section>
+      )}
+
+      {/* ── Email Delivery Tracking ── */}
+      {isCompleted && (
+        <Section title="Email Delivery">
+          <EmailTracking campaignId={id} />
         </Section>
       )}
 

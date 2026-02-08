@@ -81,6 +81,29 @@ export async function runCampaign(campaignId: string): Promise<{ ok: boolean }> 
   return res.json();
 }
 
+// ── Email Tracking ───────────────────────────────────────────
+
+export type EmailDeliverySummary = {
+  total_sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  bounced: number;
+  per_creator: {
+    creator_id: string;
+    email_id: string;
+    recipient: string;
+    status: string;
+    events: { event_type: string; created_at: string }[];
+  }[];
+};
+
+export async function getEmailEvents(campaignId: string): Promise<EmailDeliverySummary> {
+  const res = await fetch(`${API_URL}/api/campaigns/${campaignId}/email-events`);
+  if (!res.ok) return { total_sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, per_creator: [] };
+  return res.json();
+}
+
 // ── Campaigns ─────────────────────────────────────────────────
 
 export async function createCampaign(body: {
