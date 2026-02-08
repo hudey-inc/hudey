@@ -38,6 +38,7 @@ Requirements:
 - Clear CTA to reply with interest
 - Professional but warm tone
 - No generic "I love your content" - be specific
+- Sign off with the brand name "{brand_name}" — never use placeholder text like "[Your name]"
 
 Return a JSON object with:
 {{ "subject": "email subject line", "body": "email body text" }}
