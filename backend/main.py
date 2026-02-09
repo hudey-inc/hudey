@@ -34,4 +34,9 @@ app.include_router(webhooks.router)
 @app.get("/health")
 def health():
     """Health check."""
-    return {"status": "ok"}
+    jwt_secret = os.getenv("SUPABASE_JWT_SECRET", "").strip()
+    return {
+        "status": "ok",
+        "jwt_configured": bool(jwt_secret),
+        "jwt_length": len(jwt_secret),
+    }
