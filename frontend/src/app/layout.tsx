@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { AuthNav } from "@/components/auth-nav";
-import { MainNav } from "@/components/main-nav";
+import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -28,18 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-stone-50 text-stone-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <header className="border-b border-stone-200 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-4 flex items-center gap-6">
-            <a href="/" className="text-xl font-semibold text-stone-900">
-              Hudey
-            </a>
-            <MainNav />
-            <AuthNav />
-          </div>
-        </header>
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

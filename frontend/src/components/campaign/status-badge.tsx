@@ -1,9 +1,9 @@
 const STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-  draft: { bg: "bg-stone-100", text: "text-stone-600", dot: "bg-stone-400" },
-  running: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
-  awaiting_approval: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  failed: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
+  draft: { bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-500" },
+  running: { bg: "bg-green-100", text: "text-green-700", dot: "bg-green-500" },
+  awaiting_approval: { bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-500" },
+  completed: { bg: "bg-gray-100", text: "text-gray-700", dot: "bg-gray-500" },
+  failed: { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500" },
 };
 
 export function StatusBadge({ status }: { status: string }) {

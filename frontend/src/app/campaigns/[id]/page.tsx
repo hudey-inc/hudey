@@ -56,69 +56,69 @@ function StrategySection({ strategy }: { strategy: Record<string, any> }) {
       <div className="space-y-4 text-sm">
         {strategy.approach && (
           <div>
-            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Approach</p>
-            <p className="text-stone-800 leading-relaxed">{String(strategy.approach)}</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Approach</p>
+            <p className="text-gray-800 leading-relaxed">{String(strategy.approach)}</p>
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {strategy.creator_count != null && (
-            <div className="rounded-lg bg-stone-50 p-3 text-center">
-              <p className="text-xl font-semibold text-stone-900">{String(strategy.creator_count)}</p>
-              <p className="text-[11px] text-stone-400 mt-0.5">Creators</p>
+            <div className="rounded-lg bg-gray-50 p-3 text-center">
+              <p className="text-xl font-semibold text-gray-900">{String(strategy.creator_count)}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">Creators</p>
             </div>
           )}
           {strategy.platform_priority && (
-            <div className="rounded-lg bg-stone-50 p-3 text-center">
+            <div className="rounded-lg bg-gray-50 p-3 text-center">
               <div className="flex justify-center gap-1.5 flex-wrap">
                 {(Array.isArray(strategy.platform_priority)
                   ? (strategy.platform_priority as string[])
                   : [String(strategy.platform_priority)]
                 ).map((p) => (
-                  <span key={p} className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] font-medium text-stone-600 capitalize">
+                  <span key={p} className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600 capitalize">
                     {p}
                   </span>
                 ))}
               </div>
-              <p className="text-[11px] text-stone-400 mt-1.5">Platforms</p>
+              <p className="text-[11px] text-gray-400 mt-1.5">Platforms</p>
             </div>
           )}
           {strategy.budget_per_creator && (
-            <div className="rounded-lg bg-stone-50 p-3 text-center">
-              <p className="text-xl font-semibold text-stone-900">£{Number(strategy.budget_per_creator).toLocaleString()}</p>
-              <p className="text-[11px] text-stone-400 mt-0.5">Per Creator</p>
+            <div className="rounded-lg bg-gray-50 p-3 text-center">
+              <p className="text-xl font-semibold text-gray-900">£{Number(strategy.budget_per_creator).toLocaleString()}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">Per Creator</p>
             </div>
           )}
         </div>
 
         {strategy.messaging_angle && (
           <div>
-            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Messaging Angle</p>
-            <p className="text-stone-800 leading-relaxed">{String(strategy.messaging_angle)}</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Messaging Angle</p>
+            <p className="text-gray-800 leading-relaxed">{String(strategy.messaging_angle)}</p>
           </div>
         )}
 
         {strategy.rationale && (
           <div>
-            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Rationale</p>
-            <p className="text-stone-600 leading-relaxed">{String(strategy.rationale)}</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Rationale</p>
+            <p className="text-gray-600 leading-relaxed">{String(strategy.rationale)}</p>
           </div>
         )}
 
         {strategy.risks && (
           <div>
-            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-wider mb-1">Risks</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Risks</p>
             {Array.isArray(strategy.risks) ? (
               <ul className="space-y-1.5">
                 {(strategy.risks as string[]).map((r, i) => (
-                  <li key={i} className="flex items-start gap-2 text-stone-600 text-[13px]">
+                  <li key={i} className="flex items-start gap-2 text-gray-600 text-[13px]">
                     <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
                     {r}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-stone-600 text-[13px]">{String(strategy.risks)}</p>
+              <p className="text-gray-600 text-[13px]">{String(strategy.risks)}</p>
             )}
           </div>
         )}
@@ -189,7 +189,7 @@ export default function CampaignDetail() {
   if (checking || (loading && !error)) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-5 w-5 rounded-full border-2 border-stone-200 border-t-stone-500 animate-spin" />
+        <div className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-stone-500 animate-spin" />
       </div>
     );
   }
@@ -221,7 +221,7 @@ export default function CampaignDetail() {
   return (
     <div>
       {/* ── Back link ── */}
-      <Link href="/" className="inline-flex items-center gap-1 text-[13px] text-stone-400 hover:text-stone-700 transition-colors mb-6">
+      <Link href="/" className="inline-flex items-center gap-1 text-[13px] text-gray-400 hover:text-gray-700 transition-colors mb-6">
         <span>←</span> Campaigns
       </Link>
 
@@ -229,12 +229,12 @@ export default function CampaignDetail() {
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-stone-900 truncate">{campaign.name}</h1>
+            <h1 className="text-xl font-semibold text-gray-900 truncate">{campaign.name}</h1>
             <div className="flex items-center gap-3 mt-2">
               <StatusBadge status={campaign.status} />
-              <span className="text-[11px] text-stone-400">Created {formatDate(campaign.created_at)}</span>
+              <span className="text-[11px] text-gray-400">Created {formatDate(campaign.created_at)}</span>
               {campaign.completed_at && (
-                <span className="text-[11px] text-stone-400">Completed {formatDate(campaign.completed_at)}</span>
+                <span className="text-[11px] text-gray-400">Completed {formatDate(campaign.completed_at)}</span>
               )}
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function CampaignDetail() {
             <button
               onClick={handleRun}
               disabled={starting}
-              className="flex-shrink-0 rounded-lg bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-shrink-0 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {starting ? "Starting…" : isFailed ? "Retry" : "Run Campaign"}
             </button>
@@ -259,8 +259,8 @@ export default function CampaignDetail() {
         {/* Running state label */}
         {isRunning && campaign.agent_state && (
           <div className="mt-3 flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-[13px] text-blue-700">
+            <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <span className="text-[13px] text-indigo-700">
               {STATE_LABELS[campaign.agent_state] || campaign.agent_state}
             </span>
           </div>
@@ -346,7 +346,7 @@ export default function CampaignDetail() {
       {/* ── Approval History ── */}
       {pastApprovals.length > 0 && (
         <Section title="Approval History">
-          <Card className="divide-y divide-stone-50">
+          <Card className="divide-y divide-gray-50">
             {pastApprovals.map((a) => (
               <PastApprovalRow key={a.id} approval={a} />
             ))}
