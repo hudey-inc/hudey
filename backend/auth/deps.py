@@ -1,11 +1,13 @@
 """Auth dependencies - JWT validation and current user extraction."""
 
+import logging
 import os
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 
+logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
@@ -39,7 +41,8 @@ def get_current_user(
             algorithms=["HS256"],
             audience="authenticated",
         )
-    except JWTError:
+    except JWTError as e:
+        logger.warning("JWT validation failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
