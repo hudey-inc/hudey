@@ -4,9 +4,58 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hudey — AI-Powered Influencer Marketing",
+  metadataBase: new URL("https://hudey.co"),
+  title: {
+    default: "Hudey — AI-Powered Influencer Marketing Platform",
+    template: "%s | Hudey",
+  },
   description:
-    "Automate influencer campaigns with AI. Creator discovery, outreach, negotiation, and tracking — all in one platform.",
+    "Automate influencer campaigns with AI. Hudey finds the right creators, writes personalized outreach, negotiates deals, and tracks results — all on autopilot.",
+  keywords: [
+    "influencer marketing",
+    "AI marketing",
+    "creator discovery",
+    "influencer outreach",
+    "campaign management",
+    "influencer negotiation",
+    "creator marketing platform",
+    "automated influencer marketing",
+    "AI influencer platform",
+    "influencer campaign tracking",
+  ],
+  authors: [{ name: "Hudey Inc." }],
+  creator: "Hudey Inc.",
+  publisher: "Hudey Inc.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://hudey.co",
+    siteName: "Hudey",
+    title: "Hudey — AI-Powered Influencer Marketing Platform",
+    description:
+      "Stop managing influencers manually. Hudey's AI agents find creators, write outreach, negotiate deals, and track every result — while you focus on strategy.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hudey — AI-Powered Influencer Marketing Platform",
+    description:
+      "Stop managing influencers manually. Hudey's AI agents find creators, write outreach, negotiate deals, and track every result.",
+    creator: "@hudeyco",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://hudey.co",
+  },
 };
 
 export default function RootLayout({
