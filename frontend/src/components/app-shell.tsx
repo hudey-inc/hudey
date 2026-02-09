@@ -388,13 +388,18 @@ function Sidebar() {
                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
               )}
             </button>
-            {/* Notification Panel */}
+            {/* Notification Panel — rendered via portal-style fixed positioning */}
             {notificationsOpen && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-50">
-                <div className="px-3 py-2.5 border-b border-gray-100">
+              <div className="fixed bottom-14 left-3 w-[210px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60]">
+                <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-900">Notifications</p>
+                  {awaitingCount > 0 && (
+                    <span className="bg-red-100 text-red-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                      {awaitingCount}
+                    </span>
+                  )}
                 </div>
-                <div className="max-h-[280px] overflow-y-auto">
+                <div className="max-h-[300px] overflow-y-auto overscroll-contain">
                   {campaigns.filter((c) => c.status === "awaiting_approval").length > 0 ? (
                     campaigns
                       .filter((c) => c.status === "awaiting_approval")
@@ -405,11 +410,11 @@ function Sidebar() {
                             setNotificationsOpen(false);
                             router.push(`/campaigns/${c.short_id || c.id}`);
                           }}
-                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
                         >
-                          <span className="mt-1 h-2 w-2 rounded-full bg-purple-500 flex-shrink-0" />
+                          <span className="mt-1.5 h-2 w-2 rounded-full bg-purple-500 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-gray-900 truncate font-medium">{c.name}</p>
+                            <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{c.name}</p>
                             <p className="text-[11px] text-gray-400 mt-0.5">Awaiting your approval</p>
                           </div>
                         </button>
@@ -424,19 +429,20 @@ function Sidebar() {
                             setNotificationsOpen(false);
                             router.push(`/campaigns/${c.short_id || c.id}`);
                           }}
-                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
                         >
-                          <span className="mt-1 h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
+                          <span className="mt-1.5 h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-gray-900 truncate font-medium">{c.name}</p>
+                            <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{c.name}</p>
                             <p className="text-[11px] text-gray-400 mt-0.5">Campaign running</p>
                           </div>
                         </button>
                       ))
                   ) : (
-                    <div className="px-4 py-8 text-center">
-                      <Bell className="w-5 h-5 text-gray-300 mx-auto mb-2" />
+                    <div className="px-4 py-6 text-center">
+                      <Bell className="w-5 h-5 text-gray-300 mx-auto mb-1.5" />
                       <p className="text-[13px] text-gray-400">All caught up</p>
+                      <p className="text-[11px] text-gray-300 mt-0.5">No pending actions</p>
                     </div>
                   )}
                 </div>
