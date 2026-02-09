@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import type { CampaignSummary } from "@/lib/api";
 import { listCampaigns } from "@/lib/api";
@@ -20,9 +20,11 @@ export default function Home() {
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetched = useRef(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || fetched.current) return;
+    fetched.current = true;
     listCampaigns()
       .then(setCampaigns)
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))

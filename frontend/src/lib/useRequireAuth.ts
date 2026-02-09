@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -13,8 +13,13 @@ export function useRequireAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const router = useRouter();
+  const checked = useRef(false);
 
   useEffect(() => {
+    // Only check once
+    if (checked.current) return;
+    checked.current = true;
+
     const supabase = createClient();
     supabase.auth.getUser().then(({ data, error }) => {
       if (error || !data.user) {
@@ -24,7 +29,7 @@ export function useRequireAuth() {
       }
       setChecking(false);
     });
-  }, [router]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { user, checking };
 }
