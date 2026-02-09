@@ -15,7 +15,7 @@ export function Section({
   return (
     <section className={`mb-8 ${className}`}>
       <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-sm font-semibold text-stone-900 uppercase tracking-wider">{title}</h2>
+        <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">{title}</h2>
         {badge}
       </div>
       {children}
@@ -26,7 +26,7 @@ export function Section({
 /** White card with subtle border — used inside sections */
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-stone-100 bg-white p-5 ${className}`}>
+    <div className={`rounded-xl border border-gray-200 bg-white p-5 ${className}`}>
       {children}
     </div>
   );
