@@ -219,24 +219,24 @@ export default function LandingPage() {
             <div className="inline-flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-full text-sm font-medium mb-8 shadow-sm">
               <div className="w-2 h-2 bg-[#D16B42] rounded-full animate-pulse" />
               <span className="text-gray-700">
-                Now handling 500+ campaigns per month
+                Trusted by 500+ marketing teams
               </span>
             </div>
 
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight">
-              Stop Managing Influencers.
+              The AI Marketing Platform
               <br />
               <span className="bg-gradient-to-r from-[#2F4538] via-[#3a5745] to-[#D16B42] bg-clip-text text-transparent">
-                Start Launching Campaigns.
+                That Runs Your Campaigns
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-xl lg:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Hudey&apos;s AI agents find the right creators, write the outreach,
-              negotiate the deals, and track every result&mdash;while you focus on
-              what actually grows your brand.
+              From creator discovery to campaign reporting, Hudey&apos;s AI
+              agents handle everything&mdash;so you can focus on strategy, not
+              execution.
             </p>
 
             {/* CTA Buttons */}
@@ -377,10 +377,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 lg:mb-20">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Every tool your team wished they had
+              Everything you need to succeed
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              AI-powered features that replace entire workflows
+              Powerful AI features designed for maximum ROI
             </p>
           </div>
 
@@ -421,10 +421,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 lg:mb-20">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Teams that switched aren&apos;t going back
+              Trusted by growth leaders
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Here&apos;s what happens when you let AI run the heavy lifting
+              See how teams are scaling with Hudey
             </p>
           </div>
 
@@ -485,13 +485,11 @@ export default function LandingPage() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-            Your competitors are already using AI.
-            <br />
-            <span className="text-[#D16B42]">Are you?</span>
+            Ready to 10x your influencer ROI?
           </h2>
           <p className="text-xl text-[#E8DCC8] mb-10 max-w-2xl mx-auto">
-            Every day without Hudey is another campaign launched slower, another
-            deal negotiated worse, and another creator that went to someone else.
+            Join hundreds of brands using AI to run campaigns that actually
+            convert
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-xl mx-auto mb-8">
