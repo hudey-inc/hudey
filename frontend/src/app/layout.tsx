@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { AuthNav } from "@/components/auth-nav";
+import { MainNav } from "@/components/main-nav";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -34,11 +35,7 @@ export default function RootLayout({
             <a href="/" className="text-xl font-semibold text-stone-900">
               Hudey
             </a>
-            <nav className="flex gap-4 text-sm text-stone-600">
-              <a href="/" className="hover:text-stone-900">
-                Campaigns
-              </a>
-            </nav>
+            <MainNav />
             <AuthNav />
           </div>
         </header>
