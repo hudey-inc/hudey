@@ -8,7 +8,7 @@ import { Card } from "./section";
 // ── Status styling ──────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  contacted: { bg: "bg-stone-100", text: "text-stone-600", dot: "bg-stone-400", label: "Contacted" },
+  contacted: { bg: "bg-gray-100", text: "text-gray-600", dot: "bg-gray-400", label: "Contacted" },
   responded: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Responded" },
   negotiating: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Negotiating" },
   agreed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Agreed" },
@@ -27,7 +27,7 @@ function EngagementBadge({ status }: { status: string }) {
 
 function PlatformBadge({ platform }: { platform: string }) {
   return (
-    <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[11px] font-medium text-stone-600 capitalize">
+    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600 capitalize">
       {platform}
     </span>
   );
@@ -48,7 +48,7 @@ function formatTime(iso: string) {
 
 function MessageThread({ messages }: { messages: { from: string; body: string; timestamp: string }[] }) {
   if (!messages || messages.length === 0) {
-    return <p className="text-[13px] text-stone-400 italic">No messages yet</p>;
+    return <p className="text-[13px] text-gray-400 italic">No messages yet</p>;
   }
 
   return (
@@ -60,19 +60,19 @@ function MessageThread({ messages }: { messages: { from: string; body: string; t
             key={i}
             className={`rounded-lg px-3 py-2 text-[13px] ${
               isBrand
-                ? "bg-stone-50 border border-stone-100"
+                ? "bg-gray-50 border border-gray-100"
                 : "bg-blue-50 border border-blue-100"
             }`}
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[11px] font-medium ${isBrand ? "text-stone-500" : "text-blue-600"}`}>
+              <span className={`text-[11px] font-medium ${isBrand ? "text-gray-500" : "text-blue-600"}`}>
                 {isBrand ? "You" : "Creator"}
               </span>
-              <span className="text-[11px] text-stone-400">
+              <span className="text-[11px] text-gray-400">
                 {formatTime(msg.timestamp)}
               </span>
             </div>
-            <p className={`leading-relaxed whitespace-pre-wrap ${isBrand ? "text-stone-700" : "text-stone-800"}`}>
+            <p className={`leading-relaxed whitespace-pre-wrap ${isBrand ? "text-gray-700" : "text-gray-800"}`}>
               {msg.body}
             </p>
           </div>
@@ -94,16 +94,16 @@ function ProposalTerms({ proposal }: { proposal: Record<string, any> }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[13px]">
         {proposal.fee != null && (
           <div>
-            <span className="text-stone-400 text-[11px]">Fee</span>
-            <p className="text-stone-800 font-medium">
+            <span className="text-gray-400 text-[11px]">Fee</span>
+            <p className="text-gray-800 font-medium">
               {typeof proposal.fee === "number" ? `£${proposal.fee.toLocaleString()}` : String(proposal.fee)}
             </p>
           </div>
         )}
         {proposal.deliverables && (
           <div>
-            <span className="text-stone-400 text-[11px]">Deliverables</span>
-            <p className="text-stone-800">
+            <span className="text-gray-400 text-[11px]">Deliverables</span>
+            <p className="text-gray-800">
               {Array.isArray(proposal.deliverables)
                 ? proposal.deliverables.join(", ")
                 : String(proposal.deliverables)}
@@ -112,8 +112,8 @@ function ProposalTerms({ proposal }: { proposal: Record<string, any> }) {
         )}
         {proposal.deadline && (
           <div>
-            <span className="text-stone-400 text-[11px]">Deadline</span>
-            <p className="text-stone-800">{String(proposal.deadline)}</p>
+            <span className="text-gray-400 text-[11px]">Deadline</span>
+            <p className="text-gray-800">{String(proposal.deadline)}</p>
           </div>
         )}
       </div>
@@ -131,20 +131,20 @@ function CreatorCard({ engagement }: { engagement: CreatorEngagement }) {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               {/* Avatar circle with initial */}
-              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-stone-100 flex items-center justify-center">
-                <span className="text-[13px] font-medium text-stone-500">
+              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <span className="text-[13px] font-medium text-gray-500">
                   {(engagement.creator_name || engagement.creator_id || "?").charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-stone-900 truncate">
+                  <span className="text-sm font-medium text-gray-900 truncate">
                     {engagement.creator_name || engagement.creator_id}
                   </span>
                   {engagement.platform && <PlatformBadge platform={engagement.platform} />}
                 </div>
                 {engagement.creator_email && (
-                  <p className="text-[11px] text-stone-400 truncate">
+                  <p className="text-[11px] text-gray-400 truncate">
                     {engagement.creator_email}
                   </p>
                 )}
@@ -153,7 +153,7 @@ function CreatorCard({ engagement }: { engagement: CreatorEngagement }) {
             <div className="flex items-center gap-2 flex-shrink-0">
               <EngagementBadge status={engagement.status} />
               <svg
-                className="h-4 w-4 text-stone-300 transition-transform group-open:rotate-180"
+                className="h-4 w-4 text-gray-300 transition-transform group-open:rotate-180"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -164,7 +164,7 @@ function CreatorCard({ engagement }: { engagement: CreatorEngagement }) {
           </div>
         </summary>
 
-        <div className="mt-3 pt-3 border-t border-stone-50">
+        <div className="mt-3 pt-3 border-t border-gray-50">
           <MessageThread messages={engagement.message_history || []} />
           {engagement.latest_proposal && Object.keys(engagement.latest_proposal).length > 0 && (
             <ProposalTerms proposal={engagement.latest_proposal} />
@@ -174,7 +174,7 @@ function CreatorCard({ engagement }: { engagement: CreatorEngagement }) {
               <p className="text-[11px] font-medium text-emerald-600 uppercase tracking-wider mb-1">
                 Agreed Terms
               </p>
-              <pre className="text-[12px] text-stone-700 whitespace-pre-wrap">
+              <pre className="text-[12px] text-gray-700 whitespace-pre-wrap">
                 {JSON.stringify(engagement.terms, null, 2)}
               </pre>
             </div>
@@ -214,10 +214,10 @@ export function CreatorEngagements({ campaignId }: { campaignId: string }) {
     <div className="space-y-3">
       {/* Summary stats */}
       <div className="flex items-center gap-4 text-[13px] flex-wrap">
-        <span className="text-stone-900 font-medium">{engagements.length} creators</span>
+        <span className="text-gray-900 font-medium">{engagements.length} creators</span>
         {(counts.contacted || 0) > 0 && (
-          <span className="flex items-center gap-1.5 text-stone-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-stone-400" />
+          <span className="flex items-center gap-1.5 text-gray-500">
+            <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
             {counts.contacted} contacted
           </span>
         )}
