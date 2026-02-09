@@ -17,6 +17,7 @@ uvicorn[standard]>=0.22.0
 
 # Auth (JWT validation)
 python-jose[cryptography]>=3.3.0
+PyJWT[crypto]>=2.8.0
 ecdsa>=0.18.0
 
 # Add project-specific packages as needed, e.g.:

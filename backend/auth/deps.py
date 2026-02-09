@@ -3,10 +3,9 @@
 import logging
 import os
 
-import requests
+import requests as http_requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError, jwk
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
@@ -20,8 +19,7 @@ def _get_supabase_url() -> str:
 
 
 def _get_jwt_secret() -> str:
-    secret = os.getenv("SUPABASE_JWT_SECRET", "").strip()
-    return secret
+    return os.getenv("SUPABASE_JWT_SECRET", "").strip()
 
 
 def _get_jwks() -> dict:
@@ -39,7 +37,7 @@ def _get_jwks() -> dict:
 
     jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
     try:
-        resp = requests.get(jwks_url, timeout=10)
+        resp = http_requests.get(jwks_url, timeout=10)
         resp.raise_for_status()
         _jwks_cache = resp.json()
         logger.info("Fetched JWKS from %s (%d keys)", jwks_url, len(_jwks_cache.get("keys", [])))
@@ -58,8 +56,8 @@ def get_current_user(
     """Decode and validate the Supabase JWT. Returns the payload dict.
 
     Supports both:
-    - ES256 (asymmetric) — newer Supabase projects, validated via JWKS
-    - HS256 (symmetric) — older projects, validated via JWT secret
+    - ES256 (asymmetric) — newer Supabase projects, validated via JWKS + PyJWT
+    - HS256 (symmetric) — older projects, validated via JWT secret + python-jose
 
     The payload contains:
     - sub: user UUID (same as auth.users.id)
@@ -70,9 +68,10 @@ def get_current_user(
     token = credentials.credentials
 
     # Peek at the token header to determine the algorithm
+    import jwt as pyjwt
     try:
-        unverified_header = jwt.get_unverified_header(token)
-    except JWTError as e:
+        unverified_header = pyjwt.get_unverified_header(token)
+    except Exception as e:
         logger.warning("Cannot decode JWT header: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,29 +88,26 @@ def get_current_user(
             payload = _verify_hs256(token)
     except HTTPException:
         raise
-    except JWTError as e:
-        logger.warning("JWT validation failed (alg=%s): %s", alg, e)
+    except Exception as e:
+        logger.exception("JWT validation failed (alg=%s): %s", alg, e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail=f"Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
-    except Exception as e:
-        logger.exception("Unexpected error during JWT validation (alg=%s): %s", alg, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Auth error: {type(e).__name__}: {e}",
         )
 
     return payload
 
 
 def _verify_es256(token: str, header: dict) -> dict:
-    """Verify an ES256-signed JWT using the Supabase JWKS."""
+    """Verify an ES256-signed JWT using the Supabase JWKS and PyJWT."""
+    import jwt as pyjwt
+    from jwt import PyJWKClient
+
     jwks_data = _get_jwks()
     kid = header.get("kid")
 
-    # Find the matching key
+    # Find the matching key in JWKS
     key_data = None
     for k in jwks_data.get("keys", []):
         if k.get("kid") == kid:
@@ -136,14 +132,11 @@ def _verify_es256(token: str, header: dict) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Construct the public key and verify
-    try:
-        public_key = jwk.construct(key_data, algorithm="ES256")
-    except Exception as e:
-        logger.error("Failed to construct EC key from JWKS: %s (key_data keys: %s)", e, list(key_data.keys()))
-        raise
+    # Use PyJWT to construct the key and decode
+    from jwt.algorithms import ECAlgorithm
+    public_key = ECAlgorithm.from_jwk(key_data)
 
-    payload = jwt.decode(
+    payload = pyjwt.decode(
         token,
         public_key,
         algorithms=["ES256"],
@@ -154,13 +147,15 @@ def _verify_es256(token: str, header: dict) -> dict:
 
 def _verify_hs256(token: str) -> dict:
     """Verify an HS256-signed JWT using the JWT secret."""
+    from jose import jwt as jose_jwt
+
     secret = _get_jwt_secret()
     if not secret:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="JWT secret not configured",
         )
-    payload = jwt.decode(
+    payload = jose_jwt.decode(
         token,
         secret,
         algorithms=["HS256"],
