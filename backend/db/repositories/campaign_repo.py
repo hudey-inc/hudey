@@ -75,6 +75,19 @@ def update_campaign(campaign_id: str, updates: dict):
     return True
 
 
+def delete_campaign(campaign_id: str, brand_id: str = None):
+    """Delete campaign by id. Verifies brand ownership if brand_id provided."""
+    sb = get_supabase()
+    if not sb:
+        return False
+    campaign = get_campaign(campaign_id, brand_id=brand_id)
+    if not campaign:
+        return False
+    uuid_id = campaign["id"]
+    sb.table("campaigns").delete().eq("id", uuid_id).execute()
+    return True
+
+
 def save_campaign_result(campaign_id: str, result: dict):
     """Persist full result JSON to campaigns. Creates campaign by short_id if not present (CLI run)."""
     sb = get_supabase()

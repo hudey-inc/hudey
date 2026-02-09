@@ -80,6 +80,17 @@ export async function getCampaign(id: string): Promise<Campaign | null> {
   return res.json();
 }
 
+export async function deleteCampaign(id: string): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/campaigns/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to delete campaign (${res.status})`);
+  }
+  return res.json();
+}
+
 // ── Approvals ─────────────────────────────────────────────────
 
 export type Approval = {

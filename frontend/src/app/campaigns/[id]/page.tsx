@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { Campaign, Approval } from "@/lib/api";
-import { getCampaign, listApprovals, decideApproval, runCampaign } from "@/lib/api";
+import { getCampaign, listApprovals, decideApproval, runCampaign, deleteCampaign } from "@/lib/api";
+import { Trash2 } from "lucide-react";
 import {
   StatusBadge,
   StepProgress,
@@ -132,6 +133,7 @@ function StrategySection({ strategy }: { strategy: Record<string, any> }) {
 export default function CampaignDetail() {
   const { user, checking } = useRequireAuth();
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [approvals, setApprovals] = useState<Approval[]>([]);
@@ -139,6 +141,9 @@ export default function CampaignDetail() {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchAll = useCallback(() => {
@@ -182,6 +187,18 @@ export default function CampaignDetail() {
 
   async function handleDecide(approvalId: string, status: "approved" | "rejected", feedback?: string) {
     try { await decideApproval(approvalId, status, feedback); fetchAll(); } catch { /* noop */ }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteCampaign(id);
+      router.push("/");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete");
+      setDeleting(false);
+    }
   }
 
   // ── Loading / Error states ──
@@ -238,15 +255,26 @@ export default function CampaignDetail() {
               )}
             </div>
           </div>
-          {(isDraft || isFailed) && (
-            <button
-              onClick={handleRun}
-              disabled={starting}
-              className="flex-shrink-0 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {starting ? "Starting…" : isFailed ? "Retry" : "Run Campaign"}
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {(isDraft || isFailed) && (
+              <button
+                onClick={handleRun}
+                disabled={starting}
+                className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {starting ? "Starting…" : isFailed ? "Retry" : "Run Campaign"}
+              </button>
+            )}
+            {!isRunning && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                title="Delete campaign"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Progress bar for active campaigns */}
@@ -352,6 +380,50 @@ export default function CampaignDetail() {
             ))}
           </Card>
         </Section>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Delete Campaign</h3>
+                <p className="text-[13px] text-gray-500 mt-0.5">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-1">
+              Are you sure you want to delete <span className="font-medium text-gray-900">{campaign.name}</span>?
+            </p>
+            <p className="text-[12px] text-gray-400 mb-5">
+              All associated data including approvals, emails, and engagement records will be removed.
+            </p>
+            {deleteError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">
+                {deleteError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
+                disabled={deleting}
+                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

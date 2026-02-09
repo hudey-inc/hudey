@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from backend.auth.current_brand import get_current_brand
 from backend.db.repositories.campaign_repo import (
     create_campaign as repo_create,
+    delete_campaign as repo_delete,
     get_campaign as repo_get,
     list_campaigns as repo_list,
     update_campaign as repo_update,
@@ -150,6 +151,20 @@ def campaign_engagements(campaign_id: str, brand: dict = Depends(get_current_bra
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return get_engagements(campaign["id"])
+
+
+@router.delete("/{campaign_id}")
+def delete_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Delete campaign. Verifies brand ownership. Prevents deletion of running campaigns."""
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    if campaign.get("status") == "running":
+        raise HTTPException(status_code=409, detail="Cannot delete a running campaign")
+    ok = repo_delete(campaign_id, brand_id=brand["id"])
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to delete campaign")
+    return {"ok": True}
 
 
 @router.put("/{campaign_id}")

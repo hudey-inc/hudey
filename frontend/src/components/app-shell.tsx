@@ -149,7 +149,9 @@ function Sidebar() {
   const [user, setUser] = useState<User | null>(null);
   const [showCampaignsSub, setShowCampaignsSub] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
+  const notifRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -185,6 +187,19 @@ function Sidebar() {
 
   const handleCloseSearch = useCallback(() => setSearchOpen(false), []);
 
+  // Close notifications on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    }
+    if (notificationsOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [notificationsOpen]);
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -198,6 +213,7 @@ function Sidebar() {
   const isOutreach = pathname === "/outreach";
   const isAnalytics = pathname === "/analytics";
   const isNegotiator = pathname === "/negotiator";
+  const isSettings = pathname === "/settings";
 
   // Count for outreach notification badge
   const awaitingCount = campaigns.filter(
@@ -348,26 +364,94 @@ function Sidebar() {
       </nav>
 
       {/* Bottom toolbar */}
-      <div className="px-3 py-2 border-t border-[#ebebeb]">
+      <div className="px-3 py-2 border-t border-[#ebebeb] relative">
         <div className="flex items-center justify-between">
-          <button
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            title="Apps"
+          <Link
+            href="/"
+            className={`p-2 rounded-lg transition-colors ${
+              isHome ? "bg-gray-100" : "hover:bg-gray-100"
+            }`}
+            title="Dashboard"
           >
-            <LayoutGrid className="w-4 h-4 text-gray-400" />
-          </button>
-          <button
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
-            title="Notifications"
-          >
-            <Bell className="w-4 h-4 text-gray-400" />
-          </button>
-          <button
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            <LayoutGrid className={`w-4 h-4 ${isHome ? "text-gray-700" : "text-gray-400"}`} />
+          </Link>
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className={`p-2 rounded-lg transition-colors relative ${
+                notificationsOpen ? "bg-gray-100" : "hover:bg-gray-100"
+              }`}
+              title="Notifications"
+            >
+              <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} />
+              {awaitingCount > 0 && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+              )}
+            </button>
+            {/* Notification Panel */}
+            {notificationsOpen && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[260px] bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-50">
+                <div className="px-3 py-2.5 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-gray-900">Notifications</p>
+                </div>
+                <div className="max-h-[280px] overflow-y-auto">
+                  {campaigns.filter((c) => c.status === "awaiting_approval").length > 0 ? (
+                    campaigns
+                      .filter((c) => c.status === "awaiting_approval")
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setNotificationsOpen(false);
+                            router.push(`/campaigns/${c.short_id || c.id}`);
+                          }}
+                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                        >
+                          <span className="mt-1 h-2 w-2 rounded-full bg-purple-500 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] text-gray-900 truncate font-medium">{c.name}</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Awaiting your approval</p>
+                          </div>
+                        </button>
+                      ))
+                  ) : campaigns.filter((c) => c.status === "running").length > 0 ? (
+                    campaigns
+                      .filter((c) => c.status === "running")
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setNotificationsOpen(false);
+                            router.push(`/campaigns/${c.short_id || c.id}`);
+                          }}
+                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                        >
+                          <span className="mt-1 h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] text-gray-900 truncate font-medium">{c.name}</p>
+                            <p className="text-[11px] text-gray-400 mt-0.5">Campaign running</p>
+                          </div>
+                        </button>
+                      ))
+                  ) : (
+                    <div className="px-4 py-8 text-center">
+                      <Bell className="w-5 h-5 text-gray-300 mx-auto mb-2" />
+                      <p className="text-[13px] text-gray-400">All caught up</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <Link
+            href="/settings"
+            className={`p-2 rounded-lg transition-colors ${
+              isSettings ? "bg-gray-100" : "hover:bg-gray-100"
+            }`}
             title="Settings"
           >
-            <Settings className="w-4 h-4 text-gray-400" />
-          </button>
+            <Settings className={`w-4 h-4 ${isSettings ? "text-gray-700" : "text-gray-400"}`} />
+          </Link>
           <button
             onClick={() => setSearchOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
