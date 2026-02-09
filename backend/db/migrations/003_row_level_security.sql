@@ -6,6 +6,11 @@
 --   We join through brands to verify the user owns the data.
 --   The backend service key bypasses RLS entirely (expected behaviour).
 --   The frontend anon key is subject to these policies.
+--
+-- NOTE: Some tables store campaign_id as text, others as UUID.
+--   We use campaign_id::uuid casts where needed to avoid type mismatch errors.
+--   If a table below doesn't exist in your database, skip that section.
+--   Check with: SELECT tablename FROM pg_tables WHERE schemaname = 'public';
 
 -- ============================================================
 -- 1. BRANDS — users can only see/manage their own brand
@@ -20,7 +25,6 @@ CREATE POLICY "Users can update their own brand"
     ON brands FOR UPDATE
     USING (user_id = auth.uid());
 
--- Insert: user_id must match the authenticated user
 CREATE POLICY "Users can create their own brand"
     ON brands FOR INSERT
     WITH CHECK (user_id = auth.uid());
@@ -55,7 +59,7 @@ CREATE POLICY "Users can delete their own campaigns"
     );
 
 -- ============================================================
--- 3. CREATOR ENGAGEMENTS — scoped via campaign ownership
+-- 3. CREATOR ENGAGEMENTS — campaign_id is UUID (from migration 002)
 -- ============================================================
 ALTER TABLE creator_engagements ENABLE ROW LEVEL SECURITY;
 
@@ -90,14 +94,14 @@ CREATE POLICY "Users can update engagements for their campaigns"
     );
 
 -- ============================================================
--- 4. APPROVALS — scoped via campaign ownership
+-- 4. APPROVALS — campaign_id may be text, cast to UUID
 -- ============================================================
 ALTER TABLE approvals ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view approvals for their campaigns"
     ON approvals FOR SELECT
     USING (
-        campaign_id IN (
+        campaign_id::uuid IN (
             SELECT c.id FROM campaigns c
             JOIN brands b ON c.brand_id = b.id
             WHERE b.user_id = auth.uid()
@@ -107,7 +111,7 @@ CREATE POLICY "Users can view approvals for their campaigns"
 CREATE POLICY "Users can update approvals for their campaigns"
     ON approvals FOR UPDATE
     USING (
-        campaign_id IN (
+        campaign_id::uuid IN (
             SELECT c.id FROM campaigns c
             JOIN brands b ON c.brand_id = b.id
             WHERE b.user_id = auth.uid()
@@ -115,14 +119,14 @@ CREATE POLICY "Users can update approvals for their campaigns"
     );
 
 -- ============================================================
--- 5. EMAIL EVENTS — scoped via campaign ownership
+-- 5. EMAIL EVENTS — campaign_id may be text, cast to UUID
 -- ============================================================
 ALTER TABLE email_events ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view email events for their campaigns"
     ON email_events FOR SELECT
     USING (
-        campaign_id IN (
+        campaign_id::uuid IN (
             SELECT c.id FROM campaigns c
             JOIN brands b ON c.brand_id = b.id
             WHERE b.user_id = auth.uid()
@@ -130,7 +134,7 @@ CREATE POLICY "Users can view email events for their campaigns"
     );
 
 -- ============================================================
--- 6. AGENT ACTIONS — scoped via campaign ownership (read-only for users)
+-- 6. AGENT ACTIONS — campaign_id is UUID (from schema.sql)
 -- ============================================================
 ALTER TABLE agent_actions ENABLE ROW LEVEL SECURITY;
 
@@ -145,7 +149,7 @@ CREATE POLICY "Users can view agent actions for their campaigns"
     );
 
 -- ============================================================
--- 7. CAMPAIGN ASSIGNMENTS — scoped via campaign ownership
+-- 7. CAMPAIGN ASSIGNMENTS — campaign_id is UUID (from schema.sql)
 -- ============================================================
 ALTER TABLE campaign_assignments ENABLE ROW LEVEL SECURITY;
 
@@ -160,7 +164,7 @@ CREATE POLICY "Users can view assignments for their campaigns"
     );
 
 -- ============================================================
--- 8. CAMPAIGN REPORTS — scoped via campaign ownership
+-- 8. CAMPAIGN REPORTS — campaign_id is UUID (from schema.sql)
 -- ============================================================
 ALTER TABLE campaign_reports ENABLE ROW LEVEL SECURITY;
 
@@ -181,22 +185,4 @@ ALTER TABLE creators ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Authenticated users can view creators"
     ON creators FOR SELECT
-    USING (auth.role() = 'authenticated');
-
--- ============================================================
--- NOTES:
--- ============================================================
--- * The backend uses SUPABASE_SERVICE_KEY which bypasses RLS.
---   This is intentional — the agent and API need full access to
---   create engagements, log actions, and update campaigns.
---
--- * The frontend uses SUPABASE_ANON_KEY which is subject to RLS.
---   Users can only see their own brands, campaigns, and related data.
---
--- * The creators table is a shared cache — all authenticated users
---   can read it, but only the service key can write to it.
---
--- * If a table doesn't exist yet (e.g. approvals), the ALTER TABLE
---   will fail. Run those statements only for tables that exist in
---   your database. You can check with:
---   SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+    USING ((auth.jwt() ->> 'role') = 'authenticated');
