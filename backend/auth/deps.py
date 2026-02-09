@@ -96,6 +96,12 @@ def get_current_user(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    except Exception as e:
+        logger.exception("Unexpected error during JWT validation (alg=%s): %s", alg, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Auth error: {type(e).__name__}: {e}",
+        )
 
     return payload
 
@@ -131,7 +137,12 @@ def _verify_es256(token: str, header: dict) -> dict:
         )
 
     # Construct the public key and verify
-    public_key = jwk.construct(key_data, algorithm="ES256")
+    try:
+        public_key = jwk.construct(key_data, algorithm="ES256")
+    except Exception as e:
+        logger.error("Failed to construct EC key from JWKS: %s (key_data keys: %s)", e, list(key_data.keys()))
+        raise
+
     payload = jwt.decode(
         token,
         public_key,
