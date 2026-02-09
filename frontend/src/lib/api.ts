@@ -454,3 +454,65 @@ export async function getAggregateAnalytics(): Promise<AggregateAnalytics> {
     perCampaign,
   };
 }
+
+// ── Aggregate Negotiations ──────────────────────────────────────
+
+export type AggregateNegotiations = {
+  activeNegotiations: number;
+  totalAgreed: number;
+  totalDeclined: number;
+  avgResponseTimeHours: number;
+  negotiations: {
+    campaignId: string;
+    campaignName: string;
+    campaignStatus: string;
+    creators: CreatorEngagement[];
+  }[];
+};
+
+export async function getAggregateNegotiations(): Promise<AggregateNegotiations> {
+  const campaigns = await listCampaigns();
+
+  const results = await Promise.allSettled(
+    campaigns.map(async (c) => {
+      const engagements = await getEngagements(c.id);
+      return { campaignId: c.id, campaignName: c.name, campaignStatus: c.status, engagements };
+    })
+  );
+
+  let activeNegotiations = 0;
+  let totalAgreed = 0;
+  let totalDeclined = 0;
+  const responseTimes: number[] = [];
+  const negotiations: AggregateNegotiations["negotiations"] = [];
+
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    const { campaignId, campaignName, campaignStatus, engagements } = r.value;
+
+    // Filter to creators who have progressed beyond "contacted"
+    const active = engagements.filter((e) => e.status !== "contacted");
+    if (active.length === 0) continue;
+
+    for (const e of active) {
+      if (e.status === "negotiating") activeNegotiations++;
+      if (e.status === "agreed") totalAgreed++;
+      if (e.status === "declined") totalDeclined++;
+
+      // Calculate response time
+      if (e.response_timestamp && e.created_at) {
+        const diff = new Date(e.response_timestamp).getTime() - new Date(e.created_at).getTime();
+        if (diff > 0) responseTimes.push(diff / (1000 * 60 * 60)); // hours
+      }
+    }
+
+    negotiations.push({ campaignId, campaignName, campaignStatus, creators: active });
+  }
+
+  const avgResponseTimeHours =
+    responseTimes.length > 0
+      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+      : 0;
+
+  return { activeNegotiations, totalAgreed, totalDeclined, avgResponseTimeHours, negotiations };
+}

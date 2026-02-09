@@ -20,6 +20,7 @@ import {
   Settings,
   LayoutGrid,
   Command,
+  Bot,
 } from "lucide-react";
 
 const AUTH_ROUTES = ["/login", "/signup", "/auth/callback"];
@@ -196,6 +197,7 @@ function Sidebar() {
   const isNewCampaign = pathname === "/campaigns/new";
   const isOutreach = pathname === "/outreach";
   const isAnalytics = pathname === "/analytics";
+  const isNegotiator = pathname === "/negotiator";
 
   // Count for outreach notification badge
   const awaitingCount = campaigns.filter(
@@ -327,6 +329,21 @@ function Sidebar() {
         >
           <BarChart3 className="w-4 h-4" />
           <span>Analytics</span>
+        </Link>
+
+        <Link
+          href="/negotiator"
+          className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-lg mb-1 transition-colors ${
+            isNegotiator
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-gray-50"
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          <span>AI Negotiator</span>
+          <span className="ml-auto bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
+            NEW
+          </span>
         </Link>
       </nav>
 
