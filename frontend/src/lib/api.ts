@@ -175,6 +175,37 @@ export async function getEmailEvents(
   return res.json();
 }
 
+// ── Creator Engagements ──────────────────────────────────────
+
+export type CreatorEngagement = {
+  id: string;
+  campaign_id: string;
+  creator_id: string;
+  creator_name?: string;
+  creator_email?: string;
+  platform?: string;
+  status: "contacted" | "responded" | "negotiating" | "agreed" | "declined";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  latest_proposal?: Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  terms?: Record<string, any>;
+  message_history: { from: string; body: string; timestamp: string }[];
+  response_timestamp?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getEngagements(
+  campaignId: string
+): Promise<CreatorEngagement[]> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/engagements`
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
 // ── Campaigns ─────────────────────────────────────────────────
 
 export async function createCampaign(body: {

@@ -15,6 +15,7 @@ import {
   PendingApprovalCard,
   PastApprovalRow,
   EmailTracking,
+  CreatorEngagements,
 } from "@/components/campaign";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 
@@ -311,6 +312,13 @@ export default function CampaignDetail() {
       {isCompleted && (
         <Section title="Email Delivery">
           <EmailTracking campaignId={id} />
+        </Section>
+      )}
+
+      {/* ── Creator Responses ── */}
+      {(isRunning || isCompleted) && (
+        <Section title="Creator Responses">
+          <CreatorEngagements campaignId={id} />
         </Section>
       )}
 

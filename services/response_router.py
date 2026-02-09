@@ -132,6 +132,18 @@ def ingest_response(
     engagements[cid] = eng.model_dump()
     _save_engagements(tmp, campaign_id, engagements)
 
+    # Persist to Supabase (non-fatal — .tmp is primary for agent)
+    try:
+        from backend.db.repositories.engagement_repo import append_message, update_status
+        append_message(campaign_id, cid, {
+            "from": "creator",
+            "body": body,
+            "timestamp": ts,
+        })
+        update_status(campaign_id, cid, "responded", {"response_timestamp": ts})
+    except Exception:
+        pass
+
     return {
         "success": True,
         "campaign_id": campaign_id,

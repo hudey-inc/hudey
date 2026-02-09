@@ -139,6 +139,47 @@ class OutreachTool(BaseTool):
 
         return drafts
 
+    def _seed_engagements(self, campaign_id: str, drafts: list[dict], messages: list[dict]) -> None:
+        """Seed initial 'contacted' engagements in Supabase for dashboard visibility."""
+        try:
+            from datetime import datetime, timezone
+            from backend.db.repositories.engagement_repo import upsert_engagement
+            # Build a lookup of creator_id -> email from sent messages
+            email_by_creator = {m.get("creator_id", ""): m.get("email", "") for m in messages}
+            now = datetime.now(timezone.utc).isoformat()
+            for draft in drafts:
+                creator = draft.get("creator", {})
+                creator_id = str(
+                    creator.get("id") or creator.get("username", "")
+                    if isinstance(creator, dict)
+                    else getattr(creator, "id", None) or getattr(creator, "username", "")
+                )
+                if creator_id not in email_by_creator:
+                    continue  # wasn't actually sent
+                creator_name = (
+                    creator.get("display_name") or creator.get("username", "")
+                    if isinstance(creator, dict)
+                    else getattr(creator, "display_name", None) or getattr(creator, "username", "")
+                )
+                platform = (
+                    creator.get("platform", "")
+                    if isinstance(creator, dict)
+                    else getattr(creator, "platform", "")
+                )
+                upsert_engagement(campaign_id, creator_id, {
+                    "creator_name": creator_name,
+                    "creator_email": email_by_creator[creator_id],
+                    "platform": platform,
+                    "status": "contacted",
+                    "message_history": [{
+                        "from": "brand",
+                        "body": draft.get("body", ""),
+                        "timestamp": now,
+                    }],
+                })
+        except Exception as e:
+            logger.warning("Failed to seed engagements to Supabase: %s", e)
+
     def _log_email_events(self, campaign_id: str, messages: list[dict]) -> None:
         """Log sent events to Supabase for webhook tracking."""
         try:
@@ -248,6 +289,7 @@ class OutreachTool(BaseTool):
         # Log to disk (backwards compat) and Supabase (for webhook lookups)
         self._log_message_ids(context.campaign_id, messages)
         self._log_email_events(context.campaign_id, messages)
+        self._seed_engagements(context.campaign_id, drafts, messages)
 
         path = self.output_dir / f"outreach_sent_{context.campaign_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
