@@ -44,73 +44,71 @@ def health():
 
 @app.get("/debug/token")
 def debug_token(authorization: str = ""):
-    """Temporary debug: test the full ES256 JWKS validation flow."""
+    """Temporary debug: test the exact same auth flow as deps.py."""
+    import traceback
+
     token = authorization.replace("Bearer ", "") if authorization else ""
     if not token:
         return {"error": "No token. Pass ?authorization=Bearer+<token>"}
 
-    import traceback
-    from jose import jwt as jose_jwt, JWTError, jwk
-    import requests as req
-
     results = {}
 
-    # Step 1: decode header
+    # Test the actual get_current_user code path
     try:
-        header = jose_jwt.get_unverified_header(token)
+        from backend.auth.deps import get_current_user, _verify_es256, _get_ec_public_key
+        import json
+        import base64
+
+        # Decode header
+        header_b64 = token.split(".")[0]
+        header_b64 += "=" * (4 - len(header_b64) % 4)
+        header = json.loads(base64.urlsafe_b64decode(header_b64))
         results["header"] = header
+
+        kid = header.get("kid")
+        results["kid"] = kid
+
+        # Test key retrieval
+        try:
+            pk = _get_ec_public_key(kid)
+            results["public_key_type"] = str(type(pk))
+            results["public_key_retrieved"] = pk is not None
+        except Exception as e:
+            results["key_error"] = f"{type(e).__name__}: {e}"
+            results["key_traceback"] = traceback.format_exc()
+
+        # Test full ES256 verification
+        try:
+            payload = _verify_es256(token, header)
+            results["es256_validation"] = "SUCCESS"
+            results["email"] = payload.get("email")
+        except Exception as e:
+            results["es256_error"] = f"{type(e).__name__}: {e}"
+            results["es256_traceback"] = traceback.format_exc()
+
+        # Test DB
+        try:
+            from backend.db.client import get_supabase
+            sb = get_supabase()
+            results["db_connected"] = sb is not None
+        except Exception as e:
+            results["db_error"] = str(e)
+
+        # Test brand resolver
+        if results.get("es256_validation") == "SUCCESS":
+            try:
+                from backend.auth.brand_resolver import get_or_create_brand
+                payload = results.get("_payload", {})
+                brand = get_or_create_brand(
+                    results.get("email", "").split("@")[0],  # dummy
+                    results.get("email", "")
+                )
+                results["brand"] = {"found": brand is not None, "id": brand.get("id") if brand else None}
+            except Exception as e:
+                results["brand_error"] = f"{type(e).__name__}: {e}"
+
     except Exception as e:
-        return {"error": f"Cannot decode header: {e}"}
-
-    # Step 2: fetch JWKS
-    supabase_url = os.getenv("SUPABASE_URL", "").strip()
-    results["supabase_url_set"] = bool(supabase_url)
-    if not supabase_url:
-        return {**results, "error": "SUPABASE_URL not set"}
-
-    jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
-    try:
-        resp = req.get(jwks_url, timeout=10)
-        jwks_data = resp.json()
-        results["jwks_keys_count"] = len(jwks_data.get("keys", []))
-        results["jwks_kids"] = [k.get("kid") for k in jwks_data.get("keys", [])]
-    except Exception as e:
-        return {**results, "error": f"JWKS fetch failed: {e}"}
-
-    # Step 3: find matching key
-    kid = header.get("kid")
-    key_data = None
-    for k in jwks_data.get("keys", []):
-        if k.get("kid") == kid:
-            key_data = k
-            break
-    results["kid_match"] = key_data is not None
-    if not key_data:
-        return {**results, "error": f"No key matching kid={kid}"}
-
-    # Step 4: construct key and verify
-    try:
-        public_key = jwk.construct(key_data, algorithm="ES256")
-        results["key_constructed"] = True
-    except Exception as e:
-        return {**results, "error": f"Key construction failed: {e}", "traceback": traceback.format_exc()}
-
-    try:
-        payload = jose_jwt.decode(token, public_key, algorithms=["ES256"], audience="authenticated")
-        results["validation"] = "SUCCESS"
-        results["email"] = payload.get("email")
-        results["role"] = payload.get("role")
-    except Exception as e:
-        results["validation"] = f"FAILED: {e}"
+        results["error"] = f"{type(e).__name__}: {e}"
         results["traceback"] = traceback.format_exc()
-
-    # Step 5: check DB
-    try:
-        from backend.db.client import get_supabase
-        sb = get_supabase()
-        results["db_connected"] = sb is not None
-        results["supabase_service_key_set"] = bool(os.getenv("SUPABASE_SERVICE_KEY", "").strip())
-    except Exception as e:
-        results["db_error"] = str(e)
 
     return results
