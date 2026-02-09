@@ -261,6 +261,192 @@ function CampaignBreakdown({
             </div>
           )}
 
+          {/* Creator response threads */}
+          {(() => {
+            const responded = item.engagements.filter(
+              (e) => e.status !== "contacted"
+            );
+            if (responded.length === 0) return null;
+            return (
+              <div>
+                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
+                  Creator Responses ({responded.length})
+                </p>
+                <div className="space-y-2">
+                  {responded.map((eng) => {
+                    const statusStyle: Record<
+                      string,
+                      { bg: string; text: string; dot: string }
+                    > = {
+                      responded: {
+                        bg: "bg-blue-50",
+                        text: "text-blue-700",
+                        dot: "bg-blue-500",
+                      },
+                      negotiating: {
+                        bg: "bg-amber-50",
+                        text: "text-amber-700",
+                        dot: "bg-amber-500",
+                      },
+                      agreed: {
+                        bg: "bg-emerald-50",
+                        text: "text-emerald-700",
+                        dot: "bg-emerald-500",
+                      },
+                      declined: {
+                        bg: "bg-red-50",
+                        text: "text-red-700",
+                        dot: "bg-red-500",
+                      },
+                    };
+                    const s = statusStyle[eng.status] || statusStyle.responded;
+                    const lastMsg =
+                      eng.message_history && eng.message_history.length > 0
+                        ? eng.message_history[eng.message_history.length - 1]
+                        : null;
+                    return (
+                      <details
+                        key={eng.id}
+                        className="group rounded-lg border border-gray-100 overflow-hidden"
+                      >
+                        <summary className="cursor-pointer list-none px-3 py-2.5 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
+                                <span className="text-[11px] font-medium text-gray-500">
+                                  {(eng.creator_name || eng.creator_id || "?")
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 truncate">
+                                {eng.creator_name || eng.creator_id}
+                              </span>
+                              {eng.platform && (
+                                <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 capitalize">
+                                  {eng.platform}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {eng.response_timestamp && (
+                                <span className="text-[10px] text-gray-400 hidden sm:block">
+                                  {new Date(
+                                    eng.response_timestamp
+                                  ).toLocaleDateString("en-GB", {
+                                    day: "numeric",
+                                    month: "short",
+                                  })}
+                                </span>
+                              )}
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${s.bg} ${s.text}`}
+                              >
+                                <span className={`h-1 w-1 rounded-full ${s.dot}`} />
+                                {eng.status}
+                              </span>
+                              <ChevronDown className="w-3 h-3 text-gray-300 transition-transform group-open:rotate-180" />
+                            </div>
+                          </div>
+                          {lastMsg && (
+                            <p className="mt-1 ml-8 text-[12px] text-gray-500 line-clamp-1">
+                              {lastMsg.from === "brand" ? "You: " : "Creator: "}
+                              {lastMsg.body}
+                            </p>
+                          )}
+                        </summary>
+                        <div className="border-t border-gray-50 px-3 py-3 space-y-2">
+                          {eng.message_history &&
+                            eng.message_history.length > 0 && (
+                              <div className="space-y-1.5">
+                                {eng.message_history.map((msg, mi) => {
+                                  const isBrand = msg.from === "brand";
+                                  return (
+                                    <div
+                                      key={mi}
+                                      className={`rounded-lg px-3 py-2 text-[12px] ${
+                                        isBrand
+                                          ? "bg-gray-50 border border-gray-100"
+                                          : "bg-blue-50 border border-blue-100"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 mb-0.5">
+                                        <span
+                                          className={`text-[10px] font-medium ${
+                                            isBrand ? "text-gray-500" : "text-blue-600"
+                                          }`}
+                                        >
+                                          {isBrand ? "You" : "Creator"}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400">
+                                          {new Date(msg.timestamp).toLocaleDateString(
+                                            "en-GB",
+                                            {
+                                              day: "numeric",
+                                              month: "short",
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            }
+                                          )}
+                                        </span>
+                                      </div>
+                                      <p className="leading-relaxed whitespace-pre-wrap text-gray-700">
+                                        {msg.body}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          {eng.latest_proposal &&
+                            Object.keys(eng.latest_proposal).length > 0 && (
+                              <div className="rounded-lg bg-amber-50 border border-amber-100 p-2.5">
+                                <p className="text-[10px] font-medium text-amber-600 uppercase tracking-wider mb-1.5">
+                                  Proposed Terms
+                                </p>
+                                <div className="flex items-center gap-4 text-[12px]">
+                                  {(eng.latest_proposal.fee != null ||
+                                    eng.latest_proposal.fee_gbp != null) && (
+                                    <span className="text-gray-700">
+                                      Fee:{" "}
+                                      <span className="font-medium">
+                                        £
+                                        {Number(
+                                          eng.latest_proposal.fee ??
+                                            eng.latest_proposal.fee_gbp
+                                        ).toLocaleString()}
+                                      </span>
+                                    </span>
+                                  )}
+                                  {eng.latest_proposal.deliverables && (
+                                    <span className="text-gray-700">
+                                      {Array.isArray(eng.latest_proposal.deliverables)
+                                        ? eng.latest_proposal.deliverables.join(", ")
+                                        : String(eng.latest_proposal.deliverables)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          {eng.terms && Object.keys(eng.terms).length > 0 && (
+                            <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-2.5">
+                              <p className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider mb-1">
+                                Agreed Terms
+                              </p>
+                              <pre className="text-[11px] text-gray-700 whitespace-pre-wrap">
+                                {JSON.stringify(eng.terms, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <Link
             href={`/campaigns/${item.campaignId}`}
             className="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium"
