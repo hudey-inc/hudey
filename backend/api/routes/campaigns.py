@@ -142,6 +142,16 @@ def campaign_email_events(campaign_id: str, brand: dict = Depends(get_current_br
     return get_delivery_summary(campaign["id"])
 
 
+@router.get("/{campaign_id}/engagements")
+def campaign_engagements(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Get creator engagement status for a campaign."""
+    from backend.db.repositories.engagement_repo import get_engagements
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return get_engagements(campaign["id"])
+
+
 @router.put("/{campaign_id}")
 def update_campaign(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
     """Update campaign status/fields. Verifies brand ownership."""
