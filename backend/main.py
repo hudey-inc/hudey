@@ -44,68 +44,73 @@ def health():
 
 @app.get("/debug/token")
 def debug_token(authorization: str = ""):
-    """Temporary debug endpoint — decode JWT without validation to inspect claims.
-    Remove this endpoint after debugging is complete.
-    """
-    import base64
-    import json
-
-    from fastapi import Header
-
+    """Temporary debug: test the full ES256 JWKS validation flow."""
     token = authorization.replace("Bearer ", "") if authorization else ""
     if not token:
-        return {"error": "No token provided. Pass Authorization header."}
+        return {"error": "No token. Pass ?authorization=Bearer+<token>"}
 
-    # Decode header and payload without signature verification
+    import traceback
+    from jose import jwt as jose_jwt, JWTError, jwk
+    import requests as req
+
+    results = {}
+
+    # Step 1: decode header
     try:
-        parts = token.split(".")
-        if len(parts) != 3:
-            return {"error": f"Token has {len(parts)} parts, expected 3"}
-
-        # Decode header
-        header_b64 = parts[0] + "=" * (4 - len(parts[0]) % 4)
-        header = json.loads(base64.urlsafe_b64decode(header_b64))
-
-        # Decode payload
-        payload_b64 = parts[1] + "=" * (4 - len(parts[1]) % 4)
-        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
-
-        # Try validating with each secret variant
-        from jose import jwt as jose_jwt, JWTError
-        jwt_secret = os.getenv("SUPABASE_JWT_SECRET", "").strip()
-
-        validation_results = []
-        for label, key in [("raw", jwt_secret)]:
-            try:
-                jose_jwt.decode(token, key, algorithms=["HS256"], audience="authenticated")
-                validation_results.append({"key": label, "result": "SUCCESS"})
-            except JWTError as e:
-                validation_results.append({"key": label, "result": str(e)})
-
-        # Also try base64-decoded
-        try:
-            decoded_secret = base64.b64decode(jwt_secret).decode("utf-8")
-            try:
-                jose_jwt.decode(token, decoded_secret, algorithms=["HS256"], audience="authenticated")
-                validation_results.append({"key": "base64_decoded", "result": "SUCCESS"})
-            except JWTError as e:
-                validation_results.append({"key": "base64_decoded", "result": str(e)})
-        except Exception as e:
-            validation_results.append({"key": "base64_decoded", "result": f"decode error: {e}"})
-
-        # Try without audience check
-        for label, key in [("raw_no_aud", jwt_secret)]:
-            try:
-                jose_jwt.decode(token, key, algorithms=["HS256"], options={"verify_aud": False})
-                validation_results.append({"key": label, "result": "SUCCESS"})
-            except JWTError as e:
-                validation_results.append({"key": label, "result": str(e)})
-
-        return {
-            "header": header,
-            "payload": {k: v for k, v in payload.items() if k != "sub"},  # hide user id
-            "secret_first_4": jwt_secret[:4] + "..." if jwt_secret else "NOT SET",
-            "validation": validation_results,
-        }
+        header = jose_jwt.get_unverified_header(token)
+        results["header"] = header
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Cannot decode header: {e}"}
+
+    # Step 2: fetch JWKS
+    supabase_url = os.getenv("SUPABASE_URL", "").strip()
+    results["supabase_url_set"] = bool(supabase_url)
+    if not supabase_url:
+        return {**results, "error": "SUPABASE_URL not set"}
+
+    jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+    try:
+        resp = req.get(jwks_url, timeout=10)
+        jwks_data = resp.json()
+        results["jwks_keys_count"] = len(jwks_data.get("keys", []))
+        results["jwks_kids"] = [k.get("kid") for k in jwks_data.get("keys", [])]
+    except Exception as e:
+        return {**results, "error": f"JWKS fetch failed: {e}"}
+
+    # Step 3: find matching key
+    kid = header.get("kid")
+    key_data = None
+    for k in jwks_data.get("keys", []):
+        if k.get("kid") == kid:
+            key_data = k
+            break
+    results["kid_match"] = key_data is not None
+    if not key_data:
+        return {**results, "error": f"No key matching kid={kid}"}
+
+    # Step 4: construct key and verify
+    try:
+        public_key = jwk.construct(key_data, algorithm="ES256")
+        results["key_constructed"] = True
+    except Exception as e:
+        return {**results, "error": f"Key construction failed: {e}", "traceback": traceback.format_exc()}
+
+    try:
+        payload = jose_jwt.decode(token, public_key, algorithms=["ES256"], audience="authenticated")
+        results["validation"] = "SUCCESS"
+        results["email"] = payload.get("email")
+        results["role"] = payload.get("role")
+    except Exception as e:
+        results["validation"] = f"FAILED: {e}"
+        results["traceback"] = traceback.format_exc()
+
+    # Step 5: check DB
+    try:
+        from backend.db.client import get_supabase
+        sb = get_supabase()
+        results["db_connected"] = sb is not None
+        results["supabase_service_key_set"] = bool(os.getenv("SUPABASE_SERVICE_KEY", "").strip())
+    except Exception as e:
+        results["db_error"] = str(e)
+
+    return results
