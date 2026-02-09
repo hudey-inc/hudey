@@ -6,27 +6,6 @@ from backend.db.client import get_supabase
 
 logger = logging.getLogger(__name__)
 
-# Track whether the brand_id column exists (avoids repeated errors)
-_brand_id_exists: bool | None = None
-
-
-def _has_brand_id_column() -> bool:
-    """Check if the campaigns table has a brand_id column (cached)."""
-    global _brand_id_exists
-    if _brand_id_exists is not None:
-        return _brand_id_exists
-    sb = get_supabase()
-    if not sb:
-        return False
-    try:
-        # Try a query that references brand_id
-        sb.table("campaigns").select("brand_id").limit(1).execute()
-        _brand_id_exists = True
-    except Exception:
-        _brand_id_exists = False
-        logger.info("campaigns.brand_id column not found — skipping brand filtering")
-    return _brand_id_exists
-
 
 def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: str = None, brand_id: str = None):
     """Insert campaign; return campaign id (UUID string)."""
@@ -40,7 +19,7 @@ def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: 
     }
     if short_id:
         row["short_id"] = short_id
-    if brand_id and _has_brand_id_column():
+    if brand_id:
         row["brand_id"] = brand_id
     if strategy:
         row["target_audience"] = strategy.get("target_audience")
@@ -53,19 +32,19 @@ def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: 
 
 
 def list_campaigns(limit: int = 50, brand_id: str = None):
-    """List campaigns, newest first. Optionally filter by brand_id."""
+    """List campaigns for a brand, newest first."""
     sb = get_supabase()
     if not sb:
         return []
     query = sb.table("campaigns").select("id, short_id, name, status, created_at")
-    if brand_id and _has_brand_id_column():
+    if brand_id:
         query = query.eq("brand_id", brand_id)
     r = query.order("created_at", desc=True).limit(limit).execute()
     return r.data or []
 
 
 def get_campaign(campaign_id: str, brand_id: str = None):
-    """Get campaign by UUID or short_id. Optionally verify brand ownership."""
+    """Get campaign by UUID or short_id. Verifies brand ownership if brand_id provided."""
     sb = get_supabase()
     if not sb:
         return None
@@ -77,8 +56,8 @@ def get_campaign(campaign_id: str, brand_id: str = None):
     if not r.data or len(r.data) == 0:
         return None
     row = r.data[0]
-    # If brand_id provided and column exists, verify ownership
-    if brand_id and _has_brand_id_column() and row.get("brand_id") and row["brand_id"] != brand_id:
+    # Verify brand ownership
+    if brand_id and row.get("brand_id") and row["brand_id"] != brand_id:
         return None
     return row
 
