@@ -23,7 +23,7 @@ import {
   Bot,
 } from "lucide-react";
 
-const AUTH_ROUTES = ["/login", "/signup", "/auth/callback"];
+const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
