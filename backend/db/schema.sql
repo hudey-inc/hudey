@@ -4,6 +4,7 @@
 -- Brands/Clients
 CREATE TABLE IF NOT EXISTS brands (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) UNIQUE,
     name VARCHAR(255) NOT NULL,
     industry VARCHAR(100),
     brand_voice JSONB,
