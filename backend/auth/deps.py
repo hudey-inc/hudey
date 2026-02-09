@@ -5,7 +5,6 @@ import logging
 import os
 
 import requests as http_requests
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -154,12 +153,28 @@ def _verify_es256(token: str, header: dict) -> dict:
     """Verify an ES256-signed JWT using cryptography + manual validation."""
     import base64
     import time
-    from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
-    from cryptography.hazmat.primitives.hashes import SHA256
-    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+        from cryptography.hazmat.primitives.hashes import SHA256
+        from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
+    except ImportError as e:
+        logger.error("cryptography library not available: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server crypto library missing: {e}",
+        )
 
     kid = header.get("kid")
-    public_key = _get_ec_public_key(kid)
+    try:
+        public_key = _get_ec_public_key(kid)
+    except Exception as e:
+        logger.exception("Failed to get EC public key for kid=%s: %s", kid, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Key retrieval error: {type(e).__name__}: {e}",
+        )
+
     if not public_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -185,19 +200,18 @@ def _verify_es256(token: str, header: dict) -> dict:
     if len(signature) != 64:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid signature length",
+            detail=f"Invalid signature length ({len(signature)} bytes, expected 64)",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     r = int.from_bytes(signature[:32], "big")
     s = int.from_bytes(signature[32:], "big")
-
-    from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
     der_sig = encode_dss_signature(r, s)
 
     try:
         public_key.verify(der_sig, signing_input, ECDSA(SHA256()))
-    except Exception:
+    except Exception as e:
+        logger.warning("ES256 signature verification failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
