@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { CampaignSummary } from "@/lib/api";
-import { listCampaigns } from "@/lib/api";
+import type { CampaignSummary, AggregateMetrics } from "@/lib/api";
+import { listCampaigns, getAggregateMetrics } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import {
   Target,
@@ -14,6 +14,13 @@ import {
   ChevronRight,
   Plus,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+} from "recharts";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -30,6 +37,15 @@ function getGreeting() {
   if (hour < 12) return "Good Morning";
   if (hour < 18) return "Good Afternoon";
   return "Good Evening";
+}
+
+function getProgressPercent(status: string): number {
+  switch (status) {
+    case "running": return 50;
+    case "awaiting_approval": return 65;
+    case "completed": return 100;
+    default: return 0;
+  }
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -89,6 +105,164 @@ function MiniChart({ variant }: { variant: number }) {
   );
 }
 
+// ── Metric Card with Recharts ───────────────────────────────
+
+function MetricCard({
+  title,
+  value,
+  trend,
+  trendUp,
+  chartData,
+  chartColor,
+  chartType = "line",
+}: {
+  title: string;
+  value: number;
+  trend: string;
+  trendUp: boolean;
+  chartData: number[];
+  chartColor: string;
+  chartType?: "line" | "area";
+}) {
+  const data = chartData.map((v, i) => ({ value: v, idx: i }));
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-sm text-gray-500">{title}</p>
+        {trend && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              trendUp
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {trendUp ? "↑" : "↓"} {trend}
+          </span>
+        )}
+      </div>
+      <p className="text-4xl font-semibold text-gray-900 mb-4">{value}</p>
+      <div className="h-16">
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === "area" ? (
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id={`grad-${title}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={chartColor} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={chartColor} stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={chartColor}
+                strokeWidth={2}
+                fill={`url(#grad-${title})`}
+                dot={false}
+              />
+            </AreaChart>
+          ) : (
+            <LineChart data={data}>
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={chartColor}
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function MetricsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-gray-200 bg-white p-6 animate-pulse"
+        >
+          <div className="h-4 bg-gray-100 rounded w-24 mb-3" />
+          <div className="h-8 bg-gray-100 rounded w-16 mb-4" />
+          <div className="h-16 bg-gray-50 rounded" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DashboardMetrics() {
+  const [metrics, setMetrics] = useState<AggregateMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAggregateMetrics()
+      .then(setMetrics)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <MetricsSkeleton />;
+  if (!metrics) return null;
+
+  // Calculate trend percentages from trend arrays
+  const calcTrend = (arr: number[]): { value: string; up: boolean } => {
+    const recent = arr.slice(-3).reduce((a, b) => a + b, 0);
+    const older = arr.slice(0, 3).reduce((a, b) => a + b, 0);
+    if (older === 0) return { value: recent > 0 ? `+${recent}` : "—", up: recent > 0 };
+    const pct = Math.round(((recent - older) / older) * 100);
+    return { value: `${pct >= 0 ? "+" : ""}${pct}%`, up: pct >= 0 };
+  };
+
+  const outreachTrend = calcTrend(metrics.outreachTrend);
+  const responseTrend = calcTrend(metrics.responseTrend);
+  const totalDeals = metrics.dealProgress.agreed + metrics.dealProgress.negotiating;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <MetricCard
+        title="Active Outreach"
+        value={metrics.activeOutreach}
+        trend={outreachTrend.value}
+        trendUp={outreachTrend.up}
+        chartData={metrics.outreachTrend}
+        chartColor="#6366f1"
+      />
+      <MetricCard
+        title="Weekly Responses"
+        value={metrics.weeklyResponses}
+        trend={responseTrend.value}
+        trendUp={responseTrend.up}
+        chartData={metrics.responseTrend}
+        chartColor="#8b5cf6"
+      />
+      <MetricCard
+        title="Deal Progress"
+        value={totalDeals}
+        trend={
+          metrics.dealProgress.agreed > 0
+            ? `${metrics.dealProgress.agreed} agreed`
+            : "—"
+        }
+        trendUp={metrics.dealProgress.agreed > 0}
+        chartData={[
+          metrics.dealProgress.contacted,
+          metrics.dealProgress.responded,
+          metrics.dealProgress.negotiating,
+          metrics.dealProgress.agreed,
+        ]}
+        chartColor="#f97316"
+        chartType="area"
+      />
+    </div>
+  );
+}
+
 // ── Campaign Card (top row) ─────────────────────────────────
 
 function CampaignCard({
@@ -134,11 +308,12 @@ function CampaignRow({ campaign }: { campaign: CampaignSummary }) {
   const label = campaign.status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+  const progress = getProgressPercent(campaign.status);
 
   return (
     <Link
       href={`/campaigns/${campaign.short_id || campaign.id}`}
-      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-all group relative"
+      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-all group relative overflow-hidden"
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-8 h-8 bg-white rounded border border-gray-200 flex items-center justify-center text-sm group-hover:border-indigo-300 transition-colors flex-shrink-0">
@@ -161,6 +336,16 @@ function CampaignRow({ campaign }: { campaign: CampaignSummary }) {
           </div>
         </div>
       </div>
+
+      {/* Progress bar */}
+      {progress > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100">
+          <div
+            className="h-full bg-indigo-600 transition-all rounded-br"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
     </Link>
   );
 }
@@ -238,14 +423,17 @@ function HomeContent() {
         </h1>
       </div>
 
+      {/* Dashboard Metrics */}
+      <DashboardMetrics />
+
       {/* Recent campaigns (card row) */}
       {campaigns.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Your Recents</h2>
+            <h2 className="text-lg font-medium text-gray-900">Your Recents</h2>
             <Link
               href="/campaigns/new"
-              className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors"
             >
               <span>See All</span>
               <ChevronRight className="w-4 h-4" />
@@ -262,7 +450,7 @@ function HomeContent() {
       {/* Campaign list */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">
+          <h2 className="text-lg font-medium text-gray-900">
             {filter
               ? `${filter.charAt(0).toUpperCase() + filter.slice(1)} Campaigns`
               : "All Campaigns"}
