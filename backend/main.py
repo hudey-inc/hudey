@@ -12,6 +12,7 @@ app = FastAPI(title="Hudey API")
 # CORS: allow frontend origin (restrict in production)
 _origins = [
     "http://localhost:3000",
+    "https://app.hudey.co",
 ]
 _frontend_url = (os.getenv("FRONTEND_URL") or "").strip()
 if _frontend_url and _frontend_url not in _origins:
