@@ -9,13 +9,32 @@ async function authFetch(
   options: RequestInit = {}
 ): Promise<Response> {
   const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+
+  // Try getSession first (reads from storage, fast)
+  let token: string | undefined;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token;
+  } catch {
+    // ignore
+  }
+
+  // If no token from getSession, try getUser to force a refresh
+  if (!token) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        token = session?.access_token;
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   const headers = new Headers(options.headers);
-  if (session?.access_token) {
-    headers.set("Authorization", `Bearer ${session.access_token}`);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
   if (!headers.has("Content-Type") && options.body) {
     headers.set("Content-Type", "application/json");
@@ -44,14 +63,20 @@ export type Campaign = CampaignSummary & {
 
 export async function listCampaigns(): Promise<CampaignSummary[]> {
   const res = await authFetch(`${API_URL}/api/campaigns`);
-  if (!res.ok) throw new Error("Failed to fetch campaigns");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch campaigns (${res.status})`);
+  }
   return res.json();
 }
 
 export async function getCampaign(id: string): Promise<Campaign | null> {
   const res = await authFetch(`${API_URL}/api/campaigns/${id}`);
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Failed to fetch campaign");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch campaign (${res.status})`);
+  }
   return res.json();
 }
 
@@ -75,7 +100,10 @@ export async function listApprovals(campaignId: string): Promise<Approval[]> {
   const res = await authFetch(
     `${API_URL}/api/campaigns/${campaignId}/approvals`
   );
-  if (!res.ok) throw new Error("Failed to fetch approvals");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch approvals (${res.status})`);
+  }
   return res.json();
 }
 
