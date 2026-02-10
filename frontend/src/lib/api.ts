@@ -217,6 +217,46 @@ export async function getEngagements(
   return res.json();
 }
 
+// ── Reply & Status ───────────────────────────────────────────
+
+export async function replyToCreator(
+  campaignId: string,
+  creatorId: string,
+  message: string
+): Promise<{ ok: boolean; email_id?: string; message: { from: string; body: string; timestamp: string }; status: string }> {
+  const res = await authFetch(`${API_URL}/api/campaigns/${campaignId}/reply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creator_id: creatorId, message }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to send reply");
+  }
+  return res.json();
+}
+
+export async function updateEngagementStatus(
+  campaignId: string,
+  creatorId: string,
+  status: string,
+  extras?: { terms?: Record<string, unknown>; latest_proposal?: Record<string, unknown> }
+): Promise<{ ok: boolean; status: string }> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/engagements/${creatorId}/status`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, ...extras }),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to update status");
+  }
+  return res.json();
+}
+
 // ── Campaigns ─────────────────────────────────────────────────
 
 export async function createCampaign(body: {
