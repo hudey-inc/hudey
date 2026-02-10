@@ -411,29 +411,52 @@ export default function CampaignDetail() {
               )}
             </div>
 
-            {/* Budget Card */}
-            {budgetGBP > 0 && (
-              <div className="bg-gradient-to-br from-[#2F4538] to-[#1f2f26] text-white rounded-xl p-5 sm:p-6 min-w-[240px] sm:min-w-[280px] flex-shrink-0">
-                <div className="text-sm opacity-90 mb-1">Campaign Budget</div>
-                <div className="text-2xl sm:text-3xl font-bold mb-3">\u00a3{budgetGBP.toLocaleString()}</div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="opacity-90">Creators</span>
-                    <span className="font-semibold">{totalCreators}</span>
+            {/* Budget / Campaign Summary Card */}
+            <div className="bg-gradient-to-br from-[#2F4538] to-[#1f2f26] text-white rounded-xl p-5 sm:p-6 min-w-[240px] sm:min-w-[280px] flex-shrink-0">
+              {budgetGBP > 0 ? (
+                <>
+                  <div className="text-sm opacity-90 mb-1">Campaign Budget</div>
+                  <div className="text-2xl sm:text-3xl font-bold mb-3">{"\u00a3"}{budgetGBP.toLocaleString()}</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="opacity-90">Creators</span>
+                      <span className="font-semibold">{totalCreators}</span>
+                    </div>
+                    <div className="w-full bg-white/20 rounded-full h-2">
+                      <div
+                        className="bg-[#D16B42] h-2 rounded-full transition-all"
+                        style={{ width: `${Math.min(totalCreators > 0 ? (agreedCount / totalCreators) * 100 : 0, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="opacity-90">Deals Agreed</span>
+                      <span className="font-semibold">{agreedCount} / {totalCreators}</span>
+                    </div>
                   </div>
-                  <div className="w-full bg-white/20 rounded-full h-2">
-                    <div
-                      className="bg-[#D16B42] h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min(responseRate, 100)}%` }}
-                    />
+                </>
+              ) : (
+                <>
+                  <div className="text-sm opacity-90 mb-1">Campaign Summary</div>
+                  <div className="text-2xl sm:text-3xl font-bold mb-3">{totalCreators} Creator{totalCreators !== 1 ? "s" : ""}</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="opacity-90">Responded</span>
+                      <span className="font-semibold">{respondedCount}</span>
+                    </div>
+                    <div className="w-full bg-white/20 rounded-full h-2">
+                      <div
+                        className="bg-[#D16B42] h-2 rounded-full transition-all"
+                        style={{ width: `${Math.min(responseRate, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="opacity-90">Response Rate</span>
+                      <span className="font-semibold">{responseRate}%</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="opacity-90">Response Rate</span>
-                    <span className="font-semibold">{responseRate}%</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Progress bar for active campaigns */}
