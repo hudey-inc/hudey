@@ -235,7 +235,7 @@ export default function LandingPage() {
             {/* Subheadline */}
             <p className="text-xl lg:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               From creator discovery to campaign reporting, Hudey&apos;s AI
-              agents handle everything&mdash;so you can focus on strategy, not
+              agents handle everything so that you can focus on strategy, not
               execution.
             </p>
 
