@@ -1,6 +1,9 @@
 """Email event repository - track delivery status from Resend webhooks."""
 
+from __future__ import annotations
+
 import logging
+from typing import Optional
 from backend.db.client import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -12,7 +15,7 @@ def create_event(
     recipient: str = "",
     campaign_id: str = "",
     creator_id: str = "",
-) -> str | None:
+) -> Optional[str]:
     """Insert an email event. Returns event id or None."""
     sb = get_supabase()
     if not sb:
@@ -134,7 +137,7 @@ def get_delivery_summary(campaign_id: str) -> dict:
     }
 
 
-def lookup_by_email_id(email_id: str) -> dict | None:
+def lookup_by_email_id(email_id: str) -> Optional[dict]:
     """Find campaign_id and creator_id for a Resend email_id by looking up sent events."""
     sb = get_supabase()
     if not sb:
