@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { listCampaigns } from "@/lib/api";
+import { listCampaigns, getOutreachInboxCount } from "@/lib/api";
 import type { CampaignSummary } from "@/lib/api";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -170,6 +170,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
+  const [inboxCount, setInboxCount] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -188,6 +189,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   useEffect(() => {
     if (user) {
       listCampaigns().then(setCampaigns).catch(() => {});
+      getOutreachInboxCount().then(setInboxCount).catch(() => {});
     }
   }, [user]);
 
@@ -353,9 +355,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         >
           <Mail className="w-4 h-4" />
           <span>Outreach</span>
-          {awaitingCount > 0 && (
+          {inboxCount > 0 && (
             <span className="ml-auto bg-red-500 text-white text-[10px] rounded-full h-4 min-w-[16px] flex items-center justify-center px-1 font-medium">
-              {awaitingCount}
+              {inboxCount}
             </span>
           )}
         </Link>
@@ -668,11 +670,11 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         >
           <Mail className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span>Outreach</span>}
-          {awaitingCount > 0 && (
+          {inboxCount > 0 && (
             <span className={`bg-red-500 text-white text-[10px] rounded-full h-4 min-w-[16px] flex items-center justify-center px-1 font-medium ${
               collapsed ? "absolute -top-1 -right-1" : "ml-auto"
             }`}>
-              {awaitingCount}
+              {inboxCount}
             </span>
           )}
         </Link>
