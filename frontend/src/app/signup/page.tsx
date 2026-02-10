@@ -159,13 +159,13 @@ export default function SignupPage() {
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex -space-x-2">
-                {["S", "M", "J"].map((initial, i) => (
-                  <div
+                {["/testimonials/sarah.jpg", "/testimonials/marcus.jpg", "/testimonials/emma.jpg"].map((src, i) => (
+                  <img
                     key={i}
-                    className="w-10 h-10 rounded-full border-2 border-white bg-gradient-to-br from-[#2F4538] to-[#1f2f26] flex items-center justify-center text-white text-xs font-bold"
-                  >
-                    {initial}
-                  </div>
+                    src={src}
+                    alt=""
+                    className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                  />
                 ))}
               </div>
               <div>
