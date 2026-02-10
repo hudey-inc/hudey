@@ -257,6 +257,68 @@ export async function updateEngagementStatus(
   return res.json();
 }
 
+// ── Negotiation ──────────────────────────────────────────────
+
+export type CounterOffer = {
+  subject: string;
+  body: string;
+  proposed_terms: {
+    fee_gbp?: number;
+    deliverables?: string[];
+    deadline?: string;
+  };
+};
+
+export async function generateCounterOffer(
+  campaignId: string,
+  creatorId: string
+): Promise<{ ok: boolean; counter_offer: CounterOffer; score: number; creator_id: string }> {
+  const res = await authFetch(`${API_URL}/api/campaigns/${campaignId}/negotiate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creator_id: creatorId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to generate counter-offer");
+  }
+  return res.json();
+}
+
+export async function sendCounterOffer(
+  campaignId: string,
+  creatorId: string,
+  offer: { subject: string; message: string; proposed_terms: Record<string, unknown> }
+): Promise<{ ok: boolean; status: string }> {
+  const res = await authFetch(`${API_URL}/api/campaigns/${campaignId}/send-counter-offer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creator_id: creatorId, ...offer }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to send counter-offer");
+  }
+  return res.json();
+}
+
+export async function acceptTerms(
+  campaignId: string,
+  creatorId: string,
+  terms?: Record<string, unknown>
+): Promise<{ ok: boolean; status: string; terms: Record<string, unknown> }> {
+  const res = await authFetch(`${API_URL}/api/campaigns/${campaignId}/accept-terms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creator_id: creatorId, terms }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to accept terms");
+  }
+  return res.json();
+}
+
 // ── Campaigns ─────────────────────────────────────────────────
 
 export async function createCampaign(body: {

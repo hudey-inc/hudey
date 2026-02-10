@@ -230,6 +230,244 @@ def reply_to_creator(campaign_id: str, body: dict, brand: dict = Depends(get_cur
     }
 
 
+@router.post("/{campaign_id}/negotiate")
+def generate_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+    """Generate an AI counter-offer for a creator negotiation.
+
+    Body: { creator_id: str }
+
+    Uses Claude to analyze the conversation thread and campaign context,
+    then drafts a professional counter-offer with proposed terms.
+    Returns the draft for human review before sending.
+    """
+    from backend.db.repositories.engagement_repo import get_engagement
+
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    creator_id = body.get("creator_id", "").strip()
+    if not creator_id:
+        raise HTTPException(status_code=400, detail="creator_id is required")
+
+    db_campaign_id = campaign["id"]
+    engagement = get_engagement(db_campaign_id, creator_id)
+    if not engagement:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+
+    # Build context for the negotiation tool
+    brief_data = campaign.get("brief", {})
+    if not brief_data:
+        raise HTTPException(status_code=400, detail="Campaign has no brief")
+
+    try:
+        from models.brief import CampaignBrief
+        from models.campaign import CreatorEngagement as EngModel
+        from models.context import CampaignContext
+        from tools.negotiation import NegotiationTool, score_offer
+
+        brief = CampaignBrief(**brief_data)
+        context = CampaignContext(campaign_id=db_campaign_id, brief=brief)
+
+        eng_model = EngModel(
+            creator_id=creator_id,
+            status=engagement.get("status", "responded"),
+            latest_proposal=engagement.get("latest_proposal"),
+            terms=engagement.get("terms"),
+            message_history=engagement.get("message_history") or [],
+            response_timestamp=engagement.get("response_timestamp"),
+            notes=engagement.get("notes"),
+        )
+
+        tool = NegotiationTool()
+        counter_offer = tool.compose_counter_offer(eng_model, context)
+        proposal = counter_offer.get("proposed_terms", {})
+        score = score_offer(proposal, context)
+
+        return {
+            "ok": True,
+            "counter_offer": counter_offer,
+            "score": score,
+            "creator_id": creator_id,
+        }
+    except Exception as e:
+        logger.exception("Failed to generate counter-offer for %s: %s", creator_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to generate counter-offer: {str(e)}")
+
+
+@router.post("/{campaign_id}/send-counter-offer")
+def send_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+    """Send an approved counter-offer to a creator.
+
+    Body: {
+        creator_id: str,
+        subject: str,
+        message: str,
+        proposed_terms: { fee_gbp: number, deliverables: [...], deadline: str }
+    }
+
+    Appends the counter-offer to the thread, updates proposed terms,
+    advances status to negotiating, and sends via Resend if email available.
+    """
+    from datetime import datetime, timezone
+    from backend.db.repositories.engagement_repo import (
+        get_engagement,
+        append_message,
+        update_status,
+    )
+
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    creator_id = body.get("creator_id", "").strip()
+    message_text = body.get("message", "").strip()
+    subject = body.get("subject", "").strip()
+    proposed_terms = body.get("proposed_terms", {})
+
+    if not creator_id or not message_text:
+        raise HTTPException(status_code=400, detail="creator_id and message are required")
+
+    db_campaign_id = campaign["id"]
+    engagement = get_engagement(db_campaign_id, creator_id)
+    if not engagement:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+
+    ts = datetime.now(timezone.utc).isoformat()
+
+    # Append brand counter-offer to history
+    msg = {"from": "brand", "body": message_text, "timestamp": ts}
+    append_message(db_campaign_id, creator_id, msg)
+
+    # Update status and proposed terms
+    extras = {}
+    if proposed_terms:
+        extras["latest_proposal"] = proposed_terms
+    update_status(db_campaign_id, creator_id, "negotiating", extras if extras else None)
+
+    # Send via Resend
+    email_id = None
+    creator_email = engagement.get("creator_email", "")
+    if creator_email:
+        try:
+            import os
+            resend_key = os.getenv("RESEND_API_KEY", "")
+            if resend_key:
+                import resend
+                resend.api_key = resend_key
+                from_addr = os.getenv("OUTREACH_FROM_EMAIL", "outreach@hudey.co")
+                r = resend.Emails.send({
+                    "from": from_addr,
+                    "to": [creator_email],
+                    "subject": subject or f"Re: Partnership with {campaign.get('name', 'your campaign')}",
+                    "text": message_text,
+                    "headers": {"X-Entity-Ref-ID": db_campaign_id},
+                })
+                email_id = r.get("id") if isinstance(r, dict) else None
+                logger.info("Counter-offer sent via Resend to %s (email_id=%s)", creator_email, email_id)
+        except Exception as e:
+            logger.warning("Failed to send counter-offer via Resend to %s: %s", creator_email, e)
+
+    return {
+        "ok": True,
+        "email_id": email_id,
+        "message": msg,
+        "status": "negotiating",
+        "proposed_terms": proposed_terms,
+    }
+
+
+@router.post("/{campaign_id}/accept-terms")
+def accept_terms(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+    """Accept negotiation terms for a creator engagement.
+
+    Body: {
+        creator_id: str,
+        terms: { fee_gbp: number, deliverables: [...], deadline: str }
+    }
+
+    Sets agreed terms, advances status to agreed, and optionally sends
+    a confirmation message to the creator.
+    """
+    from datetime import datetime, timezone
+    from backend.db.repositories.engagement_repo import (
+        get_engagement,
+        append_message,
+        update_status,
+    )
+
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    creator_id = body.get("creator_id", "").strip()
+    terms = body.get("terms", {})
+
+    if not creator_id:
+        raise HTTPException(status_code=400, detail="creator_id is required")
+
+    db_campaign_id = campaign["id"]
+    engagement = get_engagement(db_campaign_id, creator_id)
+    if not engagement:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+
+    ts = datetime.now(timezone.utc).isoformat()
+
+    # Use provided terms, or fall back to latest_proposal
+    final_terms = terms if terms else (engagement.get("latest_proposal") or {})
+
+    # Update status to agreed with final terms
+    update_status(db_campaign_id, creator_id, "agreed", {"terms": final_terms})
+
+    # Append system message to thread
+    fee_str = ""
+    if final_terms.get("fee_gbp"):
+        fee_str = f" at £{final_terms['fee_gbp']}"
+    elif final_terms.get("fee"):
+        fee_str = f" at £{final_terms['fee']}"
+    system_msg = {"from": "brand", "body": f"✅ Deal agreed{fee_str}. Terms confirmed.", "timestamp": ts}
+    append_message(db_campaign_id, creator_id, system_msg)
+
+    # Optionally send confirmation email
+    email_id = None
+    creator_email = engagement.get("creator_email", "")
+    if creator_email and body.get("send_confirmation", True):
+        try:
+            import os
+            resend_key = os.getenv("RESEND_API_KEY", "")
+            if resend_key:
+                import resend
+                resend.api_key = resend_key
+                from_addr = os.getenv("OUTREACH_FROM_EMAIL", "outreach@hudey.co")
+                brand_name = (campaign.get("brief") or {}).get("brand_name", "our team")
+                confirmation_text = (
+                    f"Great news! We're happy to confirm the partnership.\n\n"
+                    f"Agreed terms:\n"
+                    f"- Fee: £{final_terms.get('fee_gbp') or final_terms.get('fee', 'TBD')}\n"
+                    f"- Deliverables: {', '.join(final_terms.get('deliverables', ['TBD']))}\n"
+                    f"- Deadline: {final_terms.get('deadline', 'TBD')}\n\n"
+                    f"We'll be in touch with next steps shortly.\n\n"
+                    f"Best,\n{brand_name}"
+                )
+                r = resend.Emails.send({
+                    "from": from_addr,
+                    "to": [creator_email],
+                    "subject": f"Partnership Confirmed — {campaign.get('name', 'Campaign')}",
+                    "text": confirmation_text,
+                    "headers": {"X-Entity-Ref-ID": db_campaign_id},
+                })
+                email_id = r.get("id") if isinstance(r, dict) else None
+        except Exception as e:
+            logger.warning("Failed to send confirmation to %s: %s", creator_email, e)
+
+    return {
+        "ok": True,
+        "email_id": email_id,
+        "status": "agreed",
+        "terms": final_terms,
+    }
+
+
 @router.patch("/{campaign_id}/engagements/{creator_id}/status")
 def update_engagement_status(
     campaign_id: str,
