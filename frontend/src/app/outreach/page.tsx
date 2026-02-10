@@ -2,33 +2,97 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { AggregateOutreach } from "@/lib/api";
+import type { AggregateOutreach, CreatorEngagement } from "@/lib/api";
 import { getAggregateOutreach, replyToCreator, updateEngagementStatus } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import {
+  Inbox,
   Mail,
-  Send,
-  Eye,
-  ChevronDown,
-  Users,
-  MessageSquare,
   CheckCircle2,
+  Star,
+  Search,
+  MessageSquare,
   XCircle,
   Loader2,
+  Sparkles,
+  Plus,
+  Pencil,
+  Copy,
+  Bot,
+  Reply,
+  ExternalLink,
+  Archive,
+  Trash2,
+  Paperclip,
+  Tag,
 } from "lucide-react";
+
+// ── Types ────────────────────────────────────────────────────
+
+type TabKey = "inbox" | "sent" | "sequences" | "templates" | "analytics";
+type FilterKey = "all" | "unread" | "starred" | "important";
+
+// Derived inbox message from real creator engagement data
+type InboxMessage = {
+  id: string;
+  creatorName: string;
+  creatorEmail?: string;
+  creatorId: string;
+  platform?: string;
+  campaignId: string;
+  campaignName: string;
+  subject: string;
+  preview: string;
+  timestamp: string;
+  unread: boolean;
+  starred: boolean;
+  important: boolean;
+  labels: string[];
+  status: string;
+  engagement: CreatorEngagement;
+  aiSuggestion: string | null;
+};
 
 // ── Helpers ──────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
-  string,
-  { icon: string; color: string; label: string }
-> = {
-  clicked: { icon: "🔗", color: "text-emerald-600", label: "Clicked" },
-  opened: { icon: "👁", color: "text-green-600", label: "Opened" },
-  delivered: { icon: "✓✓", color: "text-blue-600", label: "Delivered" },
-  sent: { icon: "✓", color: "text-gray-400", label: "Sent" },
-  bounced: { icon: "✗", color: "text-red-500", label: "Bounced" },
-  complained: { icon: "⚠", color: "text-red-500", label: "Complained" },
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatDate(iso);
+}
+
+function pct(n: number, total: number): string {
+  if (total === 0) return "0%";
+  return `${Math.round((n / total) * 100)}%`;
+}
+
+const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+  responded: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Responded" },
+  negotiating: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Negotiating" },
+  agreed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Agreed" },
+  declined: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Declined" },
+  contacted: { bg: "bg-gray-50", text: "text-gray-600", dot: "bg-gray-400", label: "Contacted" },
 };
 
 const ENGAGEMENT_COLORS: Record<string, string> = {
@@ -39,92 +103,65 @@ const ENGAGEMENT_COLORS: Record<string, string> = {
   declined: "bg-red-500",
 };
 
-function pct(n: number, total: number): string {
-  if (total === 0) return "0%";
-  return `${Math.round((n / total) * 100)}%`;
+// ── Build inbox messages from real data ──────────────────────
+
+function buildInboxMessages(data: AggregateOutreach): InboxMessage[] {
+  const messages: InboxMessage[] = [];
+
+  for (const campaign of data.perCampaign) {
+    for (const eng of campaign.engagements) {
+      if (eng.status === "contacted") continue; // Skip non-responders
+
+      const lastMsg = eng.message_history?.length > 0
+        ? eng.message_history[eng.message_history.length - 1]
+        : null;
+      const lastCreatorMsg = eng.message_history?.filter(m => m.from !== "brand").pop();
+
+      const isRecent = eng.updated_at
+        ? Date.now() - new Date(eng.updated_at).getTime() < 48 * 60 * 60 * 1000
+        : false;
+
+      // Determine AI suggestion based on status
+      let aiSuggestion: string | null = null;
+      if (eng.status === "responded") {
+        aiSuggestion = `Review ${eng.creator_name || "creator"}'s response and consider a counter-offer`;
+      } else if (eng.status === "negotiating" && eng.latest_proposal) {
+        const fee = eng.latest_proposal.fee_gbp || eng.latest_proposal.fee;
+        aiSuggestion = fee
+          ? `Counter-offer around £${Math.round(Number(fee) * 0.85).toLocaleString()} with performance bonus`
+          : "Generate an AI counter-offer to move negotiation forward";
+      }
+
+      messages.push({
+        id: eng.id,
+        creatorName: eng.creator_name || eng.creator_id,
+        creatorEmail: eng.creator_email,
+        creatorId: eng.creator_id,
+        platform: eng.platform,
+        campaignId: campaign.campaignId,
+        campaignName: campaign.campaignName,
+        subject: lastCreatorMsg
+          ? `Re: ${campaign.campaignName}`
+          : `${campaign.campaignName} — ${eng.creator_name || eng.creator_id}`,
+        preview: lastMsg?.body || "No messages yet",
+        timestamp: eng.updated_at || eng.created_at,
+        unread: isRecent && lastMsg?.from !== "brand",
+        starred: eng.status === "agreed",
+        important: eng.status === "negotiating" || eng.status === "responded",
+        labels: [eng.status, ...(eng.platform ? [eng.platform] : [])],
+        status: eng.status,
+        engagement: eng,
+        aiSuggestion,
+      });
+    }
+  }
+
+  // Sort by most recent first
+  messages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return messages;
 }
 
-// ── Stat Card ────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 hover:shadow-lg transition-shadow">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <p className="text-sm text-gray-500">{label}</p>
-      </div>
-      <p className="text-2xl sm:text-3xl font-semibold text-gray-900">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-    </div>
-  );
-}
-
-// ── Funnel ───────────────────────────────────────────────────
-
-function ResponseFunnel({
-  byStatus,
-  total,
-}: {
-  byStatus: Record<string, number>;
-  total: number;
-}) {
-  const stages = [
-    { key: "contacted", label: "Contacted", color: "bg-gray-200 text-gray-700" },
-    { key: "responded", label: "Responded", color: "bg-blue-100 text-blue-700" },
-    { key: "negotiating", label: "Negotiating", color: "bg-amber-100 text-amber-700" },
-    { key: "agreed", label: "Agreed", color: "bg-emerald-100 text-emerald-700" },
-    { key: "declined", label: "Declined", color: "bg-red-100 text-red-700" },
-  ];
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">
-        Response Funnel
-      </h3>
-      <div className="space-y-3">
-        {stages.map((stage) => {
-          const count = byStatus[stage.key] || 0;
-          const width = total > 0 ? Math.max((count / total) * 100, 4) : 4;
-          return (
-            <div key={stage.key}>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-gray-600">{stage.label}</span>
-                <span className="font-medium text-gray-900">
-                  {count}{" "}
-                  <span className="text-gray-400 font-normal">
-                    ({pct(count, total)})
-                  </span>
-                </span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${ENGAGEMENT_COLORS[stage.key] || "bg-gray-300"}`}
-                  style={{ width: `${width}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── Campaign Breakdown Card ─────────────────────────────────
+// ── Reply Composer ───────────────────────────────────────────
 
 function ReplyComposer({
   campaignId,
@@ -133,7 +170,7 @@ function ReplyComposer({
 }: {
   campaignId: string;
   creatorId: string;
-  onSent: (msg: { from: string; body: string; timestamp: string }) => void;
+  onSent: () => void;
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -142,47 +179,52 @@ function ReplyComposer({
     if (!text.trim() || sending) return;
     setSending(true);
     try {
-      const result = await replyToCreator(campaignId, creatorId, text.trim());
-      onSent(result.message);
+      await replyToCreator(campaignId, creatorId, text.trim());
       setText("");
+      onSent();
     } catch {
-      // Silently fail — user can retry
+      // retry
     } finally {
       setSending(false);
     }
   }
 
   return (
-    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
-      <input
-        type="text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-          }
-        }}
-        placeholder="Type a reply..."
-        className="flex-1 text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none transition-colors"
-        disabled={sending}
-      />
-      <button
-        onClick={handleSend}
-        disabled={!text.trim() || sending}
-        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5"
-      >
-        {sending ? (
-          <Loader2 className="w-3 h-3 animate-spin" />
-        ) : (
-          <Send className="w-3 h-3" />
-        )}
-        Send
-      </button>
+    <div className="p-6 border-t border-gray-200">
+      <div className="flex gap-3">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder="Write your reply..."
+          rows={3}
+          className="flex-1 text-sm px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2F4538] focus:ring-1 focus:ring-[#2F4538]/20 outline-none transition-colors resize-none"
+          disabled={sending}
+        />
+      </div>
+      <div className="flex items-center gap-3 mt-3">
+        <button
+          onClick={handleSend}
+          disabled={!text.trim() || sending}
+          className="px-6 py-2.5 bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-300 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+        >
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Reply className="w-4 h-4" />}
+          Reply
+        </button>
+        <button className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2">
+          <Paperclip className="w-4 h-4 text-gray-500" />
+        </button>
+      </div>
     </div>
   );
 }
+
+// ── Status Actions ──────────────────────────────────────────
 
 function StatusActions({
   campaignId,
@@ -193,7 +235,7 @@ function StatusActions({
   campaignId: string;
   creatorId: string;
   currentStatus: string;
-  onUpdated: (newStatus: string) => void;
+  onUpdated: () => void;
 }) {
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -201,59 +243,45 @@ function StatusActions({
     setUpdating(newStatus);
     try {
       await updateEngagementStatus(campaignId, creatorId, newStatus);
-      onUpdated(newStatus);
+      onUpdated();
     } catch {
-      // Silently fail
+      // retry
     } finally {
       setUpdating(null);
     }
   }
 
-  // Only show status actions for certain states
   if (currentStatus === "contacted") return null;
 
   return (
-    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
-      <span className="text-[10px] text-gray-400 mr-1">Mark as:</span>
+    <div className="flex items-center gap-2 flex-wrap">
       {currentStatus !== "agreed" && (
         <button
           onClick={() => handleStatusChange("agreed")}
           disabled={updating !== null}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50"
         >
-          {updating === "agreed" ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <CheckCircle2 className="w-3 h-3" />
-          )}
-          Agreed
+          {updating === "agreed" ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+          Mark Agreed
         </button>
       )}
       {currentStatus !== "declined" && (
         <button
           onClick={() => handleStatusChange("declined")}
           disabled={updating !== null}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
         >
-          {updating === "declined" ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <XCircle className="w-3 h-3" />
-          )}
-          Declined
+          {updating === "declined" ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+          Mark Declined
         </button>
       )}
       {currentStatus !== "negotiating" && currentStatus !== "contacted" && (
         <button
           onClick={() => handleStatusChange("negotiating")}
           disabled={updating !== null}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
         >
-          {updating === "negotiating" ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <MessageSquare className="w-3 h-3" />
-          )}
+          {updating === "negotiating" ? <Loader2 className="w-3 h-3 animate-spin" /> : <MessageSquare className="w-3 h-3" />}
           Negotiating
         </button>
       )}
@@ -261,377 +289,114 @@ function StatusActions({
   );
 }
 
-function CampaignBreakdown({
-  item,
-  onDataChange,
-}: {
-  item: AggregateOutreach["perCampaign"][number];
-  onDataChange: () => void;
-}) {
-  const [open, setOpen] = useState(false);
+// ── Sequence templates (static display) ─────────────────────
 
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Mail className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {item.campaignName}
-            </p>
-            <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
-              <span>{item.email.total_sent} sent</span>
-              <span>{item.engagements.length} creators</span>
-            </div>
-          </div>
-        </div>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+const SEQUENCES = [
+  {
+    id: 1,
+    name: "Product Launch Sequence",
+    status: "active",
+    steps: 5,
+    activeContacts: 48,
+    totalContacts: 120,
+    openRate: 68,
+    responseRate: 24,
+    campaign: "All Campaigns",
+    lastEdited: "Feb 2026",
+    performance: "excellent",
+  },
+  {
+    id: 2,
+    name: "Follow-up for Non-Responders",
+    status: "active",
+    steps: 3,
+    activeContacts: 22,
+    totalContacts: 85,
+    openRate: 52,
+    responseRate: 15,
+    campaign: "Multiple Campaigns",
+    lastEdited: "Feb 2026",
+    performance: "good",
+  },
+  {
+    id: 3,
+    name: "Re-engagement Campaign",
+    status: "paused",
+    steps: 4,
+    activeContacts: 0,
+    totalContacts: 64,
+    openRate: 45,
+    responseRate: 12,
+    campaign: "Q4 Retrospective",
+    lastEdited: "Jan 2026",
+    performance: "average",
+  },
+];
 
-      {open && (
-        <div className="border-t border-gray-100 p-4 space-y-4">
-          {/* Email stats */}
-          {item.email.total_sent > 0 && (
-            <div>
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
-                Email Delivery
-              </p>
-              <div className="flex items-center gap-3 sm:gap-4 text-[13px] flex-wrap">
-                <span className="text-gray-900 font-medium">
-                  {item.email.total_sent} sent
-                </span>
-                {item.email.delivered > 0 && (
-                  <span className="text-blue-600">
-                    {item.email.delivered} delivered
-                  </span>
-                )}
-                {item.email.opened > 0 && (
-                  <span className="text-green-600">
-                    {item.email.opened} opened
-                  </span>
-                )}
-                {item.email.clicked > 0 && (
-                  <span className="text-emerald-600">
-                    {item.email.clicked} clicked
-                  </span>
-                )}
-                {item.email.bounced > 0 && (
-                  <span className="text-red-500">
-                    {item.email.bounced} bounced
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Per-creator emails */}
-          {item.email.per_creator.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="text-left text-[11px] font-medium text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                    <th className="px-3 py-2">Recipient</th>
-                    <th className="px-3 py-2">Creator</th>
-                    <th className="px-3 py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {item.email.per_creator.map((c, i) => {
-                    const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.sent;
-                    return (
-                      <tr key={i} className="hover:bg-gray-50/50">
-                        <td className="px-3 py-2 text-gray-500 font-mono text-[12px]">
-                          {c.recipient || "—"}
-                        </td>
-                        <td className="px-3 py-2 text-gray-700">
-                          {c.creator_id || "—"}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span
-                            className={`inline-flex items-center gap-1.5 ${cfg.color}`}
-                          >
-                            <span className="text-[12px] font-mono">
-                              {cfg.icon}
-                            </span>
-                            <span className="text-[12px]">{cfg.label}</span>
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Engagement summary */}
-          {item.engagements.length > 0 && (
-            <div>
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
-                Creator Engagements
-              </p>
-              <div className="flex items-center gap-3 flex-wrap text-[13px]">
-                {Object.entries(
-                  item.engagements.reduce(
-                    (acc, e) => {
-                      acc[e.status] = (acc[e.status] || 0) + 1;
-                      return acc;
-                    },
-                    {} as Record<string, number>
-                  )
-                ).map(([status, count]) => (
-                  <span key={status} className="flex items-center gap-1.5">
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${ENGAGEMENT_COLORS[status] || "bg-gray-300"}`}
-                    />
-                    <span className="text-gray-600">
-                      {count} {status}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Creator response threads */}
-          {(() => {
-            const responded = item.engagements.filter(
-              (e) => e.status !== "contacted"
-            );
-            if (responded.length === 0) return null;
-            return (
-              <div>
-                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
-                  Creator Responses ({responded.length})
-                </p>
-                <div className="space-y-2">
-                  {responded.map((eng) => {
-                    const statusStyle: Record<
-                      string,
-                      { bg: string; text: string; dot: string }
-                    > = {
-                      responded: {
-                        bg: "bg-blue-50",
-                        text: "text-blue-700",
-                        dot: "bg-blue-500",
-                      },
-                      negotiating: {
-                        bg: "bg-amber-50",
-                        text: "text-amber-700",
-                        dot: "bg-amber-500",
-                      },
-                      agreed: {
-                        bg: "bg-emerald-50",
-                        text: "text-emerald-700",
-                        dot: "bg-emerald-500",
-                      },
-                      declined: {
-                        bg: "bg-red-50",
-                        text: "text-red-700",
-                        dot: "bg-red-500",
-                      },
-                    };
-                    const s = statusStyle[eng.status] || statusStyle.responded;
-                    const lastMsg =
-                      eng.message_history && eng.message_history.length > 0
-                        ? eng.message_history[eng.message_history.length - 1]
-                        : null;
-                    return (
-                      <details
-                        key={eng.id}
-                        className="group rounded-lg border border-gray-100 overflow-hidden"
-                      >
-                        <summary className="cursor-pointer list-none px-3 py-2.5 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
-                                <span className="text-[11px] font-medium text-gray-500">
-                                  {(eng.creator_name || eng.creator_id || "?")
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </span>
-                              </div>
-                              <span className="text-sm font-medium text-gray-900 truncate">
-                                {eng.creator_name || eng.creator_id}
-                              </span>
-                              {eng.platform && (
-                                <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 capitalize">
-                                  {eng.platform}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {eng.response_timestamp && (
-                                <span className="text-[10px] text-gray-400 hidden sm:block">
-                                  {new Date(
-                                    eng.response_timestamp
-                                  ).toLocaleDateString("en-GB", {
-                                    day: "numeric",
-                                    month: "short",
-                                  })}
-                                </span>
-                              )}
-                              <span
-                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${s.bg} ${s.text}`}
-                              >
-                                <span className={`h-1 w-1 rounded-full ${s.dot}`} />
-                                {eng.status}
-                              </span>
-                              <ChevronDown className="w-3 h-3 text-gray-300 transition-transform group-open:rotate-180" />
-                            </div>
-                          </div>
-                          {lastMsg && (
-                            <p className="mt-1 ml-8 text-[12px] text-gray-500 line-clamp-1">
-                              {lastMsg.from === "brand" ? "You: " : "Creator: "}
-                              {lastMsg.body}
-                            </p>
-                          )}
-                        </summary>
-                        <div className="border-t border-gray-50 px-3 py-3 space-y-2">
-                          {eng.message_history &&
-                            eng.message_history.length > 0 && (
-                              <div className="space-y-1.5">
-                                {eng.message_history.map((msg, mi) => {
-                                  const isBrand = msg.from === "brand";
-                                  return (
-                                    <div
-                                      key={mi}
-                                      className={`rounded-lg px-3 py-2 text-[12px] ${
-                                        isBrand
-                                          ? "bg-gray-50 border border-gray-100"
-                                          : "bg-blue-50 border border-blue-100"
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 mb-0.5">
-                                        <span
-                                          className={`text-[10px] font-medium ${
-                                            isBrand ? "text-gray-500" : "text-blue-600"
-                                          }`}
-                                        >
-                                          {isBrand ? "You" : "Creator"}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400">
-                                          {new Date(msg.timestamp).toLocaleDateString(
-                                            "en-GB",
-                                            {
-                                              day: "numeric",
-                                              month: "short",
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            }
-                                          )}
-                                        </span>
-                                      </div>
-                                      <p className="leading-relaxed whitespace-pre-wrap text-gray-700">
-                                        {msg.body}
-                                      </p>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          {eng.latest_proposal &&
-                            Object.keys(eng.latest_proposal).length > 0 && (
-                              <div className="rounded-lg bg-amber-50 border border-amber-100 p-2.5">
-                                <p className="text-[10px] font-medium text-amber-600 uppercase tracking-wider mb-1.5">
-                                  Proposed Terms
-                                </p>
-                                <div className="flex items-center gap-4 text-[12px]">
-                                  {(eng.latest_proposal.fee != null ||
-                                    eng.latest_proposal.fee_gbp != null) && (
-                                    <span className="text-gray-700">
-                                      Fee:{" "}
-                                      <span className="font-medium">
-                                        £
-                                        {Number(
-                                          eng.latest_proposal.fee ??
-                                            eng.latest_proposal.fee_gbp
-                                        ).toLocaleString()}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {eng.latest_proposal.deliverables && (
-                                    <span className="text-gray-700">
-                                      {Array.isArray(eng.latest_proposal.deliverables)
-                                        ? eng.latest_proposal.deliverables.join(", ")
-                                        : String(eng.latest_proposal.deliverables)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          {eng.terms && Object.keys(eng.terms).length > 0 && (
-                            <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-2.5">
-                              <p className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider mb-1">
-                                Agreed Terms
-                              </p>
-                              <pre className="text-[11px] text-gray-700 whitespace-pre-wrap">
-                                {JSON.stringify(eng.terms, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                          {/* Reply composer — show for active engagements */}
-                          {eng.status !== "declined" && eng.status !== "agreed" && (
-                            <ReplyComposer
-                              campaignId={item.campaignId}
-                              creatorId={eng.creator_id}
-                              onSent={() => onDataChange()}
-                            />
-                          )}
-                          {/* Status actions */}
-                          <StatusActions
-                            campaignId={item.campaignId}
-                            creatorId={eng.creator_id}
-                            currentStatus={eng.status}
-                            onUpdated={() => onDataChange()}
-                          />
-                        </div>
-                      </details>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-          <Link
-            href={`/campaigns/${item.campaignId}`}
-            className="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-          >
-            View Campaign →
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-}
+const TEMPLATES = [
+  {
+    id: 1,
+    name: "Initial Outreach — Product Launch",
+    category: "outreach",
+    subject: "Partnership Opportunity: {{campaign_name}}",
+    preview: "Hi {{first_name}}, I came across your content and love your style...",
+    uses: 142,
+    responseRate: 28,
+    lastUsed: "2 hours ago",
+    favorite: true,
+  },
+  {
+    id: 2,
+    name: "Follow-up #1",
+    category: "follow-up",
+    subject: "Re: Partnership Opportunity",
+    preview: "Hi {{first_name}}, I wanted to follow up on my previous message...",
+    uses: 89,
+    responseRate: 22,
+    lastUsed: "1 day ago",
+    favorite: false,
+  },
+  {
+    id: 3,
+    name: "Negotiation Counter-Offer",
+    category: "negotiation",
+    subject: "Re: {{subject}}",
+    preview: "Thanks for your interest! Based on the campaign scope...",
+    uses: 56,
+    responseRate: 35,
+    lastUsed: "3 days ago",
+    favorite: true,
+  },
+  {
+    id: 4,
+    name: "Contract & Next Steps",
+    category: "closing",
+    subject: "Excited to Work Together!",
+    preview: "Great! I'm attaching the contract and campaign details...",
+    uses: 103,
+    responseRate: 92,
+    lastUsed: "5 hours ago",
+    favorite: false,
+  },
+];
 
 // ── Loading Skeleton ─────────────────────────────────────────
 
 function OutreachSkeleton() {
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="px-6 lg:px-8 py-8">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse"
-          >
+          <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse">
             <div className="h-4 bg-gray-100 rounded w-20 mb-3" />
             <div className="h-8 bg-gray-100 rounded w-16" />
           </div>
         ))}
       </div>
-      <div className="h-64 bg-white rounded-xl border border-gray-200 animate-pulse" />
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="h-96 bg-white rounded-xl border border-gray-200 animate-pulse" />
+        <div className="lg:col-span-2 h-96 bg-white rounded-xl border border-gray-200 animate-pulse" />
+      </div>
     </div>
   );
 }
@@ -643,9 +408,14 @@ export default function OutreachPage() {
   const [data, setData] = useState<AggregateOutreach | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<TabKey>("inbox");
+  const [selectedFilter, setSelectedFilter] = useState<FilterKey>("all");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
     getAggregateOutreach()
       .then(setData)
       .catch(() => {})
@@ -653,139 +423,815 @@ export default function OutreachPage() {
   }, [user, refreshKey]);
 
   function handleDataChange() {
-    // Debounced refresh after reply/status change
     setTimeout(() => setRefreshKey((k) => k + 1), 500);
   }
 
   if (checking) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
       </div>
     );
   }
 
+  // Build inbox messages from real data
+  const inboxMessages = data ? buildInboxMessages(data) : [];
+  const selectedMessage = inboxMessages.find((m) => m.id === selectedMessageId) || null;
+
+  // Apply filters
+  const filteredMessages = inboxMessages.filter((msg) => {
+    if (selectedFilter === "unread") return msg.unread;
+    if (selectedFilter === "starred") return msg.starred;
+    if (selectedFilter === "important") return msg.important;
+    return true;
+  }).filter((msg) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      msg.creatorName.toLowerCase().includes(q) ||
+      msg.subject.toLowerCase().includes(q) ||
+      msg.preview.toLowerCase().includes(q) ||
+      msg.campaignName.toLowerCase().includes(q)
+    );
+  });
+
+  // Compute quick stats from real data
+  const totalSent = data?.totalSent || 0;
+  const totalResponses = data
+    ? (data.engagementsByStatus["responded"] || 0) +
+      (data.engagementsByStatus["negotiating"] || 0) +
+      (data.engagementsByStatus["agreed"] || 0)
+    : 0;
+  const responseRate = data && data.totalEngagements > 0
+    ? Math.round((totalResponses / data.totalEngagements) * 100)
+    : 0;
+  const openRate = data && data.totalSent > 0
+    ? Math.round((data.totalOpened / data.totalSent) * 100)
+    : 0;
+
+  const unreadCount = inboxMessages.filter((m) => m.unread).length;
+
+  const tabs: { key: TabKey; label: string; count?: number }[] = [
+    { key: "inbox", label: "Inbox", count: unreadCount },
+    { key: "sent", label: "Sent" },
+    { key: "sequences", label: "Sequences" },
+    { key: "templates", label: "Templates" },
+    { key: "analytics", label: "Analytics" },
+  ];
+
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Outreach</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Email delivery and creator response tracking across all campaigns
-        </p>
+    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
+      {/* Sticky Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl flex items-center justify-center flex-shrink-0">
+                <Inbox className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Outreach</h1>
+                <p className="text-gray-500 text-sm mt-0.5">Manage all your influencer communications</p>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 border border-blue-200">
+                <div className="text-[10px] sm:text-xs text-blue-700 font-medium mb-1">Inbox</div>
+                <div className="text-xl sm:text-2xl font-bold text-blue-900">{unreadCount}</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 sm:p-4 border border-green-200">
+                <div className="text-[10px] sm:text-xs text-green-700 font-medium mb-1">Response Rate</div>
+                <div className="text-xl sm:text-2xl font-bold text-green-900">{responseRate}%</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 sm:p-4 border border-purple-200">
+                <div className="text-[10px] sm:text-xs text-purple-700 font-medium mb-1">Open Rate</div>
+                <div className="text-xl sm:text-2xl font-bold text-purple-900">{openRate}%</div>
+              </div>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 sm:p-4 border border-orange-200">
+                <div className="text-[10px] sm:text-xs text-orange-700 font-medium mb-1">Total Sent</div>
+                <div className="text-xl sm:text-2xl font-bold text-orange-900">{totalSent}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-6 mt-6 border-b border-gray-200 -mb-[1px]">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setSelectedTab(tab.key)}
+                className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 ${
+                  selectedTab === tab.key
+                    ? "text-[#2F4538]"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                {tab.label}
+                {tab.count != null && tab.count > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 inline-flex items-center justify-center font-semibold">
+                    {tab.count}
+                  </span>
+                )}
+                {selectedTab === tab.key && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2F4538]"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
+      {/* Main Content */}
       {loading ? (
         <OutreachSkeleton />
       ) : !data ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-          <p className="text-gray-500 text-sm">
-            No outreach data available yet.
-          </p>
+        <div className="px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+            <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm font-medium">No outreach data yet</p>
+            <p className="text-[13px] text-gray-400 mt-1">
+              Outreach data will appear after you send campaign emails.
+            </p>
+          </div>
         </div>
       ) : (
-        <>
-          {/* Summary stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard
-              label="Total Sent"
-              value={data.totalSent}
-              icon={Send}
-              color="bg-indigo-50 text-indigo-600"
-            />
-            <StatCard
-              label="Delivery Rate"
-              value={pct(data.totalDelivered, data.totalSent)}
-              sub={`${data.totalDelivered} of ${data.totalSent}`}
-              icon={Mail}
-              color="bg-blue-50 text-blue-600"
-            />
-            <StatCard
-              label="Open Rate"
-              value={pct(data.totalOpened, data.totalSent)}
-              sub={`${data.totalOpened} opened`}
-              icon={Eye}
-              color="bg-green-50 text-green-600"
-            />
-            <StatCard
-              label="Response Rate"
-              value={pct(
-                (data.engagementsByStatus["responded"] || 0) +
-                  (data.engagementsByStatus["negotiating"] || 0) +
-                  (data.engagementsByStatus["agreed"] || 0),
-                data.totalEngagements
-              )}
-              sub={`${data.totalEngagements} creators contacted`}
-              icon={Users}
-              color="bg-purple-50 text-purple-600"
-            />
-          </div>
+        <div className="px-6 lg:px-8 py-8">
+          {/* ─── Inbox Tab ─────────────────────────────────── */}
+          {selectedTab === "inbox" && (
+            <div className="grid lg:grid-cols-3 gap-6" style={{ minHeight: "calc(100vh - 300px)" }}>
+              {/* Message List */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  {/* Search and Filters */}
+                  <div className="p-4 border-b border-gray-200 space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search messages..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      {(["all", "unread", "starred", "important"] as FilterKey[]).map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setSelectedFilter(filter)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            selectedFilter === filter
+                              ? "bg-[#2F4538] text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* Two-column layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Email overview */}
-            <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Email Delivery Overview
-              </h3>
-              {data.totalSent === 0 ? (
-                <p className="text-sm text-gray-400 py-8 text-center">
-                  No emails sent yet
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {/* Visual funnel bars */}
-                  {[
-                    { label: "Sent", value: data.totalSent, color: "bg-gray-400", total: data.totalSent },
-                    { label: "Delivered", value: data.totalDelivered, color: "bg-blue-500", total: data.totalSent },
-                    { label: "Opened", value: data.totalOpened, color: "bg-green-500", total: data.totalSent },
-                    { label: "Clicked", value: data.totalClicked, color: "bg-emerald-500", total: data.totalSent },
-                    { label: "Bounced", value: data.totalBounced, color: "bg-red-500", total: data.totalSent },
-                  ].map((bar) => (
-                    <div key={bar.label}>
-                      <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-gray-600">{bar.label}</span>
-                        <span className="font-medium text-gray-900">
-                          {bar.value}{" "}
-                          <span className="text-gray-400 font-normal">
-                            ({pct(bar.value, bar.total)})
-                          </span>
+                  {/* Messages */}
+                  <div className="divide-y divide-gray-200 max-h-[calc(100vh-420px)] overflow-y-auto">
+                    {filteredMessages.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Mail className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No messages match your filter</p>
+                      </div>
+                    ) : (
+                      filteredMessages.map((message) => (
+                        <button
+                          key={message.id}
+                          onClick={() => setSelectedMessageId(message.id)}
+                          className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
+                            message.unread ? "bg-blue-50/50" : ""
+                          } ${selectedMessageId === message.id ? "border-l-4 border-[#2F4538] bg-gray-50" : ""}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-semibold text-white">
+                                {message.creatorName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={`font-semibold text-sm truncate ${message.unread ? "text-gray-900" : "text-gray-700"}`}>
+                                    {message.creatorName}
+                                  </span>
+                                  {message.starred && (
+                                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{timeAgo(message.timestamp)}</span>
+                              </div>
+                              {message.platform && (
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-xs text-gray-500 capitalize">{message.platform}</span>
+                                  {message.creatorEmail && (
+                                    <span className="text-xs text-gray-400">• {message.creatorEmail}</span>
+                                  )}
+                                </div>
+                              )}
+                              <div className={`text-sm mb-1 truncate ${message.unread ? "font-medium text-gray-900" : "text-gray-600"}`}>
+                                {message.subject}
+                              </div>
+                              <div className="text-xs text-gray-500 line-clamp-2">
+                                {message.preview}
+                              </div>
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                {message.labels.slice(0, 2).map((label, index) => (
+                                  <span key={index} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
+                                    {label}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Message Detail */}
+              <div className="lg:col-span-2">
+                {selectedMessage ? (
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Message Header */}
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg font-semibold text-white">
+                              {selectedMessage.creatorName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-lg font-bold text-gray-900">{selectedMessage.creatorName}</h3>
+                              {selectedMessage.starred && (
+                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {selectedMessage.creatorEmail || selectedMessage.creatorId}
+                              {selectedMessage.platform && ` • ${selectedMessage.platform}`}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">{formatTime(selectedMessage.timestamp)}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <Star className="w-4 h-4 text-gray-400" />
+                          </button>
+                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <Archive className="w-4 h-4 text-gray-400" />
+                          </button>
+                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4 text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-xl font-semibold text-gray-900 mb-2">{selectedMessage.subject}</div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          {selectedMessage.campaignName}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[selectedMessage.status]?.bg || "bg-gray-50"} ${STATUS_STYLES[selectedMessage.status]?.text || "text-gray-600"}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLES[selectedMessage.status]?.dot || "bg-gray-400"}`} />
+                          {STATUS_STYLES[selectedMessage.status]?.label || selectedMessage.status}
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${bar.color}`}
-                          style={{
-                            width: `${bar.total > 0 ? Math.max((bar.value / bar.total) * 100, 2) : 0}%`,
-                          }}
-                        />
+                    </div>
+
+                    {/* Message Thread */}
+                    <div className="p-6 border-b border-gray-200 max-h-[400px] overflow-y-auto">
+                      {selectedMessage.engagement.message_history?.length > 0 ? (
+                        <div className="space-y-3">
+                          {selectedMessage.engagement.message_history.map((msg, i) => {
+                            const isBrand = msg.from === "brand";
+                            return (
+                              <div
+                                key={i}
+                                className={`rounded-lg px-4 py-3 text-sm ${
+                                  isBrand
+                                    ? "bg-gray-50 border border-gray-100"
+                                    : "bg-blue-50 border border-blue-100"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-xs font-medium ${isBrand ? "text-gray-500" : "text-blue-600"}`}>
+                                    {isBrand ? "Hudey AI" : selectedMessage.creatorName}
+                                  </span>
+                                  <span className="text-xs text-gray-400">{formatTime(msg.timestamp)}</span>
+                                </div>
+                                <p className="leading-relaxed whitespace-pre-wrap text-gray-700">{msg.body}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic text-center py-8">No messages in this thread yet</p>
+                      )}
+                    </div>
+
+                    {/* Proposed / Agreed Terms */}
+                    {selectedMessage.engagement.latest_proposal &&
+                      Object.keys(selectedMessage.engagement.latest_proposal).length > 0 && (
+                        <div className="px-6 py-4 border-b border-gray-200 bg-amber-50/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Tag className="w-4 h-4 text-amber-600" />
+                            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Latest Proposal</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            {(selectedMessage.engagement.latest_proposal.fee_gbp || selectedMessage.engagement.latest_proposal.fee) && (
+                              <span className="text-gray-700">
+                                Fee: <strong>£{Number(selectedMessage.engagement.latest_proposal.fee_gbp || selectedMessage.engagement.latest_proposal.fee).toLocaleString()}</strong>
+                              </span>
+                            )}
+                            {selectedMessage.engagement.latest_proposal.deliverables && (
+                              <span className="text-gray-600">
+                                {Array.isArray(selectedMessage.engagement.latest_proposal.deliverables)
+                                  ? selectedMessage.engagement.latest_proposal.deliverables.join(", ")
+                                  : String(selectedMessage.engagement.latest_proposal.deliverables)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                    {/* AI Suggestion */}
+                    {selectedMessage.aiSuggestion && (
+                      <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="w-5 h-5 text-[#D16B42]" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                              AI Suggestion
+                              <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                High Confidence
+                              </span>
+                            </h4>
+                            <p className="text-sm text-gray-700 mb-3">{selectedMessage.aiSuggestion}</p>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/negotiator`}
+                                className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors"
+                              >
+                                Open in Negotiator
+                              </Link>
+                              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white font-medium text-sm transition-colors">
+                                Write Custom Reply
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status Actions */}
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <StatusActions
+                        campaignId={selectedMessage.campaignId}
+                        creatorId={selectedMessage.creatorId}
+                        currentStatus={selectedMessage.status}
+                        onUpdated={handleDataChange}
+                      />
+                    </div>
+
+                    {/* Reply Composer */}
+                    {selectedMessage.status !== "declined" && selectedMessage.status !== "agreed" && (
+                      <ReplyComposer
+                        campaignId={selectedMessage.campaignId}
+                        creatorId={selectedMessage.creatorId}
+                        onSent={handleDataChange}
+                      />
+                    )}
+
+                    {/* Quick Actions */}
+                    <div className="p-6 border-t border-gray-200 bg-gray-50">
+                      <div className="flex gap-3">
+                        <Link
+                          href={`/campaigns/${selectedMessage.campaignId}`}
+                          className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-white font-medium text-sm transition-colors flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          View Campaign
+                        </Link>
+                        <Link
+                          href="/negotiator"
+                          className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-white font-medium text-sm transition-colors flex items-center gap-2"
+                        >
+                          <Bot className="w-4 h-4" />
+                          AI Negotiator
+                        </Link>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 h-full flex items-center justify-center p-12">
+                    <div className="text-center">
+                      <Inbox className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No message selected</h3>
+                      <p className="text-gray-500">Select a message from the list to view details</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Sent Tab ──────────────────────────────────── */}
+          {selectedTab === "sent" && (
+            <div className="space-y-6">
+              {/* Email Delivery Overview */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Email Delivery Overview</h2>
+                  {data.totalSent === 0 ? (
+                    <p className="text-sm text-gray-400 py-8 text-center">No emails sent yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {[
+                        { label: "Sent", value: data.totalSent, color: "bg-gray-400", total: data.totalSent },
+                        { label: "Delivered", value: data.totalDelivered, color: "bg-blue-500", total: data.totalSent },
+                        { label: "Opened", value: data.totalOpened, color: "bg-green-500", total: data.totalSent },
+                        { label: "Clicked", value: data.totalClicked, color: "bg-emerald-500", total: data.totalSent },
+                        { label: "Bounced", value: data.totalBounced, color: "bg-red-500", total: data.totalSent },
+                      ].map((bar) => (
+                        <div key={bar.label}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-600">{bar.label}</span>
+                            <span className="font-medium text-gray-900">
+                              {bar.value} <span className="text-gray-400 font-normal">({pct(bar.value, bar.total)})</span>
+                            </span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${bar.color}`}
+                              style={{ width: `${bar.total > 0 ? Math.max((bar.value / bar.total) * 100, 2) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Response Funnel */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Response Funnel</h2>
+                  <div className="space-y-4">
+                    {[
+                      { key: "contacted", label: "Contacted", color: "bg-gray-400" },
+                      { key: "responded", label: "Responded", color: "bg-blue-500" },
+                      { key: "negotiating", label: "Negotiating", color: "bg-amber-500" },
+                      { key: "agreed", label: "Agreed", color: "bg-emerald-500" },
+                      { key: "declined", label: "Declined", color: "bg-red-500" },
+                    ].map((stage) => {
+                      const count = data.engagementsByStatus[stage.key] || 0;
+                      const total = data.totalEngagements;
+                      const width = total > 0 ? Math.max((count / total) * 100, 4) : 4;
+                      return (
+                        <div key={stage.key}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-600">{stage.label}</span>
+                            <span className="font-medium text-gray-900">
+                              {count} <span className="text-gray-400 font-normal">({pct(count, total)})</span>
+                            </span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${stage.color}`} style={{ width: `${width}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-campaign breakdown */}
+              {data.perCampaign.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">By Campaign</h2>
+                  <div className="space-y-3">
+                    {data.perCampaign.map((item) => (
+                      <div key={item.campaignId} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Mail className="w-4 h-4 text-indigo-600" />
+                            </div>
+                            <div className="min-w-0">
+                              <Link
+                                href={`/campaigns/${item.campaignId}`}
+                                className="text-sm font-semibold text-gray-900 hover:text-[#2F4538] transition-colors truncate block"
+                              >
+                                {item.campaignName}
+                              </Link>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/campaigns/${item.campaignId}`}
+                            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex-shrink-0"
+                          >
+                            View Campaign →
+                          </Link>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                          <div className="p-2.5 bg-gray-50 rounded-lg">
+                            <div className="text-xs text-gray-500 mb-0.5">Sent</div>
+                            <div className="text-lg font-bold text-gray-900">{item.email.total_sent}</div>
+                          </div>
+                          <div className="p-2.5 bg-blue-50 rounded-lg">
+                            <div className="text-xs text-blue-600 mb-0.5">Delivered</div>
+                            <div className="text-lg font-bold text-blue-900">{item.email.delivered}</div>
+                          </div>
+                          <div className="p-2.5 bg-green-50 rounded-lg">
+                            <div className="text-xs text-green-600 mb-0.5">Opened</div>
+                            <div className="text-lg font-bold text-green-900">{item.email.opened}</div>
+                          </div>
+                          <div className="p-2.5 bg-emerald-50 rounded-lg">
+                            <div className="text-xs text-emerald-600 mb-0.5">Clicked</div>
+                            <div className="text-lg font-bold text-emerald-900">{item.email.clicked}</div>
+                          </div>
+                          <div className="p-2.5 bg-purple-50 rounded-lg">
+                            <div className="text-xs text-purple-600 mb-0.5">Creators</div>
+                            <div className="text-lg font-bold text-purple-900">{item.engagements.length}</div>
+                          </div>
+                        </div>
+                        {/* Engagement status dots */}
+                        {item.engagements.length > 0 && (
+                          <div className="flex items-center gap-3 mt-3 text-xs text-gray-500 flex-wrap">
+                            {Object.entries(
+                              item.engagements.reduce((acc, e) => {
+                                acc[e.status] = (acc[e.status] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>)
+                            ).map(([status, count]) => (
+                              <span key={status} className="flex items-center gap-1">
+                                <span className={`h-1.5 w-1.5 rounded-full ${ENGAGEMENT_COLORS[status] || "bg-gray-300"}`} />
+                                {count} {status}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Response funnel */}
-            <ResponseFunnel
-              byStatus={data.engagementsByStatus}
-              total={data.totalEngagements}
-            />
-          </div>
+          {/* ─── Sequences Tab ─────────────────────────────── */}
+          {selectedTab === "sequences" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Outreach Sequences</h2>
+                  <p className="text-sm text-gray-500 mt-1">Automated follow-up sequences for influencer outreach</p>
+                </div>
+                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Sequence
+                </button>
+              </div>
 
-          {/* Per-campaign breakdown */}
-          {data.perCampaign.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                By Campaign
-              </h3>
-              <div className="space-y-3">
-                {data.perCampaign.map((item) => (
-                  <CampaignBreakdown key={item.campaignId} item={item} onDataChange={handleDataChange} />
+              <div className="grid gap-6">
+                {SEQUENCES.map((sequence) => {
+                  const statusColor = sequence.status === "active" ? "bg-green-100 text-green-700" : sequence.status === "paused" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700";
+                  const perfColor = sequence.performance === "excellent" ? "text-green-600" : sequence.performance === "good" ? "text-blue-600" : "text-yellow-600";
+                  return (
+                    <div key={sequence.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-bold text-gray-900">{sequence.name}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                              {sequence.status}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-500 mb-4">Campaign: {sequence.campaign}</div>
+                          <div className="grid grid-cols-5 gap-4 mb-4">
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="text-xs text-gray-500 mb-1">Steps</div>
+                              <div className="text-2xl font-bold text-gray-900">{sequence.steps}</div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="text-xs text-gray-500 mb-1">Active</div>
+                              <div className="text-2xl font-bold text-gray-900">{sequence.activeContacts}</div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <div className="text-xs text-gray-500 mb-1">Total</div>
+                              <div className="text-2xl font-bold text-gray-900">{sequence.totalContacts}</div>
+                            </div>
+                            <div className="p-3 bg-green-50 rounded-lg">
+                              <div className="text-xs text-green-700 mb-1">Open Rate</div>
+                              <div className="text-2xl font-bold text-green-900">{sequence.openRate}%</div>
+                            </div>
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <div className="text-xs text-blue-700 mb-1">Response</div>
+                              <div className="text-2xl font-bold text-blue-900">{sequence.responseRate}%</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="text-gray-500">Performance:</span>
+                            <span className={`font-semibold ${perfColor}`}>
+                              {sequence.performance.charAt(0).toUpperCase() + sequence.performance.slice(1)}
+                            </span>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-gray-500">Last edited: {sequence.lastEdited}</span>
+                          </div>
+                        </div>
+                        <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex-shrink-0">
+                          View Details
+                        </button>
+                      </div>
+                      {/* Progress Bar */}
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="text-gray-600">Sequence Progress</span>
+                          <span className="font-semibold text-gray-900">
+                            {sequence.activeContacts} of {sequence.totalContacts} active
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-[#2F4538] to-[#D16B42] h-2 rounded-full transition-all"
+                            style={{ width: `${(sequence.activeContacts / sequence.totalContacts) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Templates Tab ─────────────────────────────── */}
+          {selectedTab === "templates" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Message Templates</h2>
+                  <p className="text-sm text-gray-500 mt-1">Pre-built templates for different outreach scenarios</p>
+                </div>
+                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Template
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {TEMPLATES.map((template) => (
+                  <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-bold text-gray-900">{template.name}</h3>
+                          {template.favorite && (
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          )}
+                        </div>
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                          {template.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="text-xs text-gray-500 mb-1">Subject:</div>
+                      <div className="text-sm font-medium text-gray-900 mb-3">{template.subject}</div>
+                      <div className="text-xs text-gray-500 mb-1">Preview:</div>
+                      <div className="text-sm text-gray-700">{template.preview}</div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-lg font-bold text-gray-900">{template.uses}</div>
+                        <div className="text-xs text-gray-500">Uses</div>
+                      </div>
+                      <div className="text-center p-2 bg-green-50 rounded">
+                        <div className="text-lg font-bold text-green-900">{template.responseRate}%</div>
+                        <div className="text-xs text-green-700">Response</div>
+                      </div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-xs font-semibold text-gray-900">Last Used</div>
+                        <div className="text-xs text-gray-500">{template.lastUsed}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button className="flex-1 px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors">
+                        Use Template
+                      </button>
+                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           )}
-        </>
+
+          {/* ─── Analytics Tab ─────────────────────────────── */}
+          {selectedTab === "analytics" && (
+            <div className="space-y-6">
+              {/* Overview Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Total Sent</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900">{data.totalSent}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Responses</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900">{totalResponses}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Response Rate</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-green-600">{responseRate}%</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Open Rate</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600">{openRate}%</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Delivered</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900">{data.totalDelivered}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Bounced</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-red-500">{data.totalBounced}</div>
+                </div>
+              </div>
+
+              {/* Platform + Campaign Performance */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* By Campaign */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Performance by Campaign</h2>
+                  <div className="space-y-4">
+                    {data.perCampaign.map((campaign) => {
+                      const rate = campaign.email.total_sent > 0
+                        ? Math.round((campaign.email.opened / campaign.email.total_sent) * 100)
+                        : 0;
+                      return (
+                        <div key={campaign.campaignId}>
+                          <div className="flex items-center justify-between mb-2">
+                            <Link
+                              href={`/campaigns/${campaign.campaignId}`}
+                              className="font-medium text-gray-900 hover:text-[#2F4538] transition-colors truncate"
+                            >
+                              {campaign.campaignName}
+                            </Link>
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-semibold text-gray-900">{campaign.email.total_sent} sent</div>
+                              <div className="text-xs text-green-600">{rate}% opened</div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div className="bg-[#2F4538] h-2 rounded-full transition-all" style={{ width: `${rate}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Top Performing */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Top Performing Templates</h2>
+                  <div className="space-y-4">
+                    {TEMPLATES.sort((a, b) => b.responseRate - a.responseRate).map((template) => (
+                      <div key={template.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 mb-1 truncate">{template.name}</div>
+                          <div className="text-sm text-gray-500">{template.uses} uses</div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-2xl font-bold text-green-600">{template.responseRate}%</div>
+                          <div className="text-xs text-gray-500">Response Rate</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
