@@ -324,19 +324,25 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           {showCampaignsSub && (
             <div className="ml-9 mt-1 space-y-1">
               <Link
-                href="/?filter=active"
+                href="/campaigns"
+                className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                All Campaigns
+              </Link>
+              <Link
+                href="/campaigns?filter=active"
                 className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 Active
               </Link>
               <Link
-                href="/?filter=completed"
+                href="/campaigns?filter=completed"
                 className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 Completed
               </Link>
               <Link
-                href="/?filter=draft"
+                href="/campaigns?filter=draft"
                 className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 Drafts
@@ -636,19 +642,25 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               {showCampaignsSub && (
                 <div className="ml-9 mt-1 space-y-1">
                   <Link
-                    href="/?filter=active"
+                    href="/campaigns"
+                    className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    All Campaigns
+                  </Link>
+                  <Link
+                    href="/campaigns?filter=active"
                     className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
                   >
                     Active
                   </Link>
                   <Link
-                    href="/?filter=completed"
+                    href="/campaigns?filter=completed"
                     className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
                   >
                     Completed
                   </Link>
                   <Link
-                    href="/?filter=draft"
+                    href="/campaigns?filter=draft"
                     className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
                   >
                     Drafts
