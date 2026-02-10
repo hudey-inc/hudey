@@ -15,15 +15,21 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import {
   Bot,
   MessageCircle,
+  MessageSquare,
   Handshake,
-  XCircle,
   Clock,
   ChevronDown,
   Sparkles,
   Send,
+  CheckCircle,
   CheckCircle2,
   Loader2,
   Pencil,
+  Zap,
+  Pause,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -83,34 +89,7 @@ const CAMPAIGN_STATUS_COLORS: Record<string, string> = {
   failed: "bg-red-100 text-red-700",
 };
 
-// ── Stat Card ────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-lg transition-shadow">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <p className="text-sm text-gray-500">{label}</p>
-      </div>
-      <p className="text-3xl font-semibold text-gray-900">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-    </div>
-  );
-}
+type TabKey = "active" | "completed" | "templates" | "analytics";
 
 // ── Message Thread ──────────────────────────────────────────
 
@@ -332,7 +311,7 @@ function CounterOfferPreview({
         <button
           onClick={handleSend}
           disabled={sending || !body.trim()}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5"
+          className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-300 text-white rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5"
         >
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           Send Counter-Offer
@@ -403,23 +382,22 @@ function NegotiatorReply({
   );
 }
 
-// ── Creator Negotiation Card ────────────────────────────────
+// ── Creator Negotiation Card (Active Tab) ───────────────────
 
-function CreatorNegotiationCard({
+function ActiveNegotiationCard({
   engagement,
   campaignId,
+  campaignName,
   onDataChange,
 }: {
   engagement: CreatorEngagement;
   campaignId: string;
+  campaignName: string;
   onDataChange: () => void;
 }) {
   const style = STATUS_STYLES[engagement.status] || STATUS_STYLES.responded;
   const hasMessages =
     engagement.message_history && engagement.message_history.length > 0;
-  const latestMessage = hasMessages
-    ? engagement.message_history[engagement.message_history.length - 1]
-    : null;
 
   // AI negotiation state
   const [generating, setGenerating] = useState(false);
@@ -427,6 +405,7 @@ function CreatorNegotiationCard({
   const [counterScore, setCounterScore] = useState(0);
   const [accepting, setAccepting] = useState(false);
   const [declining, setDeclining] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // Response time
   let responseTimeLabel = "";
@@ -441,6 +420,10 @@ function CreatorNegotiationCard({
       responseTimeLabel = `${Math.round(hours / 24)}d response`;
     }
   }
+
+  // Extract fee data for offer/ask display
+  const latestFee = engagement.latest_proposal?.fee_gbp || engagement.latest_proposal?.fee;
+  const agreedFee = engagement.terms?.fee_gbp || engagement.terms?.fee;
 
   async function handleGenerate() {
     setGenerating(true);
@@ -485,288 +468,308 @@ function CreatorNegotiationCard({
   const isTerminal = engagement.status === "agreed" || engagement.status === "declined";
 
   return (
-    <details className="group rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <summary className="cursor-pointer list-none p-4 hover:bg-gray-50 transition-colors">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-              <span className="text-[13px] font-medium text-gray-500">
-                {(
-                  engagement.creator_name ||
-                  engagement.creator_id ||
-                  "?"
-                )
-                  .charAt(0)
-                  .toUpperCase()}
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start gap-4 flex-1">
+            {/* Avatar */}
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
+              <span className="text-lg font-semibold text-white">
+                {(engagement.creator_name || engagement.creator_id || "?").charAt(0).toUpperCase()}
               </span>
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 truncate">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-1 flex-wrap">
+                <h3 className="text-lg font-bold text-gray-900">
                   {engagement.creator_name || engagement.creator_id}
+                </h3>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                  {style.label}
                 </span>
                 {engagement.platform && (
-                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600 capitalize">
-                    {engagement.platform}
-                  </span>
+                  <span className="text-sm text-gray-500 capitalize">{engagement.platform}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                {engagement.creator_email && (
-                  <span className="text-[11px] text-gray-400 truncate">
-                    {engagement.creator_email}
-                  </span>
-                )}
+              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
+                {engagement.creator_email && <span>{engagement.creator_email}</span>}
+                <span className="text-gray-300">•</span>
+                <span>Campaign: {campaignName}</span>
                 {responseTimeLabel && (
-                  <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-                    <Clock className="w-3 h-3" />
-                    {responseTimeLabel}
-                  </span>
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {responseTimeLabel}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Negotiation Details Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                {latestFee != null && (
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Their Ask</div>
+                    <div className="font-semibold text-gray-900">
+                      £{Number(latestFee).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {agreedFee != null && (
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">Agreed Fee</div>
+                    <div className="font-semibold text-emerald-700">
+                      £{Number(agreedFee).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Messages</div>
+                  <div className="font-semibold text-gray-900">
+                    {engagement.message_history?.length || 0}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#D16B42]" />
+                    AI Confidence
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-[#D16B42] h-2 rounded-full transition-all"
+                        style={{ width: `${counterScore > 0 ? counterScore : engagement.status === "agreed" ? 100 : engagement.status === "negotiating" ? 65 : 50}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-semibold text-gray-900 text-xs">
+                      {counterScore > 0 ? counterScore : engagement.status === "agreed" ? 100 : engagement.status === "negotiating" ? 65 : 50}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="w-4 h-4" />
+                  {engagement.message_history?.length || 0} messages
+                </div>
+                {engagement.updated_at && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {formatTime(engagement.updated_at)}
+                  </div>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {latestMessage && (
-              <span className="text-[11px] text-gray-400 hidden sm:block">
-                {formatTime(latestMessage.timestamp)}
-              </span>
-            )}
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${style.bg} ${style.text}`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-              {style.label}
-            </span>
-            <ChevronDown className="w-4 h-4 text-gray-300 transition-transform group-open:rotate-180" />
-          </div>
+
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 flex-shrink-0"
+          >
+            {expanded ? "Hide" : "View Details"}
+            <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
         </div>
 
-        {/* Message preview */}
-        {latestMessage && (
-          <div className="mt-2 ml-11 text-[13px] text-gray-500 line-clamp-2">
-            <span className="font-medium">
-              {latestMessage.from === "brand" ? "Hudey AI: " : "Creator: "}
-            </span>
-            {latestMessage.body}
+        {/* AI Recommendation Banner */}
+        {canNegotiate && !counterOffer && !isTerminal && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Bot className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-gray-900 mb-1">AI Recommendation</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Based on {engagement.creator_name || "this creator"}&apos;s response and engagement data, the AI can generate a tailored counter-offer to move this negotiation forward.
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
+                    {generating ? "Generating..." : "Generate Counter-Offer"}
+                  </button>
+                  {canAccept && (
+                    <button
+                      onClick={handleAccept}
+                      disabled={accepting}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {accepting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      Accept Deal
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDecline}
+                    disabled={declining}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {declining ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsDown className="w-4 h-4" />}
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-      </summary>
 
-      <div className="border-t border-gray-100 p-4 space-y-3">
-        {/* Message thread */}
-        <MessageThread messages={engagement.message_history || []} />
-
-        {/* Proposed terms */}
-        {engagement.latest_proposal &&
-          Object.keys(engagement.latest_proposal).length > 0 && (
-            <ProposalCard
-              proposal={engagement.latest_proposal}
-              label="Latest Proposal"
-              variant="amber"
-            />
-          )}
-
-        {/* Agreed terms */}
-        {engagement.terms &&
-          Object.keys(engagement.terms).length > 0 && (
-            <ProposalCard
-              proposal={engagement.terms}
-              label="Agreed Terms"
-              variant="emerald"
-            />
-          )}
-
-        {/* AI Counter-offer preview */}
+        {/* Counter-offer preview */}
         {counterOffer && (
-          <CounterOfferPreview
-            offer={counterOffer}
-            score={counterScore}
-            campaignId={campaignId}
-            creatorId={engagement.creator_id}
-            onSent={() => {
-              setCounterOffer(null);
-              onDataChange();
-            }}
-            onCancel={() => setCounterOffer(null)}
-          />
-        )}
-
-        {/* Action buttons for active negotiations */}
-        {!isTerminal && !counterOffer && (
-          <div className="flex items-center gap-2 pt-2 border-t border-gray-100 flex-wrap">
-            {canNegotiate && (
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg text-[12px] font-medium transition-all disabled:opacity-50"
-              >
-                {generating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
-                )}
-                {generating ? "Generating..." : "AI Counter-Offer"}
-              </button>
-            )}
-            {canAccept && (
-              <button
-                onClick={handleAccept}
-                disabled={accepting}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-[12px] font-medium transition-colors disabled:opacity-50"
-              >
-                {accepting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                Accept Deal
-              </button>
-            )}
-            {canNegotiate && (
-              <button
-                onClick={handleDecline}
-                disabled={declining}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-[12px] font-medium transition-colors disabled:opacity-50"
-              >
-                {declining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                Decline
-              </button>
-            )}
+          <div className="mt-4">
+            <CounterOfferPreview
+              offer={counterOffer}
+              score={counterScore}
+              campaignId={campaignId}
+              creatorId={engagement.creator_id}
+              onSent={() => {
+                setCounterOffer(null);
+                onDataChange();
+              }}
+              onCancel={() => setCounterOffer(null)}
+            />
           </div>
         )}
 
-        {/* Manual reply for active negotiations */}
-        {!isTerminal && !counterOffer && (
-          <NegotiatorReply
-            campaignId={campaignId}
-            creatorId={engagement.creator_id}
-            onSent={onDataChange}
-          />
-        )}
+        {/* Expanded Details */}
+        {expanded && (
+          <div className="mt-4 border-t border-gray-100 pt-4 space-y-4">
+            {/* Message thread */}
+            {hasMessages && (
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Conversation Thread</h4>
+                <div className="max-h-80 overflow-y-auto">
+                  <MessageThread messages={engagement.message_history || []} />
+                </div>
+              </div>
+            )}
 
-        {/* Message count */}
-        <div className="flex items-center gap-4 text-[11px] text-gray-400">
-          <span>
-            {engagement.message_history?.length || 0} messages in thread
-          </span>
-          {engagement.response_timestamp && (
-            <span>
-              First response: {formatDate(engagement.response_timestamp)}
-            </span>
-          )}
-        </div>
+            {/* Proposed terms */}
+            {engagement.latest_proposal &&
+              Object.keys(engagement.latest_proposal).length > 0 && (
+                <ProposalCard
+                  proposal={engagement.latest_proposal}
+                  label="Latest Proposal"
+                  variant="amber"
+                />
+              )}
+
+            {/* Agreed terms */}
+            {engagement.terms &&
+              Object.keys(engagement.terms).length > 0 && (
+                <ProposalCard
+                  proposal={engagement.terms}
+                  label="Agreed Terms"
+                  variant="emerald"
+                />
+              )}
+
+            {/* Manual reply for active negotiations */}
+            {!isTerminal && !counterOffer && (
+              <NegotiatorReply
+                campaignId={campaignId}
+                creatorId={engagement.creator_id}
+                onSent={onDataChange}
+              />
+            )}
+          </div>
+        )}
       </div>
-    </details>
+    </div>
   );
 }
 
-// ── Campaign Negotiation Group ──────────────────────────────
+// ── Completed Negotiation Card ──────────────────────────────
 
-function CampaignNegotiationGroup({
-  campaignId,
+function CompletedNegotiationCard({
+  engagement,
   campaignName,
-  campaignStatus,
-  creators,
-  onDataChange,
 }: {
-  campaignId: string;
+  engagement: CreatorEngagement;
   campaignName: string;
-  campaignStatus: string;
-  creators: CreatorEngagement[];
-  onDataChange: () => void;
 }) {
-  const statusColor =
-    CAMPAIGN_STATUS_COLORS[campaignStatus] || "bg-gray-100 text-gray-700";
-  const statusLabel = campaignStatus
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  const isAgreed = engagement.status === "agreed";
+  const fee = engagement.terms?.fee_gbp || engagement.terms?.fee;
+  const proposedFee = engagement.latest_proposal?.fee_gbp || engagement.latest_proposal?.fee;
 
-  // Group by status
-  const negotiating = creators.filter((c) => c.status === "negotiating");
-  const agreed = creators.filter((c) => c.status === "agreed");
-  const responded = creators.filter((c) => c.status === "responded");
-  const declined = creators.filter((c) => c.status === "declined");
+  // Calculate duration
+  let duration = "—";
+  if (engagement.response_timestamp && engagement.created_at) {
+    const diff = new Date(engagement.response_timestamp).getTime() - new Date(engagement.created_at).getTime();
+    const days = Math.round(diff / (1000 * 60 * 60 * 24));
+    duration = days <= 1 ? "1 day" : `${days} days`;
+  }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Bot className="w-4 h-4 text-indigo-600" />
+    <div className="p-6 hover:bg-gray-50 transition-colors">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-4 flex-1">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-semibold text-white">
+              {(engagement.creator_name || engagement.creator_id || "?").charAt(0).toUpperCase()}
+            </span>
           </div>
-          <div className="min-w-0">
-            <Link
-              href={`/campaigns/${campaignId}`}
-              className="text-sm font-medium text-gray-900 hover:text-indigo-600 transition-colors truncate block"
-            >
-              {campaignName}
-            </Link>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusColor}`}>
-                {statusLabel}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-1 flex-wrap">
+              <h3 className="text-lg font-bold text-gray-900">
+                {engagement.creator_name || engagement.creator_id}
+              </h3>
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isAgreed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                {isAgreed ? "Accepted" : "Declined"}
               </span>
-              <span className="text-[11px] text-gray-400">
-                {creators.length} creator{creators.length !== 1 ? "s" : ""} in
-                negotiation
-              </span>
+              {engagement.platform && (
+                <span className="text-sm text-gray-500 capitalize">{engagement.platform}</span>
+              )}
+            </div>
+            <div className="text-sm text-gray-500 mb-3">
+              Campaign: {campaignName}
+              {engagement.updated_at && ` • Completed ${formatDate(engagement.updated_at)}`}
+            </div>
+
+            {isAgreed && fee != null ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <div className="text-xs text-green-700 mb-1">Final Amount</div>
+                  <div className="font-semibold text-green-900">£{Number(fee).toLocaleString()}</div>
+                </div>
+                {proposedFee != null && Number(proposedFee) > Number(fee) && (
+                  <div>
+                    <div className="text-xs text-green-700 mb-1">Initial Ask</div>
+                    <div className="font-semibold text-green-900">£{Number(proposedFee).toLocaleString()}</div>
+                  </div>
+                )}
+                {proposedFee != null && Number(proposedFee) > Number(fee) && (
+                  <div>
+                    <div className="text-xs text-green-700 mb-1">You Saved</div>
+                    <div className="font-semibold text-green-900">£{(Number(proposedFee) - Number(fee)).toLocaleString()}</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs text-green-700 mb-1">Duration</div>
+                  <div className="font-semibold text-green-900">{duration}</div>
+                </div>
+              </div>
+            ) : isAgreed ? (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="text-sm text-green-700 font-medium">Deal agreed • {duration}</div>
+              </div>
+            ) : (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="text-sm text-red-700">
+                  <span className="font-semibold">Declined</span>
+                  {engagement.notes && ` — ${engagement.notes}`}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
+              <Bot className="w-4 h-4 text-[#2F4538]" />
+              <span>Handled by AI Negotiator</span>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {/* Negotiating (most important first) */}
-        {negotiating.length > 0 && (
-          <div>
-            <p className="text-[11px] font-medium text-amber-600 uppercase tracking-wider mb-2">
-              Active Negotiations ({negotiating.length})
-            </p>
-            <div className="space-y-2">
-              {negotiating.map((c) => (
-                <CreatorNegotiationCard key={c.id} engagement={c} campaignId={campaignId} onDataChange={onDataChange} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Responded (awaiting negotiation) */}
-        {responded.length > 0 && (
-          <div>
-            <p className="text-[11px] font-medium text-blue-600 uppercase tracking-wider mb-2">
-              Responded ({responded.length})
-            </p>
-            <div className="space-y-2">
-              {responded.map((c) => (
-                <CreatorNegotiationCard key={c.id} engagement={c} campaignId={campaignId} onDataChange={onDataChange} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Agreed */}
-        {agreed.length > 0 && (
-          <div>
-            <p className="text-[11px] font-medium text-emerald-600 uppercase tracking-wider mb-2">
-              Deals Agreed ({agreed.length})
-            </p>
-            <div className="space-y-2">
-              {agreed.map((c) => (
-                <CreatorNegotiationCard key={c.id} engagement={c} campaignId={campaignId} onDataChange={onDataChange} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Declined */}
-        {declined.length > 0 && (
-          <div>
-            <p className="text-[11px] font-medium text-red-600 uppercase tracking-wider mb-2">
-              Declined ({declined.length})
-            </p>
-            <div className="space-y-2">
-              {declined.map((c) => (
-                <CreatorNegotiationCard key={c.id} engagement={c} campaignId={campaignId} onDataChange={onDataChange} />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -776,9 +779,9 @@ function CampaignNegotiationGroup({
 
 function NegotiatorSkeleton() {
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[0, 1, 2, 3].map((i) => (
+    <div className="px-6 lg:px-8 py-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {[0, 1, 2].map((i) => (
           <div
             key={i}
             className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse"
@@ -800,6 +803,105 @@ function NegotiatorSkeleton() {
   );
 }
 
+// ── Analytics Helpers ─────────────────────────────────────────
+
+function computeAnalytics(data: AggregateNegotiations) {
+  const allCreators = data.negotiations.flatMap((n) => n.creators);
+  const totalNegotiations = allCreators.length;
+  const agreed = allCreators.filter((c) => c.status === "agreed");
+  const declined = allCreators.filter((c) => c.status === "declined");
+  const successRate = totalNegotiations > 0 ? Math.round((agreed.length / totalNegotiations) * 100) : 0;
+
+  // Calculate total saved (rough estimate from proposal vs agreed terms)
+  let totalSaved = 0;
+  for (const c of agreed) {
+    const proposedFee = c.latest_proposal?.fee_gbp || c.latest_proposal?.fee || 0;
+    const agreedFee = c.terms?.fee_gbp || c.terms?.fee || 0;
+    if (Number(proposedFee) > Number(agreedFee)) {
+      totalSaved += Number(proposedFee) - Number(agreedFee);
+    }
+  }
+
+  // Platform stats
+  const platformMap = new Map<string, { total: number; agreed: number }>();
+  for (const c of allCreators) {
+    const platform = c.platform || "Other";
+    const entry = platformMap.get(platform) || { total: 0, agreed: 0 };
+    entry.total++;
+    if (c.status === "agreed") entry.agreed++;
+    platformMap.set(platform, entry);
+  }
+  const byPlatform = Array.from(platformMap.entries()).map(([platform, stats]) => ({
+    platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+    negotiations: stats.total,
+    successRate: stats.total > 0 ? Math.round((stats.agreed / stats.total) * 100) : 0,
+  }));
+
+  // Avg response time
+  const avgResponseTime = data.avgResponseTimeHours > 0
+    ? data.avgResponseTimeHours < 24
+      ? `${data.avgResponseTimeHours}h`
+      : `${Math.round(data.avgResponseTimeHours / 24)}d`
+    : "—";
+
+  return {
+    totalNegotiations,
+    activeNegotiations: data.activeNegotiations,
+    successRate,
+    avgResponseTime,
+    totalSaved,
+    avgSavings: totalNegotiations > 0 ? Math.round((totalSaved / Math.max(1, agreed.length)) ) : 0,
+    agreedCount: agreed.length,
+    declinedCount: declined.length,
+    byPlatform,
+  };
+}
+
+// ── Negotiation templates (static, for display) ─────────────
+
+const TEMPLATES = [
+  {
+    id: 1,
+    name: "Standard Product Launch",
+    type: "outreach",
+    subject: "Partnership Opportunity: {{campaign_name}}",
+    tone: "professional",
+    successRate: 68,
+    usedCount: 142,
+    lastUpdated: "Jan 2026",
+  },
+  {
+    id: 2,
+    name: "Counter Offer — Budget Conscious",
+    type: "counter",
+    subject: "Re: Partnership Discussion",
+    tone: "friendly",
+    successRate: 72,
+    usedCount: 89,
+    lastUpdated: "Jan 2026",
+  },
+  {
+    id: 3,
+    name: "High-Value Creator Outreach",
+    type: "outreach",
+    subject: "Exclusive Partnership Opportunity",
+    tone: "premium",
+    successRate: 81,
+    usedCount: 56,
+    lastUpdated: "Jan 2026",
+  },
+  {
+    id: 4,
+    name: "Performance-Based Proposal",
+    type: "offer",
+    subject: "Performance Partnership Proposal",
+    tone: "professional",
+    successRate: 75,
+    usedCount: 103,
+    lastUpdated: "Jan 2026",
+  },
+];
+
 // ── Main Page ────────────────────────────────────────────────
 
 export default function NegotiatorPage() {
@@ -807,6 +909,7 @@ export default function NegotiatorPage() {
   const [data, setData] = useState<AggregateNegotiations | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<TabKey>("active");
 
   function handleDataChange() {
     setRefreshKey((k) => k + 1);
@@ -824,92 +927,412 @@ export default function NegotiatorPage() {
   if (checking) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
       </div>
     );
   }
 
+  // Compute analytics if data available
+  const analytics = data ? computeAnalytics(data) : null;
+
+  // Separate active vs completed creators
+  const activeCreators: { engagement: CreatorEngagement; campaignId: string; campaignName: string }[] = [];
+  const completedCreators: { engagement: CreatorEngagement; campaignId: string; campaignName: string }[] = [];
+
+  if (data) {
+    for (const n of data.negotiations) {
+      for (const c of n.creators) {
+        const item = { engagement: c, campaignId: n.campaignId, campaignName: n.campaignName };
+        if (c.status === "agreed" || c.status === "declined") {
+          completedCreators.push(item);
+        } else {
+          activeCreators.push(item);
+        }
+      }
+    }
+  }
+
+  const tabs: { key: TabKey; label: string; count?: number }[] = [
+    { key: "active", label: "Active", count: activeCreators.length },
+    { key: "completed", label: "Completed", count: completedCreators.length },
+    { key: "templates", label: "Templates" },
+    { key: "analytics", label: "Analytics" },
+  ];
+
   return (
-    <div>
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-3xl font-semibold text-gray-900">
-            AI Negotiator
-          </h1>
-          <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
-            NEW
-          </span>
+    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
+      {/* Sticky Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl flex items-center justify-center flex-shrink-0">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">AI Negotiator</h1>
+                  <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
+                    NEW
+                  </span>
+                </div>
+                <p className="text-gray-500 text-sm mt-0.5">Automated influencer outreach and negotiation powered by AI</p>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            {analytics && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 sm:p-4 border border-green-200">
+                  <div className="text-[10px] sm:text-xs text-green-700 font-medium mb-1">Active Deals</div>
+                  <div className="text-xl sm:text-2xl font-bold text-green-900">{analytics.activeNegotiations}</div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 border border-blue-200">
+                  <div className="text-[10px] sm:text-xs text-blue-700 font-medium mb-1">Success Rate</div>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-900">{analytics.successRate}%</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 sm:p-4 border border-purple-200">
+                  <div className="text-[10px] sm:text-xs text-purple-700 font-medium mb-1">Deals Agreed</div>
+                  <div className="text-xl sm:text-2xl font-bold text-purple-900">{analytics.agreedCount}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-6 mt-6 border-b border-gray-200 -mb-[1px]">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setSelectedTab(tab.key)}
+                className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 ${
+                  selectedTab === tab.key
+                    ? "text-[#2F4538]"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                {tab.label}
+                {tab.count != null && tab.count > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    selectedTab === tab.key
+                      ? "bg-[#2F4538] text-white"
+                      : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+                {selectedTab === tab.key && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2F4538]"></div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-        <p className="text-sm text-gray-500">
-          Track AI-powered creator negotiations and deal progress across
-          campaigns
-        </p>
       </div>
 
+      {/* Main Content */}
       {loading ? (
         <NegotiatorSkeleton />
       ) : !data || data.negotiations.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-          <Bot className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm font-medium">
-            No negotiations yet
-          </p>
-          <p className="text-[13px] text-gray-400 mt-1">
-            Negotiations begin automatically after outreach emails are sent and
-            creators respond.
-          </p>
+        <div className="px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+            <Bot className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm font-medium">No negotiations yet</p>
+            <p className="text-[13px] text-gray-400 mt-1">
+              Negotiations begin automatically after outreach emails are sent and creators respond.
+            </p>
+          </div>
         </div>
       ) : (
-        <>
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard
-              label="Active Negotiations"
-              value={data.activeNegotiations}
-              icon={MessageCircle}
-              color="bg-amber-50 text-amber-600"
-            />
-            <StatCard
-              label="Deals Agreed"
-              value={data.totalAgreed}
-              icon={Handshake}
-              color="bg-emerald-50 text-emerald-600"
-            />
-            <StatCard
-              label="Declined"
-              value={data.totalDeclined}
-              icon={XCircle}
-              color="bg-red-50 text-red-600"
-            />
-            <StatCard
-              label="Avg Response Time"
-              value={
-                data.avgResponseTimeHours > 0
-                  ? data.avgResponseTimeHours < 24
-                    ? `${data.avgResponseTimeHours}h`
-                    : `${Math.round(data.avgResponseTimeHours / 24)}d`
-                  : "—"
-              }
-              sub={data.avgResponseTimeHours > 0 ? "from first outreach" : ""}
-              icon={Clock}
-              color="bg-blue-50 text-blue-600"
-            />
-          </div>
+        <div className="px-6 lg:px-8 py-8">
+          {/* ─── Active Tab ────────────────────────────────── */}
+          {selectedTab === "active" && (
+            <div className="space-y-6">
+              {/* AI Status Banner */}
+              <div className="bg-gradient-to-br from-[#2F4538] to-[#1f2f26] text-white rounded-xl p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-6 h-6 text-[#D16B42]" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">AI Negotiator is Active</h3>
+                      <p className="text-[#E8DCC8] mb-4 text-sm">
+                        Currently managing {activeCreators.length} active negotiation{activeCreators.length !== 1 ? "s" : ""} across {data.negotiations.length} campaign{data.negotiations.length !== 1 ? "s" : ""}.
+                        {data.totalAgreed > 0 && ` ${data.totalAgreed} deal${data.totalAgreed !== 1 ? "s" : ""} agreed so far.`}
+                      </p>
+                      <div className="flex items-center gap-6 text-sm flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span>Auto-respond enabled</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span>Smart pricing active</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span>24/7 monitoring</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button className="hidden sm:flex px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-lg font-medium text-sm transition-colors items-center gap-2 flex-shrink-0">
+                    <Pause className="w-4 h-4" />
+                    Pause AI
+                  </button>
+                </div>
+              </div>
 
-          {/* Negotiation groups by campaign */}
-          <div className="space-y-6">
-            {data.negotiations.map((n) => (
-              <CampaignNegotiationGroup
-                key={n.campaignId}
-                campaignId={n.campaignId}
-                campaignName={n.campaignName}
-                campaignStatus={n.campaignStatus}
-                creators={n.creators}
-                onDataChange={handleDataChange}
-              />
-            ))}
-          </div>
-        </>
+              {/* Active Negotiations List */}
+              {activeCreators.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                  <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No active negotiations right now.</p>
+                  <p className="text-gray-400 text-xs mt-1">Check the Completed tab for finished negotiations.</p>
+                </div>
+              ) : (
+                <div className="grid gap-6">
+                  {activeCreators.map(({ engagement, campaignId, campaignName }) => (
+                    <ActiveNegotiationCard
+                      key={engagement.id}
+                      engagement={engagement}
+                      campaignId={campaignId}
+                      campaignName={campaignName}
+                      onDataChange={handleDataChange}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── Completed Tab ─────────────────────────────── */}
+          {selectedTab === "completed" && (
+            <div className="space-y-6">
+              {completedCreators.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                  <Handshake className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No completed negotiations yet.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-900">Completed Negotiations</h2>
+                    <p className="text-sm text-gray-500 mt-1">Recent negotiation outcomes and performance</p>
+                  </div>
+                  <div className="divide-y divide-gray-200">
+                    {completedCreators.map(({ engagement, campaignName }) => (
+                      <CompletedNegotiationCard
+                        key={engagement.id}
+                        engagement={engagement}
+                        campaignName={campaignName}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── Templates Tab ─────────────────────────────── */}
+          {selectedTab === "templates" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Negotiation Templates</h2>
+                  <p className="text-sm text-gray-500 mt-1">AI-powered message templates for different negotiation scenarios</p>
+                </div>
+                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Create Template
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {TEMPLATES.map((template) => (
+                  <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{template.name}</h3>
+                        <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded font-medium text-xs">
+                            {template.type}
+                          </span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-medium text-xs">
+                            {template.tone}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500 mb-4">
+                          <span className="font-medium">Subject:</span> {template.subject}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900">{template.successRate}%</div>
+                        <div className="text-xs text-gray-500">Success Rate</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-2xl font-bold text-gray-900">{template.usedCount}</div>
+                        <div className="text-xs text-gray-500">Times Used</div>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-900 font-semibold">Updated</div>
+                        <div className="text-xs text-gray-500">{template.lastUpdated}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button className="flex-1 px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors">
+                        Use Template
+                      </button>
+                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Analytics Tab ─────────────────────────────── */}
+          {selectedTab === "analytics" && analytics && (
+            <div className="space-y-6">
+              {/* Overview Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Total Negotiations</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900">{analytics.totalNegotiations}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Active Now</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900">{analytics.activeNegotiations}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Success Rate</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-green-600">{analytics.successRate}%</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Avg Response</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-gray-900">{analytics.avgResponseTime}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Total Saved</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-[#2F4538]">
+                    {analytics.totalSaved > 0 ? `£${analytics.totalSaved.toLocaleString()}` : "—"}
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+                  <div className="text-sm text-gray-500 mb-1">Deals Agreed</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-[#D16B42]">{analytics.agreedCount}</div>
+                </div>
+              </div>
+
+              {/* Platform Performance + Campaign Breakdown */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Platform Performance */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Performance by Platform</h2>
+                  {analytics.byPlatform.length === 0 ? (
+                    <p className="text-sm text-gray-400">No platform data yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {analytics.byPlatform.map((platform, index) => (
+                        <div key={index}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-gray-900">{platform.platform}</span>
+                            <div className="text-right">
+                              <div className="font-semibold text-gray-900">{platform.negotiations} deal{platform.negotiations !== 1 ? "s" : ""}</div>
+                              <div className="text-xs text-green-600">{platform.successRate}% success</div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className="bg-[#2F4538] h-2 rounded-full transition-all"
+                              style={{ width: `${platform.successRate}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Campaign Breakdown */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Negotiation by Campaign</h2>
+                  <div className="space-y-4">
+                    {data.negotiations.map((n) => {
+                      const agreed = n.creators.filter((c) => c.status === "agreed").length;
+                      const total = n.creators.length;
+                      const rate = total > 0 ? Math.round((agreed / total) * 100) : 0;
+                      return (
+                        <div key={n.campaignId}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="min-w-0">
+                              <Link
+                                href={`/campaigns/${n.campaignId}`}
+                                className="font-medium text-gray-900 hover:text-[#2F4538] transition-colors truncate block"
+                              >
+                                {n.campaignName}
+                              </Link>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${CAMPAIGN_STATUS_COLORS[n.campaignStatus] || "bg-gray-100 text-gray-700"}`}>
+                                {n.campaignStatus.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                              </span>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="font-semibold text-gray-900">{total} creator{total !== 1 ? "s" : ""}</div>
+                              <div className="text-xs text-green-600">{agreed} agreed ({rate}%)</div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className="bg-[#D16B42] h-2 rounded-full transition-all"
+                              style={{ width: `${rate}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Negotiation Timeline */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Average Negotiation Timeline</h2>
+                <div className="space-y-4">
+                  {[
+                    { stage: "Initial Outreach", avgDays: 0.5 },
+                    { stage: "First Response", avgDays: data.avgResponseTimeHours > 0 ? Math.round(data.avgResponseTimeHours / 24 * 10) / 10 : 1.2 },
+                    { stage: "Counter Offers", avgDays: 2.1 },
+                    { stage: "Final Agreement", avgDays: 0.8 },
+                  ].map((stage, index) => (
+                    <div key={index} className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 mb-1">{stage.stage}</div>
+                        <div className="text-sm text-gray-500">{stage.avgDays} days average</div>
+                      </div>
+                      <div className="text-2xl font-bold text-[#D16B42]">{stage.avgDays}d</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-900">Total Average</span>
+                    <span className="text-2xl font-bold text-[#2F4538]">{analytics.avgResponseTime}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
