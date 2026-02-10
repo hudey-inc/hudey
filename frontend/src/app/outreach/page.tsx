@@ -25,12 +25,26 @@ import {
   Trash2,
   Paperclip,
   Tag,
+  X,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────
 
 type TabKey = "inbox" | "sent" | "sequences" | "templates" | "analytics";
 type FilterKey = "all" | "unread" | "starred" | "important";
+
+type Template = {
+  id: number;
+  name: string;
+  category: string;
+  subject: string;
+  preview: string;
+  body: string;
+  uses: number;
+  responseRate: number;
+  lastUsed: string;
+  favorite: boolean;
+};
 
 // Derived inbox message from real creator engagement data
 type InboxMessage = {
@@ -333,13 +347,14 @@ const SEQUENCES = [
   },
 ];
 
-const TEMPLATES = [
+const DEFAULT_TEMPLATES: Template[] = [
   {
     id: 1,
     name: "Initial Outreach — Product Launch",
     category: "outreach",
     subject: "Partnership Opportunity: {{campaign_name}}",
     preview: "Hi {{first_name}}, I came across your content and love your style...",
+    body: "Hi {{first_name}},\n\nI came across your content and love your style. We're launching {{campaign_name}} and think you'd be a perfect fit.\n\nWould you be interested in collaborating? We'd love to discuss the details.\n\nBest,\n{{brand_name}}",
     uses: 142,
     responseRate: 28,
     lastUsed: "2 hours ago",
@@ -351,6 +366,7 @@ const TEMPLATES = [
     category: "follow-up",
     subject: "Re: Partnership Opportunity",
     preview: "Hi {{first_name}}, I wanted to follow up on my previous message...",
+    body: "Hi {{first_name}},\n\nI wanted to follow up on my previous message about {{campaign_name}}. I think your audience would really resonate with this campaign.\n\nWould you have time for a quick chat this week?\n\nBest,\n{{brand_name}}",
     uses: 89,
     responseRate: 22,
     lastUsed: "1 day ago",
@@ -362,6 +378,7 @@ const TEMPLATES = [
     category: "negotiation",
     subject: "Re: {{subject}}",
     preview: "Thanks for your interest! Based on the campaign scope...",
+    body: "Thanks for your interest! Based on the campaign scope, we'd like to propose the following:\n\n- Fee: {{proposed_fee}}\n- Deliverables: {{deliverables}}\n- Timeline: {{timeline}}\n\nLet me know your thoughts!\n\nBest,\n{{brand_name}}",
     uses: 56,
     responseRate: 35,
     lastUsed: "3 days ago",
@@ -373,12 +390,145 @@ const TEMPLATES = [
     category: "closing",
     subject: "Excited to Work Together!",
     preview: "Great! I'm attaching the contract and campaign details...",
+    body: "Great! I'm attaching the contract and campaign details for your review.\n\nKey details:\n- Campaign: {{campaign_name}}\n- Fee: {{agreed_fee}}\n- Deliverables: {{deliverables}}\n- Deadline: {{deadline}}\n\nPlease review and sign at your earliest convenience.\n\nBest,\n{{brand_name}}",
     uses: 103,
     responseRate: 92,
     lastUsed: "5 hours ago",
     favorite: false,
   },
 ];
+
+const TEMPLATE_STORAGE_KEY = "hudey-outreach-templates";
+
+function loadTemplates(): Template[] {
+  if (typeof window === "undefined") return DEFAULT_TEMPLATES;
+  try {
+    const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return DEFAULT_TEMPLATES;
+}
+
+function saveTemplates(templates: Template[]) {
+  try {
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
+  } catch { /* ignore */ }
+}
+
+// ── Template Editor Modal ────────────────────────────────────
+
+function TemplateEditorModal({
+  template,
+  onSave,
+  onClose,
+}: {
+  template: Template | null; // null = create new
+  onSave: (t: Template) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(template?.name || "");
+  const [category, setCategory] = useState(template?.category || "outreach");
+  const [subject, setSubject] = useState(template?.subject || "");
+  const [body, setBody] = useState(template?.body || "");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !subject.trim()) return;
+    onSave({
+      id: template?.id || Date.now(),
+      name: name.trim(),
+      category,
+      subject: subject.trim(),
+      preview: body.trim().slice(0, 80) + (body.trim().length > 80 ? "..." : ""),
+      body: body.trim(),
+      uses: template?.uses || 0,
+      responseRate: template?.responseRate || 0,
+      lastUsed: template?.lastUsed || "Never",
+      favorite: template?.favorite || false,
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">
+            {template ? "Edit Template" : "Create Template"}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Template Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Initial Outreach — Product Launch"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent bg-white"
+            >
+              <option value="outreach">Outreach</option>
+              <option value="follow-up">Follow-up</option>
+              <option value="negotiation">Negotiation</option>
+              <option value="closing">Closing</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject Line</label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Partnership Opportunity: {{campaign_name}}"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Message Body</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Write your template message here... Use {{variables}} for dynamic content."
+              rows={8}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent resize-none"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              Available variables: {"{{first_name}}"}, {"{{campaign_name}}"}, {"{{brand_name}}"}, {"{{proposed_fee}}"}, {"{{deliverables}}"}
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={!name.trim() || !subject.trim()}
+              className="flex-1 px-6 py-2.5 bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-300 text-white rounded-lg font-medium text-sm transition-colors"
+            >
+              {template ? "Save Changes" : "Create Template"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 // ── Loading Skeleton ─────────────────────────────────────────
 
@@ -412,6 +562,8 @@ export default function OutreachPage() {
   const [selectedFilter, setSelectedFilter] = useState<FilterKey>("all");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [templates, setTemplates] = useState<Template[]>(() => loadTemplates());
+  const [editingTemplate, setEditingTemplate] = useState<Template | null | "new">(null); // null=closed, "new"=create, Template=edit
 
   useEffect(() => {
     if (!user) return;
@@ -424,6 +576,41 @@ export default function OutreachPage() {
 
   function handleDataChange() {
     setTimeout(() => setRefreshKey((k) => k + 1), 500);
+  }
+
+  function handleSaveTemplate(t: Template) {
+    setTemplates((prev) => {
+      const exists = prev.find((p) => p.id === t.id);
+      const next = exists ? prev.map((p) => (p.id === t.id ? t : p)) : [...prev, t];
+      saveTemplates(next);
+      return next;
+    });
+    setEditingTemplate(null);
+  }
+
+  function handleDeleteTemplate(id: number) {
+    setTemplates((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      saveTemplates(next);
+      return next;
+    });
+  }
+
+  function handleDuplicateTemplate(t: Template) {
+    const copy: Template = { ...t, id: Date.now(), name: `${t.name} (Copy)`, uses: 0, responseRate: 0, lastUsed: "Never" };
+    setTemplates((prev) => {
+      const next = [...prev, copy];
+      saveTemplates(next);
+      return next;
+    });
+  }
+
+  function handleToggleFavorite(id: number) {
+    setTemplates((prev) => {
+      const next = prev.map((t) => t.id === id ? { ...t, favorite: !t.favorite } : t);
+      saveTemplates(next);
+      return next;
+    });
   }
 
   if (checking) {
@@ -1084,65 +1271,114 @@ export default function OutreachPage() {
                   <h2 className="text-xl font-bold text-gray-900">Message Templates</h2>
                   <p className="text-sm text-gray-500 mt-1">Pre-built templates for different outreach scenarios</p>
                 </div>
-                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                <button
+                  onClick={() => setEditingTemplate("new")}
+                  className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                >
                   <Plus className="w-4 h-4" />
                   Create Template
                 </button>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {TEMPLATES.map((template) => (
-                  <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900">{template.name}</h3>
-                          {template.favorite && (
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          )}
+              {templates.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                  <Mail className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 font-medium">No templates yet</p>
+                  <p className="text-sm text-gray-400 mt-1 mb-4">Create your first outreach template to get started</p>
+                  <button
+                    onClick={() => setEditingTemplate("new")}
+                    className="px-6 py-2.5 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Template
+                  </button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {templates.map((template) => (
+                    <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow group">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg font-bold text-gray-900 truncate">{template.name}</h3>
+                            <button
+                              onClick={() => handleToggleFavorite(template.id)}
+                              className="flex-shrink-0 p-0.5 hover:scale-110 transition-transform"
+                              title={template.favorite ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Star className={`w-4 h-4 ${template.favorite ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-400"}`} />
+                            </button>
+                          </div>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                            {template.category}
+                          </span>
                         </div>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                          {template.category}
-                        </span>
+                        <button
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete template"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
 
-                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="text-xs text-gray-500 mb-1">Subject:</div>
-                      <div className="text-sm font-medium text-gray-900 mb-3">{template.subject}</div>
-                      <div className="text-xs text-gray-500 mb-1">Preview:</div>
-                      <div className="text-sm text-gray-700">{template.preview}</div>
-                    </div>
+                      <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-500 mb-1">Subject:</div>
+                        <div className="text-sm font-medium text-gray-900 mb-3">{template.subject}</div>
+                        <div className="text-xs text-gray-500 mb-1">Preview:</div>
+                        <div className="text-sm text-gray-700">{template.preview}</div>
+                      </div>
 
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-lg font-bold text-gray-900">{template.uses}</div>
-                        <div className="text-xs text-gray-500">Uses</div>
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        <div className="text-center p-2 bg-gray-50 rounded">
+                          <div className="text-lg font-bold text-gray-900">{template.uses}</div>
+                          <div className="text-xs text-gray-500">Uses</div>
+                        </div>
+                        <div className="text-center p-2 bg-green-50 rounded">
+                          <div className="text-lg font-bold text-green-900">{template.responseRate}%</div>
+                          <div className="text-xs text-green-700">Response</div>
+                        </div>
+                        <div className="text-center p-2 bg-gray-50 rounded">
+                          <div className="text-xs font-semibold text-gray-900">Last Used</div>
+                          <div className="text-xs text-gray-500">{template.lastUsed}</div>
+                        </div>
                       </div>
-                      <div className="text-center p-2 bg-green-50 rounded">
-                        <div className="text-lg font-bold text-green-900">{template.responseRate}%</div>
-                        <div className="text-xs text-green-700">Response</div>
-                      </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-xs font-semibold text-gray-900">Last Used</div>
-                        <div className="text-xs text-gray-500">{template.lastUsed}</div>
-                      </div>
-                    </div>
 
-                    <div className="flex gap-2">
-                      <button className="flex-1 px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors">
-                        Use Template
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
-                        <Copy className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingTemplate(template)}
+                          className="flex-1 px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors"
+                        >
+                          Edit Template
+                        </button>
+                        <button
+                          onClick={() => setEditingTemplate(template)}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicateTemplate(template)}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+                          title="Duplicate"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Template Editor Modal */}
+              {editingTemplate !== null && (
+                <TemplateEditorModal
+                  template={editingTemplate === "new" ? null : editingTemplate}
+                  onSave={handleSaveTemplate}
+                  onClose={() => setEditingTemplate(null)}
+                />
+              )}
             </div>
           )}
 
@@ -1214,7 +1450,7 @@ export default function OutreachPage() {
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Top Performing Templates</h2>
                   <div className="space-y-4">
-                    {TEMPLATES.sort((a, b) => b.responseRate - a.responseRate).map((template) => (
+                    {[...templates].sort((a, b) => b.responseRate - a.responseRate).map((template) => (
                       <div key={template.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900 mb-1 truncate">{template.name}</div>

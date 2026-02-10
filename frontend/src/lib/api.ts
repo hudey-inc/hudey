@@ -477,6 +477,31 @@ export async function getAggregateOutreach(): Promise<AggregateOutreach> {
   };
 }
 
+// ── Outreach Inbox Count (lightweight) ──────────────────────────
+
+export async function getOutreachInboxCount(): Promise<number> {
+  const campaigns = await listCampaigns();
+  const results = await Promise.allSettled(
+    campaigns.map((c) => getEngagements(c.id))
+  );
+  let count = 0;
+  const cutoff = Date.now() - 48 * 60 * 60 * 1000; // 48h window
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    for (const e of r.value) {
+      if (e.status === "contacted") continue;
+      const lastMsg = e.message_history?.length > 0
+        ? e.message_history[e.message_history.length - 1]
+        : null;
+      const ts = e.updated_at || e.created_at;
+      if (ts && new Date(ts).getTime() > cutoff && lastMsg?.from !== "brand") {
+        count++;
+      }
+    }
+  }
+  return count;
+}
+
 // ── Aggregate Analytics ─────────────────────────────────────────
 
 export type AggregateAnalytics = {
