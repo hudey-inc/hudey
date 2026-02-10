@@ -593,6 +593,200 @@ export async function getAggregateAnalytics(): Promise<AggregateAnalytics> {
   };
 }
 
+// ── Full Analytics Dashboard ────────────────────────────────────
+
+export type FullAnalytics = AggregateAnalytics & {
+  /** Email delivery breakdown (sent, delivered, opened, clicked, bounced) per campaign */
+  emailBreakdown: {
+    campaignId: string;
+    campaignName: string;
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+  }[];
+  /** Every creator engagement across all campaigns */
+  allCreators: {
+    id: string;
+    name: string;
+    email: string;
+    platform: string;
+    status: string;
+    campaignId: string;
+    campaignName: string;
+    responded: boolean;
+    agreed: boolean;
+    responseTimeHours: number | null;
+    hasProposal: boolean;
+    feeGbp: number | null;
+  }[];
+  /** Engagement status funnel counts */
+  engagementFunnel: Record<string, number>;
+  /** Negotiation stats */
+  negotiationStats: {
+    activeNegotiations: number;
+    avgResponseTimeHours: number;
+  };
+  /** Platform breakdown derived from real creator data */
+  platformBreakdown: {
+    platform: string;
+    creators: number;
+    responded: number;
+    agreed: number;
+    declined: number;
+    responseRate: number;
+  }[];
+};
+
+export async function getFullAnalytics(): Promise<FullAnalytics> {
+  const campaigns = await listCampaigns();
+  const byStatus: Record<string, number> = {};
+  for (const c of campaigns) {
+    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+  }
+
+  const results = await Promise.allSettled(
+    campaigns.map(async (c) => {
+      const [email, engagements] = await Promise.all([
+        getEmailEvents(c.id),
+        getEngagements(c.id),
+      ]);
+      return { id: c.id, name: c.name, status: c.status, email, engagements };
+    })
+  );
+
+  let totalSent = 0, totalDelivered = 0, totalOpened = 0, totalClicked = 0;
+  let totalContacted = 0, totalAgreed = 0, totalDeclined = 0, totalResponded = 0;
+  const perCampaign: AggregateAnalytics["perCampaign"] = [];
+  const emailBreakdown: FullAnalytics["emailBreakdown"] = [];
+  const allCreators: FullAnalytics["allCreators"] = [];
+  const engagementFunnel: Record<string, number> = {};
+  const platformMap: Record<string, { creators: number; responded: number; agreed: number; declined: number }> = {};
+  const responseTimes: number[] = [];
+
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    const { id, name, status, email, engagements } = r.value;
+
+    // Email totals
+    totalSent += email.total_sent;
+    totalDelivered += email.delivered;
+    totalOpened += email.opened;
+    totalClicked += email.clicked;
+
+    // Email per-campaign breakdown
+    emailBreakdown.push({
+      campaignId: id,
+      campaignName: name,
+      sent: email.total_sent,
+      delivered: email.delivered,
+      opened: email.opened,
+      clicked: email.clicked,
+      bounced: email.bounced,
+    });
+
+    // Engagement stats
+    totalContacted += engagements.length;
+    const responded = engagements.filter((e) => e.status !== "contacted").length;
+    const agreed = engagements.filter((e) => e.status === "agreed").length;
+    const declined = engagements.filter((e) => e.status === "declined").length;
+    totalAgreed += agreed;
+    totalDeclined += declined;
+    totalResponded += responded;
+
+    perCampaign.push({
+      id, name, status,
+      creators: engagements.length,
+      responded,
+      agreed,
+      emailsSent: email.total_sent,
+      openRate: email.total_sent > 0 ? Math.round((email.opened / email.total_sent) * 100) : 0,
+    });
+
+    // Process each creator engagement
+    for (const e of engagements) {
+      // Funnel counts
+      engagementFunnel[e.status] = (engagementFunnel[e.status] || 0) + 1;
+
+      // Platform breakdown
+      const plat = (e.platform || "unknown").toLowerCase();
+      if (!platformMap[plat]) platformMap[plat] = { creators: 0, responded: 0, agreed: 0, declined: 0 };
+      platformMap[plat].creators++;
+      if (e.status !== "contacted") platformMap[plat].responded++;
+      if (e.status === "agreed") platformMap[plat].agreed++;
+      if (e.status === "declined") platformMap[plat].declined++;
+
+      // Response time
+      let responseTimeHours: number | null = null;
+      if (e.response_timestamp && e.created_at) {
+        const diff = new Date(e.response_timestamp).getTime() - new Date(e.created_at).getTime();
+        if (diff > 0) {
+          responseTimeHours = Math.round((diff / (1000 * 60 * 60)) * 10) / 10;
+          responseTimes.push(responseTimeHours);
+        }
+      }
+
+      // Fee from proposal
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const feeGbp = (e.latest_proposal as any)?.fee_gbp ?? (e.terms as any)?.fee_gbp ?? null;
+
+      allCreators.push({
+        id: e.creator_id,
+        name: e.creator_name || e.creator_id,
+        email: e.creator_email || "",
+        platform: plat,
+        status: e.status,
+        campaignId: id,
+        campaignName: name,
+        responded: e.status !== "contacted",
+        agreed: e.status === "agreed",
+        responseTimeHours,
+        hasProposal: !!e.latest_proposal,
+        feeGbp: typeof feeGbp === "number" ? feeGbp : null,
+      });
+    }
+  }
+
+  const platformBreakdown = Object.entries(platformMap)
+    .map(([platform, stats]) => ({
+      platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+      ...stats,
+      responseRate: stats.creators > 0 ? Math.round((stats.responded / stats.creators) * 100) : 0,
+    }))
+    .sort((a, b) => b.creators - a.creators);
+
+  const avgResponseTimeHours =
+    responseTimes.length > 0
+      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+      : 0;
+
+  return {
+    totalCampaigns: campaigns.length,
+    byStatus,
+    totalCreatorsContacted: totalContacted,
+    totalAgreed,
+    totalDeclined,
+    responseRate: totalContacted > 0 ? Math.round((totalResponded / totalContacted) * 100) : 0,
+    conversionRate: totalContacted > 0 ? Math.round((totalAgreed / totalContacted) * 100) : 0,
+    emailStats: {
+      totalSent,
+      deliveryRate: totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 0,
+      openRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
+      clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
+    },
+    perCampaign,
+    emailBreakdown,
+    allCreators,
+    engagementFunnel,
+    negotiationStats: {
+      activeNegotiations: engagementFunnel["negotiating"] || 0,
+      avgResponseTimeHours,
+    },
+    platformBreakdown,
+  };
+}
+
 // ── Aggregate Negotiations ──────────────────────────────────────
 
 export type AggregateNegotiations = {
