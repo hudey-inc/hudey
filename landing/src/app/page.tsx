@@ -22,11 +22,11 @@ import {
 const APP_URL = "https://app.hudey.co";
 
 const benefits = [
-  "Launch campaigns in minutes, not weeks",
-  "AI writes outreach that actually gets replies",
-  "Negotiate better deals on autopilot",
-  "Real-time tracking across every creator",
-  "Full analytics without the spreadsheets",
+  "AI finds perfect creators",
+  "AI writes personalized outreach",
+  "AI negotiates on your behalf",
+  "AI monitors every campaign",
+  "AI generates insights & reports",
 ];
 
 const stats = [
@@ -235,7 +235,7 @@ export default function LandingPage() {
             {/* Subheadline */}
             <p className="text-xl lg:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               From creator discovery to campaign reporting, Hudey&apos;s AI
-              agents handle everything so that you can focus on strategy, not
+              agents handle everything&mdash;so you can focus on strategy, not
               execution.
             </p>
 
