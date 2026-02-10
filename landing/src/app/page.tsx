@@ -185,6 +185,12 @@ export default function LandingPage() {
               >
                 Results
               </a>
+              <Link
+                href="/pricing"
+                className="text-sm font-medium text-gray-700 hover:text-[#2F4538] transition-colors"
+              >
+                Pricing
+              </Link>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
@@ -556,6 +562,11 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
+                  <Link href="/pricing" className="hover:text-white transition-colors">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
                   <a href="#testimonials" className="hover:text-white transition-colors">
                     Results
                   </a>
@@ -608,7 +619,7 @@ export default function LandingPage() {
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} Hudey Inc. All rights reserved.
+              &copy; {new Date().getFullYear()} Hudey All rights reserved.
             </p>
           </div>
         </div>

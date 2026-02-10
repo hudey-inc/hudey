@@ -23,7 +23,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Agreement to Terms</h2>
             <p>
-              By accessing or using Hudey (&quot;the Service&quot;), operated by Hudey Inc. (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.
+              By accessing or using Hudey (&quot;the Service&quot;), operated by Hudey (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.
             </p>
           </section>
 
@@ -57,14 +57,14 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Payment Terms</h2>
             <p>
-              Paid subscriptions are billed in advance on a recurring basis. All fees are non-refundable except as expressly set forth in our <Link href="/refund" className="text-indigo-600 hover:underline">Refund Policy</Link>. We reserve the right to change our pricing with 30 days&apos; notice. Payment processing is handled by Stripe, and you agree to Stripe&apos;s terms of service when making payments.
+              Paid subscriptions are billed in advance on a recurring basis. All fees are non-refundable except as expressly set forth in our <Link href="/refund" className="text-indigo-600 hover:underline">Refund Policy</Link>. We reserve the right to change our pricing with 30 days&apos; notice. Payment processing is handled by Paddle, our Merchant of Record, and you agree to Paddle&apos;s Checkout Buyer Terms when making payments.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Intellectual Property</h2>
             <p>
-              The Service, including all content, features, and functionality, is owned by Hudey Inc. and is protected by copyright, trademark, and other intellectual property laws. You retain ownership of any content you submit through the Service, but grant us a licence to use it as necessary to provide the Service.
+              The Service, including all content, features, and functionality, is owned by Hudey and is protected by copyright, trademark, and other intellectual property laws. You retain ownership of any content you submit through the Service, but grant us a licence to use it as necessary to provide the Service.
             </p>
           </section>
 
@@ -85,7 +85,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">9. Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, Hudey Inc. shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, revenue, data, or goodwill, whether arising from contract, tort, or otherwise, even if we have been advised of the possibility of such damages.
+              To the maximum extent permitted by law, Hudey shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, revenue, data, or goodwill, whether arising from contract, tort, or otherwise, even if we have been advised of the possibility of such damages.
             </p>
           </section>
 

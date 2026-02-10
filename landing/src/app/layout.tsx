@@ -23,9 +23,9 @@ export const metadata: Metadata = {
     "AI influencer platform",
     "influencer campaign tracking",
   ],
-  authors: [{ name: "Hudey Inc." }],
-  creator: "Hudey Inc.",
-  publisher: "Hudey Inc.",
+  authors: [{ name: "Hudey" }],
+  creator: "Hudey",
+  publisher: "Hudey",
   openGraph: {
     type: "website",
     locale: "en_US",
