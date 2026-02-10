@@ -1,14 +1,17 @@
 """Creator engagement repository - track outreach status per creator."""
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from backend.db.client import get_supabase
 
 logger = logging.getLogger(__name__)
 
 
-def upsert_engagement(campaign_id: str, creator_id: str, data: dict) -> str | None:
+def upsert_engagement(campaign_id: str, creator_id: str, data: dict) -> Optional[str]:
     """Insert or update a creator engagement. Returns engagement id or None."""
     sb = get_supabase()
     if not sb:
@@ -51,7 +54,7 @@ def get_engagements(campaign_id: str) -> list[dict]:
         return []
 
 
-def get_engagement(campaign_id: str, creator_id: str) -> dict | None:
+def get_engagement(campaign_id: str, creator_id: str) -> Optional[dict]:
     """Get a single engagement by campaign + creator."""
     sb = get_supabase()
     if not sb:
@@ -73,7 +76,7 @@ def get_engagement(campaign_id: str, creator_id: str) -> dict | None:
 
 
 def update_status(
-    campaign_id: str, creator_id: str, status: str, extras: dict | None = None
+    campaign_id: str, creator_id: str, status: str, extras: Optional[dict] = None
 ) -> bool:
     """Update engagement status and optional extra fields."""
     sb = get_supabase()
