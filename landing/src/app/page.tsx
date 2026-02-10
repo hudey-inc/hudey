@@ -99,8 +99,7 @@ const testimonials = [
     name: "Sarah Mitchell",
     role: "CMO, StyleCo",
     company: "Fashion & Lifestyle",
-    initials: "SM",
-    color: "bg-rose-100 text-rose-700",
+    image: "/testimonials/sarah.jpg",
     content:
       "We replaced a 4-person influencer team with Hudey. Not because we wanted to — because Hudey outperformed them. Campaigns launch in hours, not weeks, and our creator response rate tripled.",
     results: "+340% ROI",
@@ -109,8 +108,7 @@ const testimonials = [
     name: "Marcus Chen",
     role: "Growth Lead, TechFlow",
     company: "B2B SaaS",
-    initials: "MC",
-    color: "bg-blue-100 text-blue-700",
+    image: "/testimonials/marcus.jpg",
     content:
       "Our old process: research creators, write 200 emails, wait, follow up, negotiate rates manually. Now? We describe the campaign and Hudey handles the rest. Our cost per engagement dropped 45%.",
     results: "-45% cost per deal",
@@ -119,8 +117,7 @@ const testimonials = [
     name: "Emma Rodriguez",
     role: "Marketing Director, WellnessHub",
     company: "Health & Wellness",
-    initials: "ER",
-    color: "bg-emerald-100 text-emerald-700",
+    image: "/testimonials/emma.jpg",
     content:
       "The negotiation AI alone paid for itself in the first month. It consistently lands rates 30-40% below what creators initially quote — without damaging the relationship. That's the magic.",
     results: "38% lower rates",
@@ -459,11 +456,11 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex items-center gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-100">
-                  <div
-                    className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-sm sm:text-lg font-bold ${testimonial.color}`}
-                  >
-                    {testimonial.initials}
-                  </div>
+                  <img
+                    src={testimonial.image}
+                    alt={testimonial.name}
+                    className="w-10 h-10 sm:w-14 sm:h-14 rounded-full object-cover"
+                  />
                   <div>
                     <div className="font-bold text-sm sm:text-base text-gray-900">
                       {testimonial.name}
