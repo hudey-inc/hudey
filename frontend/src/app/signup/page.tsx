@@ -214,7 +214,7 @@ export default function SignupPage() {
             {/* Social Signup Button */}
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm text-gray-700 mb-6"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm text-gray-700"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -226,24 +226,24 @@ export default function SignupPage() {
             </button>
 
             {/* Divider */}
-            <div className="relative my-6">
+            <div className="relative my-4 sm:my-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200" />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">Or sign up with email</span>
+              <div className="relative flex justify-center text-xs sm:text-sm">
+                <span className="px-3 sm:px-4 bg-white text-gray-500">Or sign up with email</span>
               </div>
             </div>
 
             {/* Signup Form */}
             <form onSubmit={handleSignup}>
               {/* Full Name */}
-              <div className="mb-4">
-                <label htmlFor="fullName" className="block text-sm font-semibold text-gray-900 mb-2">
+              <div className="mb-3 sm:mb-4">
+                <label htmlFor="fullName" className="block text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
                   Full name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   <input
                     id="fullName"
                     name="fullName"
@@ -252,18 +252,18 @@ export default function SignupPage() {
                     onChange={handleChange}
                     placeholder="John Doe"
                     required
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Email */}
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
+              <div className="mb-3 sm:mb-4">
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
                   Work email
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   <input
                     id="email"
                     name="email"
@@ -272,18 +272,18 @@ export default function SignupPage() {
                     onChange={handleChange}
                     placeholder="you@company.com"
                     required
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Company */}
-              <div className="mb-4">
-                <label htmlFor="company" className="block text-sm font-semibold text-gray-900 mb-2">
+              <div className="mb-3 sm:mb-4">
+                <label htmlFor="company" className="block text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
                   Company name
                 </label>
                 <div className="relative">
-                  <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Building className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   <input
                     id="company"
                     name="company"
@@ -292,18 +292,18 @@ export default function SignupPage() {
                     onChange={handleChange}
                     placeholder="Acme Inc."
                     required
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               {/* Password */}
-              <div className="mb-4">
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-900 mb-2">
+              <div className="mb-3 sm:mb-4">
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                   <input
                     id="password"
                     name="password"
@@ -313,14 +313,14 @@ export default function SignupPage() {
                     placeholder="Create a strong password"
                     required
                     minLength={6}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
                 <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters</p>
               </div>
 
               {/* Terms Checkbox */}
-              <div className="flex items-start mb-6">
+              <div className="flex items-start mb-4 sm:mb-6">
                 <input
                   id="acceptTerms"
                   name="acceptTerms"
@@ -353,7 +353,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-400 text-white py-3.5 rounded-xl font-semibold text-base transition-all hover:shadow-lg hover:shadow-[#2F4538]/20 flex items-center justify-center gap-2 group"
+                className="w-full bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-400 text-white py-3 sm:py-3.5 rounded-xl font-semibold text-sm sm:text-base transition-all hover:shadow-lg hover:shadow-[#2F4538]/20 flex items-center justify-center gap-2 group"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -367,19 +367,19 @@ export default function SignupPage() {
             </form>
 
             {/* Trial Info */}
-            <div className="mt-6 p-4 bg-[#E8DCC8]/30 border border-[#E8DCC8] rounded-xl">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-[#D16B42] flex-shrink-0 mt-0.5" />
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#E8DCC8]/30 border border-[#E8DCC8] rounded-xl">
+              <div className="flex items-center sm:items-start gap-2.5 sm:gap-3">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D16B42] flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 mb-1">14-day free trial included</p>
-                  <p className="text-xs text-gray-600">No credit card required. Cancel anytime.</p>
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900">14-day free trial included</p>
+                  <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">No credit card required. Cancel anytime.</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Login Link */}
-          <p className="text-center mt-6 text-sm text-gray-600">
+          <p className="text-center mt-4 sm:mt-6 text-sm text-gray-600">
             Already have an account?{" "}
             <Link
               href="/login"
