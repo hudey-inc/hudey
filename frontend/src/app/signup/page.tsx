@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -13,6 +14,7 @@ import {
   Sparkles,
   Star,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
 
 export default function SignupPage() {
@@ -27,7 +29,32 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
   const supabase = createClient();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) router.replace("/");
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleGoogleSignup() {
+    setError("");
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = e.target;
@@ -214,7 +241,9 @@ export default function SignupPage() {
             {/* Social Signup Button */}
             <button
               type="button"
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm text-gray-700"
+              onClick={handleGoogleSignup}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm text-gray-700 disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -356,7 +385,7 @@ export default function SignupPage() {
                 className="w-full bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-400 text-white py-3 sm:py-3.5 rounded-xl font-semibold text-sm sm:text-base transition-all hover:shadow-lg hover:shadow-[#2F4538]/20 flex items-center justify-center gap-2 group"
               >
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
                     Create account
