@@ -153,6 +153,123 @@ def campaign_engagements(campaign_id: str, brand: dict = Depends(get_current_bra
     return get_engagements(campaign["id"])
 
 
+@router.post("/{campaign_id}/reply")
+def reply_to_creator(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+    """Send a reply to a creator within a campaign thread.
+
+    Body: { creator_id: str, message: str }
+
+    Appends the message to the engagement's message_history,
+    optionally sends via Resend, and returns the updated engagement.
+    """
+    from datetime import datetime, timezone
+    from backend.db.repositories.engagement_repo import (
+        get_engagement,
+        append_message,
+        update_status,
+    )
+
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    creator_id = body.get("creator_id", "").strip()
+    message_text = body.get("message", "").strip()
+
+    if not creator_id or not message_text:
+        raise HTTPException(status_code=400, detail="creator_id and message are required")
+
+    db_campaign_id = campaign["id"]
+    engagement = get_engagement(db_campaign_id, creator_id)
+    if not engagement:
+        raise HTTPException(status_code=404, detail="Engagement not found for this creator")
+
+    ts = datetime.now(timezone.utc).isoformat()
+
+    # Append brand message to history
+    msg = {"from": "brand", "body": message_text, "timestamp": ts}
+    append_message(db_campaign_id, creator_id, msg)
+
+    # If the engagement was "responded", advance to "negotiating"
+    current_status = engagement.get("status", "contacted")
+    if current_status == "responded":
+        update_status(db_campaign_id, creator_id, "negotiating")
+
+    # Attempt to send via Resend if email is available
+    email_id = None
+    creator_email = engagement.get("creator_email", "")
+    if creator_email:
+        try:
+            import os
+            resend_key = os.getenv("RESEND_API_KEY", "")
+            if resend_key:
+                import resend
+                resend.api_key = resend_key
+
+                from_addr = os.getenv("OUTREACH_FROM_EMAIL", "outreach@hudey.co")
+                campaign_name = campaign.get("name") or "your campaign"
+                subject = f"Re: {campaign_name}"
+
+                r = resend.Emails.send({
+                    "from": from_addr,
+                    "to": [creator_email],
+                    "subject": subject,
+                    "text": message_text,
+                    "headers": {"X-Entity-Ref-ID": db_campaign_id},
+                })
+                email_id = r.get("id") if isinstance(r, dict) else None
+                logger.info("Reply sent via Resend to %s (email_id=%s)", creator_email, email_id)
+        except Exception as e:
+            logger.warning("Failed to send reply via Resend to %s: %s", creator_email, e)
+
+    return {
+        "ok": True,
+        "email_id": email_id,
+        "message": msg,
+        "status": "negotiating" if current_status == "responded" else current_status,
+    }
+
+
+@router.patch("/{campaign_id}/engagements/{creator_id}/status")
+def update_engagement_status(
+    campaign_id: str,
+    creator_id: str,
+    body: dict,
+    brand: dict = Depends(get_current_brand),
+):
+    """Update engagement status manually.
+
+    Body: { status: "negotiating" | "agreed" | "declined", terms?: {...} }
+    """
+    from backend.db.repositories.engagement_repo import update_status, get_engagement
+
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    new_status = body.get("status", "").strip()
+    valid_statuses = {"contacted", "responded", "negotiating", "agreed", "declined"}
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+
+    db_campaign_id = campaign["id"]
+    engagement = get_engagement(db_campaign_id, creator_id)
+    if not engagement:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+
+    extras = {}
+    if body.get("terms"):
+        extras["terms"] = body["terms"]
+    if body.get("latest_proposal"):
+        extras["latest_proposal"] = body["latest_proposal"]
+
+    ok = update_status(db_campaign_id, creator_id, new_status, extras if extras else None)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to update status")
+
+    return {"ok": True, "status": new_status}
+
+
 @router.delete("/{campaign_id}")
 def delete_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     """Delete campaign. Verifies brand ownership. Prevents deletion of running campaigns."""

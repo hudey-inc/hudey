@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { AggregateOutreach } from "@/lib/api";
-import { getAggregateOutreach } from "@/lib/api";
+import { getAggregateOutreach, replyToCreator, updateEngagementStatus } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import {
   Mail,
@@ -11,6 +11,10 @@ import {
   Eye,
   ChevronDown,
   Users,
+  MessageSquare,
+  CheckCircle2,
+  XCircle,
+  Loader2,
 } from "lucide-react";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -122,10 +126,147 @@ function ResponseFunnel({
 
 // ── Campaign Breakdown Card ─────────────────────────────────
 
+function ReplyComposer({
+  campaignId,
+  creatorId,
+  onSent,
+}: {
+  campaignId: string;
+  creatorId: string;
+  onSent: (msg: { from: string; body: string; timestamp: string }) => void;
+}) {
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function handleSend() {
+    if (!text.trim() || sending) return;
+    setSending(true);
+    try {
+      const result = await replyToCreator(campaignId, creatorId, text.trim());
+      onSent(result.message);
+      setText("");
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
+        placeholder="Type a reply..."
+        className="flex-1 text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none transition-colors"
+        disabled={sending}
+      />
+      <button
+        onClick={handleSend}
+        disabled={!text.trim() || sending}
+        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg text-[12px] font-medium transition-colors flex items-center gap-1.5"
+      >
+        {sending ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : (
+          <Send className="w-3 h-3" />
+        )}
+        Send
+      </button>
+    </div>
+  );
+}
+
+function StatusActions({
+  campaignId,
+  creatorId,
+  currentStatus,
+  onUpdated,
+}: {
+  campaignId: string;
+  creatorId: string;
+  currentStatus: string;
+  onUpdated: (newStatus: string) => void;
+}) {
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  async function handleStatusChange(newStatus: string) {
+    setUpdating(newStatus);
+    try {
+      await updateEngagementStatus(campaignId, creatorId, newStatus);
+      onUpdated(newStatus);
+    } catch {
+      // Silently fail
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  // Only show status actions for certain states
+  if (currentStatus === "contacted") return null;
+
+  return (
+    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
+      <span className="text-[10px] text-gray-400 mr-1">Mark as:</span>
+      {currentStatus !== "agreed" && (
+        <button
+          onClick={() => handleStatusChange("agreed")}
+          disabled={updating !== null}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+        >
+          {updating === "agreed" ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-3 h-3" />
+          )}
+          Agreed
+        </button>
+      )}
+      {currentStatus !== "declined" && (
+        <button
+          onClick={() => handleStatusChange("declined")}
+          disabled={updating !== null}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+        >
+          {updating === "declined" ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <XCircle className="w-3 h-3" />
+          )}
+          Declined
+        </button>
+      )}
+      {currentStatus !== "negotiating" && currentStatus !== "contacted" && (
+        <button
+          onClick={() => handleStatusChange("negotiating")}
+          disabled={updating !== null}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+        >
+          {updating === "negotiating" ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <MessageSquare className="w-3 h-3" />
+          )}
+          Negotiating
+        </button>
+      )}
+    </div>
+  );
+}
+
 function CampaignBreakdown({
   item,
+  onDataChange,
 }: {
   item: AggregateOutreach["perCampaign"][number];
+  onDataChange: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -438,6 +579,21 @@ function CampaignBreakdown({
                               </pre>
                             </div>
                           )}
+                          {/* Reply composer — show for active engagements */}
+                          {eng.status !== "declined" && eng.status !== "agreed" && (
+                            <ReplyComposer
+                              campaignId={item.campaignId}
+                              creatorId={eng.creator_id}
+                              onSent={() => onDataChange()}
+                            />
+                          )}
+                          {/* Status actions */}
+                          <StatusActions
+                            campaignId={item.campaignId}
+                            creatorId={eng.creator_id}
+                            currentStatus={eng.status}
+                            onUpdated={() => onDataChange()}
+                          />
                         </div>
                       </details>
                     );
@@ -486,6 +642,7 @@ export default function OutreachPage() {
   const { user, checking } = useRequireAuth();
   const [data, setData] = useState<AggregateOutreach | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -493,7 +650,12 @@ export default function OutreachPage() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user, refreshKey]);
+
+  function handleDataChange() {
+    // Debounced refresh after reply/status change
+    setTimeout(() => setRefreshKey((k) => k + 1), 500);
+  }
 
   if (checking) {
     return (
@@ -618,7 +780,7 @@ export default function OutreachPage() {
               </h3>
               <div className="space-y-3">
                 {data.perCampaign.map((item) => (
-                  <CampaignBreakdown key={item.campaignId} item={item} />
+                  <CampaignBreakdown key={item.campaignId} item={item} onDataChange={handleDataChange} />
                 ))}
               </div>
             </div>
