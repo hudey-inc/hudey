@@ -21,6 +21,8 @@ import {
   LayoutGrid,
   Command,
   Bot,
+  Menu,
+  X,
 } from "lucide-react";
 
 const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund"];
@@ -37,8 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-[1400px] mx-auto p-8">{children}</div>
+      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+        <div className="max-w-[1400px] mx-auto px-4 py-6 sm:p-8">{children}</div>
       </main>
     </div>
   );
@@ -150,6 +152,7 @@ function Sidebar() {
   const [showCampaignsSub, setShowCampaignsSub] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
@@ -200,6 +203,11 @@ function Sidebar() {
     }
   }, [notificationsOpen]);
 
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -220,8 +228,8 @@ function Sidebar() {
     (c) => c.status === "awaiting_approval"
   ).length;
 
-  return (
-    <aside className="w-[220px] bg-[#fbfbfb] border-r border-[#ebebeb] flex flex-col flex-shrink-0 relative">
+  const sidebarContent = (
+    <>
       {/* Brand */}
       <div className="p-4">
         <Link
@@ -495,6 +503,119 @@ function Sidebar() {
         onClose={handleCloseSearch}
         campaigns={campaigns}
       />
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <Menu className="w-5 h-5 text-gray-700" />
+        </button>
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-gray-900 rounded flex items-center justify-center text-white text-xs font-bold">
+            H
+          </div>
+          <span className="font-semibold text-sm text-gray-900">Hudey</span>
+        </Link>
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="p-1.5 -mr-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <Search className="w-5 h-5 text-gray-700" />
+        </button>
+      </div>
+
+      {/* Mobile search overlay (rendered outside sidebar so it works when sidebar closed) */}
+      {searchOpen && (
+        <div className="md:hidden fixed inset-0 z-[70] bg-black/40" onClick={handleCloseSearch}>
+          <div className="px-4 pt-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100">
+                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search campaigns..."
+                  autoFocus
+                  onChange={(e) => {
+                    const q = e.target.value;
+                    // Simple inline search for mobile
+                    void q;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") handleCloseSearch();
+                  }}
+                  className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400"
+                />
+                <button onClick={handleCloseSearch} className="p-1">
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+              <div className="max-h-[50vh] overflow-y-auto">
+                {campaigns.slice(0, 8).map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      handleCloseSearch();
+                      router.push(`/campaigns/${c.short_id || c.id}`);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <Target className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-gray-900 truncate">{c.name}</p>
+                    </div>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                        c.status === "running"
+                          ? "bg-green-100 text-green-700"
+                          : c.status === "completed"
+                          ? "bg-gray-100 text-gray-600"
+                          : c.status === "awaiting_approval"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {c.status.replace(/_/g, " ")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/40"
+          onClick={() => setMobileOpen(false)}
+        >
+          <aside
+            className="w-[280px] h-full bg-[#fbfbfb] border-r border-[#ebebeb] flex flex-col relative shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-[220px] bg-[#fbfbfb] border-r border-[#ebebeb] flex-col flex-shrink-0 relative">
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

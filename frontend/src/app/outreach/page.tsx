@@ -56,14 +56,14 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-lg transition-shadow">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 hover:shadow-lg transition-shadow">
       <div className="flex items-center gap-3 mb-3">
         <div className={`p-2 rounded-lg ${color}`}>
           <Icon className="w-4 h-4" />
         </div>
         <p className="text-sm text-gray-500">{label}</p>
       </div>
-      <p className="text-3xl font-semibold text-gray-900">{value}</p>
+      <p className="text-2xl sm:text-3xl font-semibold text-gray-900">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
     </div>
   );
@@ -164,7 +164,7 @@ function CampaignBreakdown({
               <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
                 Email Delivery
               </p>
-              <div className="flex items-center gap-4 text-[13px]">
+              <div className="flex items-center gap-3 sm:gap-4 text-[13px] flex-wrap">
                 <span className="text-gray-900 font-medium">
                   {item.email.total_sent} sent
                 </span>
@@ -506,7 +506,7 @@ export default function OutreachPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-gray-900">Outreach</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Outreach</h1>
         <p className="text-sm text-gray-500 mt-1">
           Email delivery and creator response tracking across all campaigns
         </p>

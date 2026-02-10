@@ -127,7 +127,7 @@ function MetricCard({
   const data = chartData.map((v, i) => ({ value: v, idx: i }));
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 hover:shadow-lg transition-shadow">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-1">
         <p className="text-sm text-gray-500">{title}</p>
         {trend && (
@@ -142,7 +142,7 @@ function MetricCard({
           </span>
         )}
       </div>
-      <p className="text-4xl font-semibold text-gray-900 mb-4">{value}</p>
+      <p className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4">{value}</p>
       <div className="h-16">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
@@ -418,7 +418,7 @@ function HomeContent() {
     <div>
       {/* Greeting */}
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-gray-900">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
           {getGreeting()}
         </h1>
       </div>
@@ -449,18 +449,19 @@ function HomeContent() {
 
       {/* Campaign list */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-gray-900">
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h2 className="text-base sm:text-lg font-medium text-gray-900 truncate">
             {filter
               ? `${filter.charAt(0).toUpperCase() + filter.slice(1)} Campaigns`
               : "All Campaigns"}
           </h2>
           <Link
             href="/campaigns/new"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-medium transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 py-2 sm:px-4 flex items-center gap-2 text-sm font-medium transition-colors flex-shrink-0"
           >
             <Plus className="w-4 h-4" />
-            New Campaign
+            <span className="hidden sm:inline">New Campaign</span>
+            <span className="sm:hidden">New</span>
           </Link>
         </div>
 
@@ -474,7 +475,7 @@ function HomeContent() {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-2 sm:p-4">
             <div className="space-y-1">
               {filteredCampaigns.map((c) => (
                 <CampaignRow key={c.id} campaign={c} />
