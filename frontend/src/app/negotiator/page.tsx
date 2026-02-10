@@ -30,6 +30,10 @@ import {
   Copy,
   ThumbsUp,
   ThumbsDown,
+  Plus,
+  X,
+  Star,
+  Trash2,
 } from "lucide-react";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -857,50 +861,220 @@ function computeAnalytics(data: AggregateNegotiations) {
   };
 }
 
-// ── Negotiation templates (static, for display) ─────────────
+// ── Negotiation Templates ────────────────────────────────────
 
-const TEMPLATES = [
+type NegotiatorTemplate = {
+  id: number;
+  name: string;
+  type: string;
+  subject: string;
+  body: string;
+  tone: string;
+  successRate: number;
+  usedCount: number;
+  lastUpdated: string;
+  favorite: boolean;
+};
+
+const DEFAULT_TEMPLATES: NegotiatorTemplate[] = [
   {
     id: 1,
     name: "Standard Product Launch",
     type: "outreach",
     subject: "Partnership Opportunity: {{campaign_name}}",
+    body: "Hi {{first_name}},\n\nWe're launching {{campaign_name}} and think your content style would be a great fit for our audience.\n\nWe'd love to discuss a partnership. Our typical packages include:\n- Fee: {{proposed_fee}}\n- Deliverables: {{deliverables}}\n- Timeline: {{timeline}}\n\nWould you be interested in learning more?\n\nBest,\n{{brand_name}}",
     tone: "professional",
     successRate: 68,
     usedCount: 142,
     lastUpdated: "Jan 2026",
+    favorite: false,
   },
   {
     id: 2,
     name: "Counter Offer — Budget Conscious",
     type: "counter",
     subject: "Re: Partnership Discussion",
+    body: "Hi {{first_name}},\n\nThank you for your proposal! We really value your work and would love to move forward.\n\nBased on our campaign budget, we'd like to propose:\n- Fee: {{counter_fee}} (with performance bonus potential)\n- Deliverables: {{deliverables}}\n- Timeline: {{timeline}}\n\nWe believe this structure benefits both sides. Let me know your thoughts!\n\nBest,\n{{brand_name}}",
     tone: "friendly",
     successRate: 72,
     usedCount: 89,
     lastUpdated: "Jan 2026",
+    favorite: false,
   },
   {
     id: 3,
     name: "High-Value Creator Outreach",
     type: "outreach",
     subject: "Exclusive Partnership Opportunity",
+    body: "Hi {{first_name}},\n\nI've been following your work and I'm truly impressed by your engagement and content quality.\n\nWe're looking for a select few creators for an exclusive campaign — {{campaign_name}}. This is a premium partnership with:\n- Competitive fee: {{proposed_fee}}\n- Creative freedom on deliverables\n- Long-term collaboration potential\n\nWould you be open to discussing this further?\n\nBest regards,\n{{brand_name}}",
     tone: "premium",
     successRate: 81,
     usedCount: 56,
     lastUpdated: "Jan 2026",
+    favorite: true,
   },
   {
     id: 4,
     name: "Performance-Based Proposal",
     type: "offer",
     subject: "Performance Partnership Proposal",
+    body: "Hi {{first_name}},\n\nWe'd love to propose a performance-based partnership for {{campaign_name}}.\n\nStructure:\n- Base fee: {{base_fee}}\n- Performance bonus: {{bonus_structure}}\n- Deliverables: {{deliverables}}\n\nThis model rewards great content and ensures alignment between both parties.\n\nInterested? Let's chat!\n\nBest,\n{{brand_name}}",
     tone: "professional",
     successRate: 75,
     usedCount: 103,
     lastUpdated: "Jan 2026",
+    favorite: false,
   },
 ];
+
+const NEG_TEMPLATE_STORAGE_KEY = "hudey-negotiator-templates";
+
+function loadNegTemplates(): NegotiatorTemplate[] {
+  if (typeof window === "undefined") return DEFAULT_TEMPLATES;
+  try {
+    const saved = localStorage.getItem(NEG_TEMPLATE_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return DEFAULT_TEMPLATES;
+}
+
+function saveNegTemplates(templates: NegotiatorTemplate[]) {
+  try {
+    localStorage.setItem(NEG_TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
+  } catch { /* ignore */ }
+}
+
+// ── Negotiator Template Editor Modal ────────────────────────
+
+function NegTemplateEditorModal({
+  template,
+  onSave,
+  onClose,
+}: {
+  template: NegotiatorTemplate | null;
+  onSave: (t: NegotiatorTemplate) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(template?.name || "");
+  const [type, setType] = useState(template?.type || "outreach");
+  const [tone, setTone] = useState(template?.tone || "professional");
+  const [subject, setSubject] = useState(template?.subject || "");
+  const [body, setBody] = useState(template?.body || "");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !subject.trim()) return;
+    onSave({
+      id: template?.id || Date.now(),
+      name: name.trim(),
+      type,
+      subject: subject.trim(),
+      body: body.trim(),
+      tone,
+      successRate: template?.successRate || 0,
+      usedCount: template?.usedCount || 0,
+      lastUpdated: new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" }),
+      favorite: template?.favorite || false,
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">
+            {template ? "Edit Template" : "Create Template"}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Template Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Counter Offer — Budget Conscious"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent bg-white"
+              >
+                <option value="outreach">Outreach</option>
+                <option value="counter">Counter Offer</option>
+                <option value="offer">Offer</option>
+                <option value="follow-up">Follow-up</option>
+                <option value="closing">Closing</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Tone</label>
+              <select
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent bg-white"
+              >
+                <option value="professional">Professional</option>
+                <option value="friendly">Friendly</option>
+                <option value="premium">Premium</option>
+                <option value="casual">Casual</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject Line</label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Re: Partnership Discussion"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Message Body</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Write your negotiation template here... Use {{variables}} for dynamic content."
+              rows={8}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent resize-none"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">
+              Variables: {"{{first_name}}"}, {"{{campaign_name}}"}, {"{{brand_name}}"}, {"{{proposed_fee}}"}, {"{{counter_fee}}"}, {"{{deliverables}}"}, {"{{timeline}}"}
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={!name.trim() || !subject.trim()}
+              className="flex-1 px-6 py-2.5 bg-[#2F4538] hover:bg-[#1f2f26] disabled:bg-gray-300 text-white rounded-lg font-medium text-sm transition-colors"
+            >
+              {template ? "Save Changes" : "Create Template"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 // ── Main Page ────────────────────────────────────────────────
 
@@ -910,9 +1084,46 @@ export default function NegotiatorPage() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedTab, setSelectedTab] = useState<TabKey>("active");
+  const [templates, setTemplates] = useState<NegotiatorTemplate[]>(() => loadNegTemplates());
+  const [editingTemplate, setEditingTemplate] = useState<NegotiatorTemplate | null | "new">(null);
 
   function handleDataChange() {
     setRefreshKey((k) => k + 1);
+  }
+
+  function handleSaveTemplate(t: NegotiatorTemplate) {
+    setTemplates((prev) => {
+      const exists = prev.find((p) => p.id === t.id);
+      const next = exists ? prev.map((p) => (p.id === t.id ? t : p)) : [...prev, t];
+      saveNegTemplates(next);
+      return next;
+    });
+    setEditingTemplate(null);
+  }
+
+  function handleDeleteTemplate(id: number) {
+    setTemplates((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      saveNegTemplates(next);
+      return next;
+    });
+  }
+
+  function handleDuplicateTemplate(t: NegotiatorTemplate) {
+    const copy: NegotiatorTemplate = { ...t, id: Date.now(), name: `${t.name} (Copy)`, usedCount: 0, successRate: 0, lastUpdated: "Never" };
+    setTemplates((prev) => {
+      const next = [...prev, copy];
+      saveNegTemplates(next);
+      return next;
+    });
+  }
+
+  function handleToggleFavorite(id: number) {
+    setTemplates((prev) => {
+      const next = prev.map((t) => t.id === id ? { ...t, favorite: !t.favorite } : t);
+      saveNegTemplates(next);
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -1143,61 +1354,115 @@ export default function NegotiatorPage() {
                   <h2 className="text-xl font-bold text-gray-900">Negotiation Templates</h2>
                   <p className="text-sm text-gray-500 mt-1">AI-powered message templates for different negotiation scenarios</p>
                 </div>
-                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
+                <button
+                  onClick={() => setEditingTemplate("new")}
+                  className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
                   Create Template
                 </button>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {TEMPLATES.map((template) => (
-                  <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">{template.name}</h3>
-                        <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded font-medium text-xs">
-                            {template.type}
-                          </span>
-                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-medium text-xs">
-                            {template.tone}
-                          </span>
+              {templates.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                  <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 font-medium">No negotiation templates yet</p>
+                  <p className="text-sm text-gray-400 mt-1 mb-4">Create your first template to streamline negotiations</p>
+                  <button
+                    onClick={() => setEditingTemplate("new")}
+                    className="px-6 py-2.5 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Template
+                  </button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {templates.map((template) => (
+                    <div key={template.id} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow group">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg font-bold text-gray-900 truncate">{template.name}</h3>
+                            <button
+                              onClick={() => handleToggleFavorite(template.id)}
+                              className="flex-shrink-0 p-0.5 hover:scale-110 transition-transform"
+                              title={template.favorite ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Star className={`w-4 h-4 ${template.favorite ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-400"}`} />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded font-medium text-xs">
+                              {template.type}
+                            </span>
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-medium text-xs">
+                              {template.tone}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-500 mb-4">
+                            <span className="font-medium">Subject:</span> {template.subject}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 mb-4">
-                          <span className="font-medium">Subject:</span> {template.subject}
+                        <button
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete template"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center p-3 bg-gray-50 rounded-lg">
+                          <div className="text-2xl font-bold text-gray-900">{template.successRate}%</div>
+                          <div className="text-xs text-gray-500">Success Rate</div>
+                        </div>
+                        <div className="text-center p-3 bg-gray-50 rounded-lg">
+                          <div className="text-2xl font-bold text-gray-900">{template.usedCount}</div>
+                          <div className="text-xs text-gray-500">Times Used</div>
+                        </div>
+                        <div className="text-center p-3 bg-gray-50 rounded-lg">
+                          <div className="text-xs text-gray-900 font-semibold">Updated</div>
+                          <div className="text-xs text-gray-500">{template.lastUpdated}</div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-gray-900">{template.successRate}%</div>
-                        <div className="text-xs text-gray-500">Success Rate</div>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-gray-900">{template.usedCount}</div>
-                        <div className="text-xs text-gray-500">Times Used</div>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <div className="text-xs text-gray-900 font-semibold">Updated</div>
-                        <div className="text-xs text-gray-500">{template.lastUpdated}</div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingTemplate(template)}
+                          className="flex-1 px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors"
+                        >
+                          Edit Template
+                        </button>
+                        <button
+                          onClick={() => setEditingTemplate(template)}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDuplicateTemplate(template)}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
+                          title="Duplicate"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
 
-                    <div className="flex gap-2">
-                      <button className="flex-1 px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors">
-                        Use Template
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
-                        <Copy className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Template Editor Modal */}
+              {editingTemplate !== null && (
+                <NegTemplateEditorModal
+                  template={editingTemplate === "new" ? null : editingTemplate}
+                  onSave={handleSaveTemplate}
+                  onClose={() => setEditingTemplate(null)}
+                />
+              )}
             </div>
           )}
 
