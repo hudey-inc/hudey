@@ -672,14 +672,9 @@ export default function OutreachPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="px-6 lg:px-8 py-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl flex items-center justify-center flex-shrink-0">
-                <Inbox className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Outreach</h1>
-                <p className="text-gray-500 text-sm mt-0.5">Manage all your influencer communications</p>
-              </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Outreach</h1>
+              <p className="text-gray-500 text-sm mt-1">Manage all your influencer communications</p>
             </div>
 
             {/* Quick Stats */}

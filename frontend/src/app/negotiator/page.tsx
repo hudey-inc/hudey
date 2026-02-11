@@ -1176,19 +1176,14 @@ export default function NegotiatorPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="px-6 lg:px-8 py-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl flex items-center justify-center flex-shrink-0">
-                <Bot className="w-6 h-6 text-white" />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">AI Negotiator</h1>
+                <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
+                  NEW
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">AI Negotiator</h1>
-                  <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
-                    NEW
-                  </span>
-                </div>
-                <p className="text-gray-500 text-sm mt-0.5">Automated influencer outreach and negotiation powered by AI</p>
-              </div>
+              <p className="text-gray-500 text-sm mt-1">Automated influencer outreach and negotiation powered by AI</p>
             </div>
 
             {/* Quick Stats */}

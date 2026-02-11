@@ -19,7 +19,6 @@ import {
   MessageSquare,
   Handshake,
   Sparkles,
-  LayoutDashboard,
 } from "lucide-react";
 import {
   LineChart,
@@ -520,18 +519,13 @@ function HomeContent() {
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-4 sm:px-8 py-5 sm:py-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl flex items-center justify-center flex-shrink-0">
-              <LayoutDashboard className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{getGreeting()}</h1>
-              <p className="text-sm text-gray-600">
-                {campaigns.length === 0
-                  ? "Get started by creating your first campaign"
-                  : `${activeCampaigns.length} active campaign${activeCampaigns.length !== 1 ? "s" : ""} running`}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">{getGreeting()}</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {campaigns.length === 0
+                ? "Get started by creating your first campaign"
+                : `${activeCampaigns.length} active campaign${activeCampaigns.length !== 1 ? "s" : ""} running`}
+            </p>
           </div>
         </div>
       </div>
