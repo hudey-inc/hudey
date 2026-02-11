@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+from typing import Optional
 
 import requests as http_requests
 from fastapi import Depends, HTTPException, status
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 # Cache JWKS so we don't fetch on every request
-_jwks_cache: dict | None = None
+_jwks_cache: Optional[dict] = None
 _public_keys_cache: dict = {}  # kid -> public key object
 
 
