@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import type { FullAnalytics } from "@/lib/api";
 import { getFullAnalytics } from "@/lib/api";
@@ -28,6 +28,8 @@ import {
   Send,
   Eye,
   Handshake,
+  ChevronDown,
+  X,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────
@@ -105,6 +107,96 @@ function getPlatformIcon(platform: string) {
   }
 }
 
+// ── CSV Export ───────────────────────────────────────────────
+
+function downloadCSV(filename: string, headers: string[], rows: string[][]) {
+  const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = [headers.map(escape).join(","), ...rows.map((r) => r.map(escape).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportTab(tab: TabKey, data: FullAnalytics, campaignFilter: string) {
+  const filtered = campaignFilter === "all"
+    ? data
+    : {
+        ...data,
+        perCampaign: data.perCampaign.filter((c) => c.id === campaignFilter),
+        allCreators: data.allCreators.filter((c) => c.campaignId === campaignFilter),
+        emailBreakdown: data.emailBreakdown.filter((e) => e.campaignId === campaignFilter),
+      };
+
+  const ts = new Date().toISOString().slice(0, 10);
+
+  switch (tab) {
+    case "overview":
+      downloadCSV(`analytics-overview-${ts}.csv`,
+        ["Metric", "Value"],
+        [
+          ["Total Campaigns", String(filtered.totalCampaigns)],
+          ["Creators Contacted", String(filtered.totalCreatorsContacted)],
+          ["Deals Agreed", String(filtered.totalAgreed)],
+          ["Declined", String(filtered.totalDeclined)],
+          ["Response Rate", `${filtered.responseRate}%`],
+          ["Conversion Rate", `${filtered.conversionRate}%`],
+          ["Emails Sent", String(filtered.emailStats.totalSent)],
+          ["Email Open Rate", `${filtered.emailStats.openRate}%`],
+          ["Email Click Rate", `${filtered.emailStats.clickRate}%`],
+          ["Email Delivery Rate", `${filtered.emailStats.deliveryRate}%`],
+        ]
+      );
+      break;
+
+    case "campaigns":
+      downloadCSV(`analytics-campaigns-${ts}.csv`,
+        ["Campaign", "Status", "Creators", "Responded", "Agreed", "Emails Sent", "Open Rate"],
+        filtered.perCampaign.map((c) => [
+          c.name, c.status, String(c.creators), String(c.responded),
+          String(c.agreed), String(c.emailsSent), `${c.openRate}%`,
+        ])
+      );
+      break;
+
+    case "creators":
+      downloadCSV(`analytics-creators-${ts}.csv`,
+        ["Name", "Email", "Platform", "Campaign", "Status", "Response Time (h)", "Proposed Fee (£)"],
+        filtered.allCreators.map((c) => [
+          c.name, c.email, c.platform, c.campaignName, c.status,
+          c.responseTimeHours !== null ? String(c.responseTimeHours) : "",
+          c.feeGbp !== null ? String(c.feeGbp) : "",
+        ])
+      );
+      break;
+
+    case "email":
+      downloadCSV(`analytics-email-${ts}.csv`,
+        ["Campaign", "Sent", "Delivered", "Opened", "Clicked", "Bounced"],
+        filtered.emailBreakdown.map((e) => [
+          e.campaignName, String(e.sent), String(e.delivered),
+          String(e.opened), String(e.clicked), String(e.bounced),
+        ])
+      );
+      break;
+
+    case "engagement":
+      downloadCSV(`analytics-engagement-${ts}.csv`,
+        ["Status", "Count", "Percentage"],
+        Object.entries(filtered.engagementFunnel).map(([status, count]) => [
+          status, String(count),
+          filtered.totalCreatorsContacted > 0
+            ? `${Math.round((count / filtered.totalCreatorsContacted) * 100)}%`
+            : "0%",
+        ])
+      );
+      break;
+  }
+}
+
 // ── Loading Skeleton ─────────────────────────────────────────
 
 function AnalyticsSkeleton() {
@@ -138,6 +230,93 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<TabKey>("overview");
   const [refreshing, setRefreshing] = useState(false);
+  const [campaignFilter, setCampaignFilter] = useState<string>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Derive filtered data from campaignFilter
+  const filteredData: FullAnalytics | null = data
+    ? campaignFilter === "all"
+      ? data
+      : (() => {
+          const pc = data.perCampaign.filter((c) => c.id === campaignFilter);
+          const creators = data.allCreators.filter((c) => c.campaignId === campaignFilter);
+          const emails = data.emailBreakdown.filter((e) => e.campaignId === campaignFilter);
+          const totalContacted = creators.length;
+          const totalAgreed = creators.filter((c) => c.agreed).length;
+          const totalDeclined = creators.filter((c) => c.status === "declined").length;
+          const totalResponded = creators.filter((c) => c.responded).length;
+          const funnel: Record<string, number> = {};
+          for (const c of creators) funnel[c.status] = (funnel[c.status] || 0) + 1;
+          const emailTotals = emails.reduce(
+            (acc, e) => ({
+              sent: acc.sent + e.sent,
+              delivered: acc.delivered + e.delivered,
+              opened: acc.opened + e.opened,
+              clicked: acc.clicked + e.clicked,
+              bounced: acc.bounced + e.bounced,
+            }),
+            { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 }
+          );
+          const platMap: Record<string, { creators: number; responded: number; agreed: number; declined: number }> = {};
+          for (const c of creators) {
+            const p = c.platform || "unknown";
+            if (!platMap[p]) platMap[p] = { creators: 0, responded: 0, agreed: 0, declined: 0 };
+            platMap[p].creators++;
+            if (c.responded) platMap[p].responded++;
+            if (c.agreed) platMap[p].agreed++;
+            if (c.status === "declined") platMap[p].declined++;
+          }
+          return {
+            ...data,
+            totalCampaigns: pc.length,
+            byStatus: pc.reduce((acc, c) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; }, {} as Record<string, number>),
+            totalCreatorsContacted: totalContacted,
+            totalAgreed,
+            totalDeclined,
+            responseRate: totalContacted > 0 ? Math.round((totalResponded / totalContacted) * 100) : 0,
+            conversionRate: totalContacted > 0 ? Math.round((totalAgreed / totalContacted) * 100) : 0,
+            emailStats: {
+              totalSent: emailTotals.sent,
+              deliveryRate: emailTotals.sent > 0 ? Math.round((emailTotals.delivered / emailTotals.sent) * 100) : 0,
+              openRate: emailTotals.sent > 0 ? Math.round((emailTotals.opened / emailTotals.sent) * 100) : 0,
+              clickRate: emailTotals.sent > 0 ? Math.round((emailTotals.clicked / emailTotals.sent) * 100) : 0,
+            },
+            perCampaign: pc,
+            emailBreakdown: emails,
+            allCreators: creators,
+            engagementFunnel: funnel,
+            negotiationStats: {
+              activeNegotiations: funnel["negotiating"] || 0,
+              avgResponseTimeHours: (() => {
+                const times = creators.filter((c) => c.responseTimeHours !== null).map((c) => c.responseTimeHours!);
+                return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+              })(),
+            },
+            platformBreakdown: Object.entries(platMap).map(([platform, s]) => ({
+              platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+              ...s,
+              responseRate: s.creators > 0 ? Math.round((s.responded / s.creators) * 100) : 0,
+            })).sort((a, b) => b.creators - a.creators),
+          };
+        })()
+    : null;
+
+  const handleExport = useCallback(() => {
+    if (!data) return;
+    exportTab(selectedTab, data, campaignFilter);
+  }, [data, selectedTab, campaignFilter]);
 
   const fetchData = () => {
     if (!user) return;
@@ -180,14 +359,77 @@ export default function AnalyticsPage() {
         <div className="px-4 sm:px-8 py-4 sm:py-5">
           {/* Top bar: controls */}
           <div className="flex items-center justify-end gap-2 sm:gap-3 mb-4">
-            <button className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span className="hidden sm:inline">Filters</span>
-            </button>
-            <button className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2">
+            {/* Campaign Filter */}
+            <div className="relative" ref={filterRef}>
+              <button
+                onClick={() => setFilterOpen(!filterOpen)}
+                className={`px-3 sm:px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  campaignFilter !== "all"
+                    ? "border-[#2F4538] bg-[#2F4538]/5 text-[#2F4538]"
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  {campaignFilter === "all"
+                    ? "All Campaigns"
+                    : data?.perCampaign.find((c) => c.id === campaignFilter)?.name || "Filter"}
+                </span>
+                {campaignFilter !== "all" ? (
+                  <X
+                    className="w-3.5 h-3.5 ml-1 hover:text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCampaignFilter("all");
+                      setFilterOpen(false);
+                    }}
+                  />
+                ) : (
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+                )}
+              </button>
+
+              {filterOpen && data && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 max-h-72 overflow-y-auto">
+                  <button
+                    onClick={() => { setCampaignFilter("all"); setFilterOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      campaignFilter === "all"
+                        ? "bg-[#2F4538]/5 text-[#2F4538] font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    All Campaigns
+                  </button>
+                  {data.perCampaign.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => { setCampaignFilter(c.id); setFilterOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                        campaignFilter === c.id
+                          ? "bg-[#2F4538]/5 text-[#2F4538] font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="truncate">{c.name}</span>
+                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{c.creators} creators</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Export */}
+            <button
+              onClick={handleExport}
+              disabled={!data}
+              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Export</span>
             </button>
+
+            {/* Refresh */}
             <button
               onClick={fetchData}
               disabled={refreshing}
@@ -229,7 +471,7 @@ export default function AnalyticsPage() {
       <div className="px-4 sm:px-8 py-6 sm:py-8">
         {loading ? (
           <AnalyticsSkeleton />
-        ) : !data ? (
+        ) : !filteredData ? (
           <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
             <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">No analytics data available yet.</p>
@@ -237,6 +479,22 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
+            {/* Campaign filter active indicator */}
+            {campaignFilter !== "all" && (
+              <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-[#2F4538]/5 border border-[#2F4538]/20 rounded-lg text-sm">
+                <Filter className="w-4 h-4 text-[#2F4538]" />
+                <span className="text-gray-700">
+                  Filtered to: <span className="font-medium text-[#2F4538]">{data?.perCampaign.find((c) => c.id === campaignFilter)?.name}</span>
+                </span>
+                <button
+                  onClick={() => setCampaignFilter("all")}
+                  className="ml-auto text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* ════════════════════ OVERVIEW TAB ════════════════════ */}
             {selectedTab === "overview" && (
               <div className="space-y-6">
@@ -247,15 +505,15 @@ export default function AnalyticsPage() {
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
                         <Users className="w-6 h-6 text-blue-600" />
                       </div>
-                      {data.responseRate > 0 && (
+                      {filteredData.responseRate > 0 && (
                         <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
                           <ArrowUpRight className="w-4 h-4" />
-                          {data.responseRate}% response
+                          {filteredData.responseRate}% response
                         </div>
                       )}
                     </div>
                     <div className="text-sm text-gray-600 mb-1">Creators Contacted</div>
-                    <div className="text-3xl font-bold text-gray-900">{data.totalCreatorsContacted}</div>
+                    <div className="text-3xl font-bold text-gray-900">{filteredData.totalCreatorsContacted}</div>
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-shadow">
@@ -263,15 +521,15 @@ export default function AnalyticsPage() {
                       <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
                         <CheckCircle className="w-6 h-6 text-green-600" />
                       </div>
-                      {data.conversionRate > 0 && (
+                      {filteredData.conversionRate > 0 && (
                         <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
                           <ArrowUpRight className="w-4 h-4" />
-                          {data.conversionRate}% conversion
+                          {filteredData.conversionRate}% conversion
                         </div>
                       )}
                     </div>
                     <div className="text-sm text-gray-600 mb-1">Deals Agreed</div>
-                    <div className="text-3xl font-bold text-gray-900">{data.totalAgreed}</div>
+                    <div className="text-3xl font-bold text-gray-900">{filteredData.totalAgreed}</div>
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-shadow">
@@ -279,15 +537,15 @@ export default function AnalyticsPage() {
                       <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center">
                         <Target className="w-6 h-6 text-purple-600" />
                       </div>
-                      {data.totalCampaigns > 0 && (
+                      {filteredData.totalCampaigns > 0 && (
                         <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
                           <ArrowUpRight className="w-4 h-4" />
-                          {data.byStatus["running"] || 0} active
+                          {filteredData.byStatus["running"] || 0} active
                         </div>
                       )}
                     </div>
                     <div className="text-sm text-gray-600 mb-1">Total Campaigns</div>
-                    <div className="text-3xl font-bold text-gray-900">{data.totalCampaigns}</div>
+                    <div className="text-3xl font-bold text-gray-900">{filteredData.totalCampaigns}</div>
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-shadow">
@@ -295,15 +553,15 @@ export default function AnalyticsPage() {
                       <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center">
                         <Mail className="w-6 h-6 text-orange-600" />
                       </div>
-                      {data.emailStats.openRate > 0 && (
-                        <div className={`flex items-center gap-1 text-sm font-semibold ${data.emailStats.openRate >= 20 ? "text-green-600" : "text-red-600"}`}>
-                          {data.emailStats.openRate >= 20 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                          {data.emailStats.openRate}% open
+                      {filteredData.emailStats.openRate > 0 && (
+                        <div className={`flex items-center gap-1 text-sm font-semibold ${filteredData.emailStats.openRate >= 20 ? "text-green-600" : "text-red-600"}`}>
+                          {filteredData.emailStats.openRate >= 20 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                          {filteredData.emailStats.openRate}% open
                         </div>
                       )}
                     </div>
                     <div className="text-sm text-gray-600 mb-1">Emails Sent</div>
-                    <div className="text-3xl font-bold text-gray-900">{data.emailStats.totalSent}</div>
+                    <div className="text-3xl font-bold text-gray-900">{filteredData.emailStats.totalSent}</div>
                   </div>
                 </div>
 
@@ -314,8 +572,8 @@ export default function AnalyticsPage() {
                       <Eye className="w-5 h-5 text-gray-600" />
                       <span className="text-sm text-gray-600">Email Open Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.emailStats.openRate}%</div>
-                    <div className="text-xs text-gray-500 mt-1">Delivery: {data.emailStats.deliveryRate}%</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.emailStats.openRate}%</div>
+                    <div className="text-xs text-gray-500 mt-1">Delivery: {filteredData.emailStats.deliveryRate}%</div>
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
@@ -323,7 +581,7 @@ export default function AnalyticsPage() {
                       <MousePointerClick className="w-5 h-5 text-gray-600" />
                       <span className="text-sm text-gray-600">Click Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.emailStats.clickRate}%</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.emailStats.clickRate}%</div>
                     <div className="text-xs text-gray-500 mt-1">Of emails sent</div>
                   </div>
 
@@ -332,7 +590,7 @@ export default function AnalyticsPage() {
                       <XCircle className="w-5 h-5 text-gray-600" />
                       <span className="text-sm text-gray-600">Declined</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.totalDeclined}</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.totalDeclined}</div>
                     <div className="text-xs text-gray-500 mt-1">Creators declined</div>
                   </div>
 
@@ -342,21 +600,21 @@ export default function AnalyticsPage() {
                       <span className="text-sm text-gray-600">Avg Response Time</span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900">
-                      {data.negotiationStats.avgResponseTimeHours > 0
-                        ? `${data.negotiationStats.avgResponseTimeHours}h`
+                      {filteredData.negotiationStats.avgResponseTimeHours > 0
+                        ? `${filteredData.negotiationStats.avgResponseTimeHours}h`
                         : "—"}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">{data.negotiationStats.activeNegotiations} active negotiations</div>
+                    <div className="text-xs text-gray-500 mt-1">{filteredData.negotiationStats.activeNegotiations} active negotiations</div>
                   </div>
                 </div>
 
                 {/* Campaign Status Breakdown */}
-                {Object.keys(data.byStatus).length > 0 && (
+                {Object.keys(filteredData.byStatus).length > 0 && (
                   <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h2 className="text-xl font-bold text-gray-900 mb-6">Campaign Status</h2>
                     <div className="space-y-4">
-                      {Object.entries(data.byStatus).map(([status, count]) => {
-                        const pct = data.totalCampaigns > 0 ? Math.round((count / data.totalCampaigns) * 100) : 0;
+                      {Object.entries(filteredData.byStatus).map(([status, count]) => {
+                        const pct = filteredData.totalCampaigns > 0 ? Math.round((count / filteredData.totalCampaigns) * 100) : 0;
                         return (
                           <div key={status}>
                             <div className="flex items-center justify-between mb-2">
@@ -384,11 +642,11 @@ export default function AnalyticsPage() {
                 )}
 
                 {/* Platform Breakdown (real data) */}
-                {data.platformBreakdown.length > 0 && (
+                {filteredData.platformBreakdown.length > 0 && (
                   <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h2 className="text-xl font-bold text-gray-900 mb-6">Platform Breakdown</h2>
                     <div className="space-y-6">
-                      {data.platformBreakdown.map((p, i) => {
+                      {filteredData.platformBreakdown.map((p, i) => {
                         const Icon = getPlatformIcon(p.platform);
                         return (
                           <div key={i} className="p-4 bg-gray-50 rounded-lg">
@@ -439,14 +697,14 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                {data.perCampaign.length === 0 ? (
+                {filteredData.perCampaign.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
                     <Target className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">No campaigns yet.</p>
                   </div>
                 ) : (
                   <div className="grid gap-6">
-                    {data.perCampaign.map((campaign) => {
+                    {filteredData.perCampaign.map((campaign) => {
                       const responseRate = campaign.creators > 0
                         ? Math.round((campaign.responded / campaign.creators) * 100)
                         : 0;
@@ -454,7 +712,7 @@ export default function AnalyticsPage() {
                         ? Math.round((campaign.agreed / campaign.creators) * 100)
                         : 0;
                       // Find matching email breakdown
-                      const emailData = data.emailBreakdown.find((e) => e.campaignId === campaign.id);
+                      const emailData = filteredData.emailBreakdown.find((e) => e.campaignId === campaign.id);
                       return (
                         <div key={campaign.id} className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-shadow">
                           <div className="flex items-start justify-between mb-5">
@@ -577,11 +835,11 @@ export default function AnalyticsPage() {
                     <p className="text-sm text-gray-600 mt-1">All creators contacted across your campaigns</p>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {data.allCreators.length} total creators
+                    {filteredData.allCreators.length} total creators
                   </div>
                 </div>
 
-                {data.allCreators.length === 0 ? (
+                {filteredData.allCreators.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
                     <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 text-sm">No creators contacted yet.</p>
@@ -601,7 +859,7 @@ export default function AnalyticsPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                          {data.allCreators.map((creator, idx) => {
+                          {filteredData.allCreators.map((creator, idx) => {
                             const Icon = getPlatformIcon(creator.platform);
                             return (
                               <tr key={`${creator.id}-${creator.campaignId}-${idx}`} className="hover:bg-gray-50 transition-colors">
@@ -666,46 +924,46 @@ export default function AnalyticsPage() {
                       <Send className="w-5 h-5 text-blue-500" />
                       <span className="text-sm text-gray-600">Sent</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.emailStats.totalSent}</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.emailStats.totalSent}</div>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
                     <div className="flex items-center gap-3 mb-2">
                       <CheckCircle className="w-5 h-5 text-green-500" />
                       <span className="text-sm text-gray-600">Delivery Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.emailStats.deliveryRate}%</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.emailStats.deliveryRate}%</div>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
                     <div className="flex items-center gap-3 mb-2">
                       <Eye className="w-5 h-5 text-purple-500" />
                       <span className="text-sm text-gray-600">Open Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.emailStats.openRate}%</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.emailStats.openRate}%</div>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
                     <div className="flex items-center gap-3 mb-2">
                       <MousePointerClick className="w-5 h-5 text-orange-500" />
                       <span className="text-sm text-gray-600">Click Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.emailStats.clickRate}%</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.emailStats.clickRate}%</div>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 col-span-2 sm:col-span-1">
                     <div className="flex items-center gap-3 mb-2">
                       <TrendingUp className="w-5 h-5 text-emerald-500" />
                       <span className="text-sm text-gray-600">Response Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{data.responseRate}%</div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.responseRate}%</div>
                   </div>
                 </div>
 
                 {/* Per-campaign email breakdown */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Email Performance by Campaign</h2>
-                  {data.emailBreakdown.length === 0 ? (
+                  {filteredData.emailBreakdown.length === 0 ? (
                     <p className="text-gray-500 text-sm text-center py-6">No email data yet.</p>
                   ) : (
                     <div className="space-y-4">
-                      {data.emailBreakdown
+                      {filteredData.emailBreakdown
                         .filter((e) => e.sent > 0)
                         .map((e, i) => {
                           const deliveryPct = e.sent > 0 ? Math.round((e.delivered / e.sent) * 100) : 0;
@@ -776,8 +1034,8 @@ export default function AnalyticsPage() {
               <div className="space-y-6">
                 {/* Engagement funnel cards */}
                 {(() => {
-                  const funnel = data.engagementFunnel;
-                  const total = data.totalCreatorsContacted;
+                  const funnel = filteredData.engagementFunnel;
+                  const total = filteredData.totalCreatorsContacted;
                   const statuses = [
                     { key: "contacted", label: "Contacted", icon: Send, color: "text-gray-500" },
                     { key: "responded", label: "Responded", icon: MessageSquare, color: "text-blue-500" },
@@ -812,7 +1070,7 @@ export default function AnalyticsPage() {
                 {/* Engagement Funnel Bars */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Engagement Funnel</h2>
-                  {data.totalCreatorsContacted === 0 ? (
+                  {filteredData.totalCreatorsContacted === 0 ? (
                     <p className="text-gray-500 text-sm text-center py-6">No engagement data yet.</p>
                   ) : (
                     <div className="space-y-4">
@@ -823,9 +1081,9 @@ export default function AnalyticsPage() {
                         { key: "agreed", label: "Agreed", color: "from-green-400 to-green-500" },
                         { key: "declined", label: "Declined", color: "from-red-400 to-red-500" },
                       ].map((s) => {
-                        const count = data.engagementFunnel[s.key] || 0;
-                        const pct = data.totalCreatorsContacted > 0
-                          ? Math.round((count / data.totalCreatorsContacted) * 100)
+                        const count = filteredData.engagementFunnel[s.key] || 0;
+                        const pct = filteredData.totalCreatorsContacted > 0
+                          ? Math.round((count / filteredData.totalCreatorsContacted) * 100)
                           : 0;
                         return (
                           <div key={s.key}>
@@ -850,11 +1108,11 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Per-campaign engagement breakdown */}
-                {data.perCampaign.length > 0 && (
+                {filteredData.perCampaign.length > 0 && (
                   <div className="bg-white rounded-xl border border-gray-200 p-6">
                     <h2 className="text-xl font-bold text-gray-900 mb-6">Engagement by Campaign</h2>
                     <div className="space-y-4">
-                      {data.perCampaign
+                      {filteredData.perCampaign
                         .filter((c) => c.creators > 0)
                         .map((c) => {
                           const respPct = c.creators > 0 ? Math.round((c.responded / c.creators) * 100) : 0;
