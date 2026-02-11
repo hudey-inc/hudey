@@ -1,13 +1,14 @@
 """Resolve the authenticated user's brand, creating one on first login."""
 
 import logging
+from typing import Optional
 
 from backend.db.client import get_supabase
 
 logger = logging.getLogger(__name__)
 
 
-def get_or_create_brand(user_id: str, email: str) -> dict | None:
+def get_or_create_brand(user_id: str, email: str) -> Optional[dict]:
     """Return the user's brand row. Creates a default brand on first login."""
     sb = get_supabase()
     if not sb:
