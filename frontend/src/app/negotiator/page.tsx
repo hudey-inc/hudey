@@ -783,7 +783,7 @@ function CompletedNegotiationCard({
 
 function NegotiatorSkeleton() {
   return (
-    <div className="px-6 lg:px-8 py-8">
+    <div className="px-4 sm:px-8 py-6 sm:py-8">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[0, 1, 2].map((i) => (
           <div
@@ -1176,7 +1176,7 @@ export default function NegotiatorPage() {
     <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
       {/* Sticky Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-6 lg:px-8 py-6">
+        <div className="px-4 sm:px-8 py-4 sm:py-5">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div>
               <div className="flex items-center gap-2">
@@ -1242,7 +1242,7 @@ export default function NegotiatorPage() {
       {loading ? (
         <NegotiatorSkeleton />
       ) : !data || data.negotiations.length === 0 ? (
-        <div className="px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-8 py-6 sm:py-8">
           <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
             <Bot className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm font-medium">No negotiations yet</p>
@@ -1252,7 +1252,7 @@ export default function NegotiatorPage() {
           </div>
         </div>
       ) : (
-        <div className="px-6 lg:px-8 py-8">
+        <div className="px-4 sm:px-8 py-6 sm:py-8">
           {/* ─── Active Tab ────────────────────────────────── */}
           {selectedTab === "active" && (
             <div className="space-y-6">
