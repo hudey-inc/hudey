@@ -90,6 +90,7 @@ function MetricCard({
   chartData,
   chartColor,
   chartType = "line",
+  chartLabels,
   icon: Icon,
   iconBg,
 }: {
@@ -101,10 +102,25 @@ function MetricCard({
   chartData: number[];
   chartColor: string;
   chartType?: "line" | "area";
+  chartLabels?: string[];
   icon: React.ElementType;
   iconBg: string;
 }) {
-  const data = chartData.map((v, i) => ({ value: v, idx: i }));
+  const gradientId = `grad-${title.replace(/\s/g, "")}`;
+  const data = chartData.map((v, i) => ({
+    value: v,
+    name: chartLabels?.[i] ?? `${i + 1}`,
+  }));
+
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-gray-900 text-white text-xs px-2.5 py-1.5 rounded-lg shadow-lg">
+        <p className="font-medium">{payload[0].value}</p>
+        {label && <p className="text-gray-400 text-[10px]">{label}</p>}
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-shadow">
@@ -124,33 +140,67 @@ function MetricCard({
       <p className="text-sm text-gray-500 mb-1">{title}</p>
       <p className="text-3xl font-bold text-gray-900">{value}</p>
       {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-      <div className="h-14 mt-3">
+      <div className="h-24 mt-3">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
-            <AreaChart data={data}>
+            <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <defs>
-                <linearGradient id={`grad-${title.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={chartColor} stopOpacity={0.3} />
                   <stop offset="100%" stopColor={chartColor} stopOpacity={0.05} />
                 </linearGradient>
               </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "#9ca3af" }}
+                dy={4}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "#9ca3af" }}
+                width={30}
+                allowDecimals={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: chartColor, strokeWidth: 1, strokeDasharray: "3 3" }} />
               <Area
                 type="monotone"
                 dataKey="value"
                 stroke={chartColor}
                 strokeWidth={2}
-                fill={`url(#grad-${title.replace(/\s/g, "")})`}
-                dot={false}
+                fill={`url(#${gradientId})`}
+                dot={{ r: 3, fill: chartColor, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: chartColor, stroke: "#fff", strokeWidth: 2 }}
               />
             </AreaChart>
           ) : (
-            <LineChart data={data}>
+            <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "#9ca3af" }}
+                dy={4}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: "#9ca3af" }}
+                width={30}
+                allowDecimals={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: chartColor, strokeWidth: 1, strokeDasharray: "3 3" }} />
               <Line
                 type="monotone"
                 dataKey="value"
                 stroke={chartColor}
                 strokeWidth={2}
-                dot={false}
+                dot={{ r: 3, fill: chartColor, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: chartColor, stroke: "#fff", strokeWidth: 2 }}
               />
             </LineChart>
           )}
@@ -171,7 +221,7 @@ function MetricsSkeleton() {
           </div>
           <div className="h-4 bg-gray-100 rounded w-24 mb-2" />
           <div className="h-8 bg-gray-100 rounded w-16 mb-3" />
-          <div className="h-14 bg-gray-50 rounded" />
+          <div className="h-24 bg-gray-50 rounded" />
         </div>
       ))}
     </div>
@@ -204,6 +254,13 @@ function DashboardMetrics() {
   const responseTrend = calcTrend(metrics.responseTrend);
   const totalDeals = metrics.dealProgress.agreed + metrics.dealProgress.negotiating;
 
+  // Generate last 7 day labels (Mon, Tue, ...)
+  const dayLabels = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d.toLocaleDateString("en-US", { weekday: "short" });
+  });
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       <MetricCard
@@ -213,6 +270,7 @@ function DashboardMetrics() {
         trend={outreachTrend.value}
         trendUp={outreachTrend.up}
         chartData={metrics.outreachTrend}
+        chartLabels={dayLabels}
         chartColor="#2F4538"
         icon={Send}
         iconBg="bg-[#2F4538]"
@@ -224,6 +282,7 @@ function DashboardMetrics() {
         trend={responseTrend.value}
         trendUp={responseTrend.up}
         chartData={metrics.responseTrend}
+        chartLabels={dayLabels}
         chartColor="#D16B42"
         icon={MessageSquare}
         iconBg="bg-[#D16B42]"
@@ -248,6 +307,7 @@ function DashboardMetrics() {
           metrics.dealProgress.negotiating,
           metrics.dealProgress.agreed,
         ]}
+        chartLabels={["Contacted", "Responded", "Negotiating", "Agreed"]}
         chartColor="#6366f1"
         chartType="area"
         icon={Handshake}
