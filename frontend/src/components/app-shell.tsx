@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -241,10 +241,10 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const isNegotiator = pathname === "/negotiator";
   const isSettings = pathname === "/settings";
 
-  // Count for outreach notification badge
-  const awaitingCount = campaigns.filter(
-    (c) => c.status === "awaiting_approval"
-  ).length;
+  // Memoized campaign subsets for notifications
+  const awaitingCampaigns = useMemo(() => campaigns.filter((c) => c.status === "awaiting_approval"), [campaigns]);
+  const runningCampaigns = useMemo(() => campaigns.filter((c) => c.status === "running"), [campaigns]);
+  const awaitingCount = awaitingCampaigns.length;
 
   // Mobile sidebar always shows full content (not collapsed)
   const mobileSidebarContent = (
@@ -432,10 +432,8 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                   )}
                 </div>
                 <div className="max-h-[300px] overflow-y-auto overscroll-contain">
-                  {campaigns.filter((c) => c.status === "awaiting_approval").length > 0 ? (
-                    campaigns
-                      .filter((c) => c.status === "awaiting_approval")
-                      .map((c) => (
+                  {awaitingCampaigns.length > 0 ? (
+                    awaitingCampaigns.map((c) => (
                         <button
                           key={c.id}
                           onClick={() => {
@@ -451,10 +449,8 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                           </div>
                         </button>
                       ))
-                  ) : campaigns.filter((c) => c.status === "running").length > 0 ? (
-                    campaigns
-                      .filter((c) => c.status === "running")
-                      .map((c) => (
+                  ) : runningCampaigns.length > 0 ? (
+                    runningCampaigns.map((c) => (
                         <button
                           key={c.id}
                           onClick={() => {
@@ -766,10 +762,8 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                   )}
                 </div>
                 <div className="max-h-[300px] overflow-y-auto overscroll-contain">
-                  {campaigns.filter((c) => c.status === "awaiting_approval").length > 0 ? (
-                    campaigns
-                      .filter((c) => c.status === "awaiting_approval")
-                      .map((c) => (
+                  {awaitingCampaigns.length > 0 ? (
+                    awaitingCampaigns.map((c) => (
                         <button
                           key={c.id}
                           onClick={() => {
@@ -785,10 +779,8 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                           </div>
                         </button>
                       ))
-                  ) : campaigns.filter((c) => c.status === "running").length > 0 ? (
-                    campaigns
-                      .filter((c) => c.status === "running")
-                      .map((c) => (
+                  ) : runningCampaigns.length > 0 ? (
+                    runningCampaigns.map((c) => (
                         <button
                           key={c.id}
                           onClick={() => {

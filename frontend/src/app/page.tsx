@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { CampaignSummary, AggregateMetrics } from "@/lib/api";
@@ -477,6 +477,19 @@ function HomeContent() {
       .finally(() => setLoading(false));
   }, [user]);
 
+  // Filter campaigns (memoized — must be before early returns)
+  const filteredCampaigns = useMemo(() => campaigns.filter((c) => {
+    if (!filter) return true;
+    if (filter === "active") return c.status === "running" || c.status === "awaiting_approval";
+    if (filter === "completed") return c.status === "completed";
+    if (filter === "draft") return c.status === "draft";
+    return true;
+  }), [campaigns, filter]);
+
+  const activeCampaigns = useMemo(() => campaigns.filter(
+    (c) => c.status === "running" || c.status === "awaiting_approval"
+  ), [campaigns]);
+
   if (checking || (!user && loading)) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -500,19 +513,6 @@ function HomeContent() {
       </div>
     );
   }
-
-  // Filter campaigns
-  const filteredCampaigns = campaigns.filter((c) => {
-    if (!filter) return true;
-    if (filter === "active") return c.status === "running" || c.status === "awaiting_approval";
-    if (filter === "completed") return c.status === "completed";
-    if (filter === "draft") return c.status === "draft";
-    return true;
-  });
-
-  const activeCampaigns = campaigns.filter(
-    (c) => c.status === "running" || c.status === "awaiting_approval"
-  );
 
   return (
     <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
