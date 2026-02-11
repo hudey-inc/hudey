@@ -326,7 +326,7 @@ export default function CampaignDetail() {
     <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
       {/* ── Sticky Header ── */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-8 py-4">
           {/* Top Row — Back + Actions */}
           <div className="flex items-center justify-between mb-4">
             <Link
@@ -518,7 +518,7 @@ export default function CampaignDetail() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="px-4 sm:px-8 py-6 sm:py-8">
         {/* ── Pending Approvals (always visible at top) ── */}
         {pendingApprovals.length > 0 && (
           <div className="mb-8">
