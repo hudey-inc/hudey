@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { CampaignSummary, AggregateMetrics } from "@/lib/api";
-import { listCampaigns, getAggregateMetrics } from "@/lib/api";
+import type { CampaignSummary, AggregateMetrics, CreatorEngagement, EmailDeliverySummary } from "@/lib/api";
+import { listCampaigns, getAggregateMetrics, getCampaign, getEngagements, getEmailEvents } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import {
   Target,
@@ -19,6 +19,11 @@ import {
   MessageSquare,
   Handshake,
   Sparkles,
+  X,
+  DollarSign,
+  TrendingUp,
+  Loader2,
+  Calendar,
 } from "lucide-react";
 import {
   LineChart,
@@ -26,6 +31,10 @@ import {
   AreaChart,
   Area,
   ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
 } from "recharts";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -253,18 +262,20 @@ function DashboardMetrics() {
 function CampaignCard({
   campaign,
   index,
+  onClick,
 }: {
   campaign: CampaignSummary;
   index: number;
+  onClick?: () => void;
 }) {
   const statusStyle = STATUS_BADGE[campaign.status] || STATUS_BADGE.draft;
   const label = STATUS_LABELS[campaign.status] || campaign.status;
   const progress = getProgressPercent(campaign.status);
 
   return (
-    <Link
-      href={`/campaigns/${campaign.short_id || campaign.id}`}
-      className="min-w-[220px] sm:min-w-[260px] bg-white rounded-xl p-5 border border-gray-200 hover:border-[#2F4538]/30 hover:shadow-lg transition-all text-left group relative overflow-hidden"
+    <button
+      onClick={onClick}
+      className="min-w-[220px] sm:min-w-[260px] bg-white rounded-xl p-5 border border-gray-200 hover:border-[#2F4538]/30 hover:shadow-lg transition-all text-left group relative overflow-hidden cursor-pointer"
     >
       {/* Progress indicator */}
       {progress > 0 && (
@@ -305,21 +316,21 @@ function CampaignCard({
           />
         ))}
       </div>
-    </Link>
+    </button>
   );
 }
 
 // ── Campaign List Row ───────────────────────────────────────
 
-function CampaignRow({ campaign }: { campaign: CampaignSummary }) {
+function CampaignRow({ campaign, onClick }: { campaign: CampaignSummary; onClick?: () => void }) {
   const statusStyle = STATUS_BADGE[campaign.status] || STATUS_BADGE.draft;
   const label = STATUS_LABELS[campaign.status] || campaign.status;
   const progress = getProgressPercent(campaign.status);
 
   return (
-    <Link
-      href={`/campaigns/${campaign.short_id || campaign.id}`}
-      className="w-full flex items-center gap-3 p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition-all group relative overflow-hidden"
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition-all group relative overflow-hidden cursor-pointer"
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-9 h-9 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-lg flex items-center justify-center flex-shrink-0">
@@ -349,7 +360,7 @@ function CampaignRow({ campaign }: { campaign: CampaignSummary }) {
           />
         </div>
       )}
-    </Link>
+    </button>
   );
 }
 
@@ -440,6 +451,317 @@ function DealProgressSummary({ metrics }: { metrics: AggregateMetrics }) {
   );
 }
 
+// ── Campaign Detail Modal ────────────────────────────────────
+
+function CampaignDetailModal({
+  campaign,
+  onClose,
+}: {
+  campaign: CampaignSummary;
+  onClose: () => void;
+}) {
+  const [engagements, setEngagements] = useState<CreatorEngagement[]>([]);
+  const [emailData, setEmailData] = useState<EmailDeliverySummary | null>(null);
+  const [budget, setBudget] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    Promise.all([
+      getEngagements(campaign.id),
+      getEmailEvents(campaign.id),
+      getCampaign(campaign.id),
+    ]).then(([eng, email, full]) => {
+      if (cancelled) return;
+      setEngagements(eng);
+      setEmailData(email);
+      if (full?.brief) {
+        const b = full.brief as Record<string, unknown>;
+        if (b.budget_gbp) setBudget(Number(b.budget_gbp));
+      }
+      setLoading(false);
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [campaign.id]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  // Compute stats
+  const totalCreators = engagements.length;
+  const responded = engagements.filter((e) => e.status !== "contacted").length;
+  const progressPct = campaign.status === "completed" ? 100
+    : totalCreators > 0 ? Math.round((responded / totalCreators) * 100)
+    : 0;
+
+  // Build recent activity from engagements
+  const recentActivity = useMemo(() => {
+    const activities: { icon: React.ElementType; text: string; time: string; color: string }[] = [];
+
+    // Group recent status changes
+    const now = Date.now();
+    const recentResponded = engagements.filter(
+      (e) => e.response_timestamp && now - new Date(e.response_timestamp).getTime() < 7 * 24 * 60 * 60 * 1000
+    );
+    const recentAgreed = engagements.filter(
+      (e) => e.status === "agreed" && e.updated_at && now - new Date(e.updated_at).getTime() < 7 * 24 * 60 * 60 * 1000
+    );
+    const recentNegotiating = engagements.filter(
+      (e) => e.status === "negotiating" && e.updated_at && now - new Date(e.updated_at).getTime() < 7 * 24 * 60 * 60 * 1000
+    );
+
+    if (recentResponded.length > 0) {
+      const latest = recentResponded.sort((a, b) =>
+        new Date(b.response_timestamp!).getTime() - new Date(a.response_timestamp!).getTime()
+      )[0];
+      const hoursAgo = Math.round((now - new Date(latest.response_timestamp!).getTime()) / (1000 * 60 * 60));
+      activities.push({
+        icon: MessageSquare,
+        text: `${recentResponded.length} new influencer response${recentResponded.length !== 1 ? "s" : ""} received`,
+        time: hoursAgo < 24 ? `${hoursAgo} hour${hoursAgo !== 1 ? "s" : ""} ago` : `${Math.round(hoursAgo / 24)}d ago`,
+        color: "bg-blue-100 text-blue-600",
+      });
+    }
+
+    if (recentNegotiating.length > 0) {
+      const latest = recentNegotiating.sort((a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      )[0];
+      const hoursAgo = Math.round((now - new Date(latest.updated_at).getTime()) / (1000 * 60 * 60));
+      activities.push({
+        icon: Handshake,
+        text: `${recentNegotiating.length} influencer${recentNegotiating.length !== 1 ? "s" : ""} entered negotiation stage`,
+        time: hoursAgo < 24 ? `${hoursAgo} hour${hoursAgo !== 1 ? "s" : ""} ago` : `${Math.round(hoursAgo / 24)}d ago`,
+        color: "bg-amber-100 text-amber-600",
+      });
+    }
+
+    if (recentAgreed.length > 0) {
+      activities.push({
+        icon: CheckCircle,
+        text: `${recentAgreed.length} deal${recentAgreed.length !== 1 ? "s" : ""} agreed`,
+        time: "This week",
+        color: "bg-green-100 text-green-600",
+      });
+    }
+
+    if (progressPct >= 50 && campaign.status === "running") {
+      activities.push({
+        icon: TrendingUp,
+        text: `Campaign milestone: ${progressPct}% completion reached`,
+        time: "Recently",
+        color: "bg-purple-100 text-purple-600",
+      });
+    }
+
+    // If no recent activity
+    if (activities.length === 0) {
+      activities.push({
+        icon: Calendar,
+        text: "Campaign created",
+        time: formatDate(campaign.created_at),
+        color: "bg-gray-100 text-gray-600",
+      });
+    }
+
+    return activities;
+  }, [engagements, campaign, progressPct]);
+
+  // Build funnel chart data for the performance overview
+  const funnelData = useMemo(() => {
+    const contacted = engagements.filter((e) => e.status === "contacted").length;
+    const respondedN = engagements.filter((e) => e.status === "responded").length;
+    const negotiatingN = engagements.filter((e) => e.status === "negotiating").length;
+    const agreedN = engagements.filter((e) => e.status === "agreed").length;
+    const declinedN = engagements.filter((e) => e.status === "declined").length;
+    return [
+      { stage: "Contacted", count: contacted + respondedN + negotiatingN + agreedN + declinedN },
+      { stage: "Responded", count: respondedN + negotiatingN + agreedN },
+      { stage: "Negotiating", count: negotiatingN + agreedN },
+      { stage: "Agreed", count: agreedN },
+    ];
+  }, [engagements]);
+
+  const statusLabel = STATUS_LABELS[campaign.status] || campaign.status;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+          <div>
+            <p className="text-sm text-gray-500">Campaign Details & Analytics</p>
+            <h2 className="text-lg font-bold text-gray-900 mt-0.5 truncate pr-4">{campaign.name}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+          >
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          </div>
+        ) : (
+          <div className="p-6 space-y-6">
+            {/* Status Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-semibold text-green-700">Status</span>
+                </div>
+                <p className="text-sm font-bold text-green-900">{statusLabel}</p>
+              </div>
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-semibold text-blue-700">Budget</span>
+                </div>
+                <p className="text-sm font-bold text-blue-900">
+                  {budget ? `£${budget.toLocaleString()}` : "—"}
+                </p>
+              </div>
+              <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-purple-600" />
+                  <span className="text-xs font-semibold text-purple-700">Influencers</span>
+                </div>
+                <p className="text-sm font-bold text-purple-900">{totalCreators}</p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-semibold text-amber-700">Progress</span>
+                </div>
+                <p className="text-sm font-bold text-amber-900">{progressPct}%</p>
+              </div>
+            </div>
+
+            {/* Performance Overview - Funnel Chart */}
+            {totalCreators > 0 && (
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-4">Performance Overview</h3>
+                <div className="h-48 sm:h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={funnelData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="stage" tick={{ fontSize: 12, fill: "#6b7280" }} />
+                      <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "1px solid #e5e7eb",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                          fontSize: "13px",
+                        }}
+                      />
+                      <defs>
+                        <linearGradient id="funnelGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#2F4538" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#2F4538" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#2F4538"
+                        strokeWidth={2}
+                        fill="url(#funnelGrad)"
+                        dot={{ r: 4, fill: "#2F4538", strokeWidth: 0 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Email Stats Summary */}
+            {emailData && emailData.total_sent > 0 && (
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-lg font-bold text-gray-900">{emailData.total_sent}</p>
+                  <p className="text-[11px] text-gray-500">Sent</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-lg font-bold text-green-600">{emailData.delivered}</p>
+                  <p className="text-[11px] text-gray-500">Delivered</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-lg font-bold text-blue-600">{emailData.opened}</p>
+                  <p className="text-[11px] text-gray-500">Opened</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-lg font-bold text-purple-600">{emailData.clicked}</p>
+                  <p className="text-[11px] text-gray-500">Clicked</p>
+                </div>
+              </div>
+            )}
+
+            {/* Recent Activity */}
+            <div>
+              <h3 className="text-base font-bold text-gray-900 mb-4">Recent Activity</h3>
+              <div className="space-y-3">
+                {recentActivity.map((activity, i) => {
+                  const Icon = activity.icon;
+                  return (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-full ${activity.color} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">{activity.text}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{activity.time}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Link
+                href="/analytics"
+                onClick={onClose}
+                className="bg-[#2F4538] hover:bg-[#243a2d] text-white rounded-xl py-3.5 text-sm font-semibold text-center transition-colors"
+              >
+                View Full Analytics
+              </Link>
+              <Link
+                href={`/campaigns/${campaign.short_id || campaign.id}`}
+                onClick={onClose}
+                className="bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 rounded-xl py-3.5 text-sm font-semibold text-center transition-colors"
+              >
+                Manage Campaign
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ───────────────────────────────────────────────
 
 export default function Home() {
@@ -458,6 +780,7 @@ function HomeContent() {
   const [metrics, setMetrics] = useState<AggregateMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<CampaignSummary | null>(null);
   const fetched = useRef(false);
 
   useEffect(() => {
@@ -553,7 +876,7 @@ function HomeContent() {
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
               {campaigns.slice(0, 6).map((c, i) => (
-                <CampaignCard key={c.id} campaign={c} index={i} />
+                <CampaignCard key={c.id} campaign={c} index={i} onClick={() => setSelectedCampaign(c)} />
               ))}
             </div>
           </div>
@@ -589,7 +912,7 @@ function HomeContent() {
             ) : (
               <div className="space-y-1 max-h-[420px] overflow-y-auto">
                 {filteredCampaigns.map((c) => (
-                  <CampaignRow key={c.id} campaign={c} />
+                  <CampaignRow key={c.id} campaign={c} onClick={() => setSelectedCampaign(c)} />
                 ))}
               </div>
             )}
@@ -614,6 +937,14 @@ function HomeContent() {
           )}
         </div>
       </div>
+
+      {/* Campaign Detail Modal */}
+      {selectedCampaign && (
+        <CampaignDetailModal
+          campaign={selectedCampaign}
+          onClose={() => setSelectedCampaign(null)}
+        />
+      )}
     </div>
   );
 }
