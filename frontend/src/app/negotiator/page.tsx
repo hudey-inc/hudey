@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import type { AggregateNegotiations, CreatorEngagement, CounterOffer } from "@/lib/api";
 import {
@@ -1087,9 +1087,9 @@ export default function NegotiatorPage() {
   const [templates, setTemplates] = useState<NegotiatorTemplate[]>(() => loadNegTemplates());
   const [editingTemplate, setEditingTemplate] = useState<NegotiatorTemplate | null | "new">(null);
 
-  function handleDataChange() {
+  const handleDataChange = useCallback(() => {
     setRefreshKey((k) => k + 1);
-  }
+  }, []);
 
   function handleSaveTemplate(t: NegotiatorTemplate) {
     setTemplates((prev) => {
@@ -1135,32 +1135,34 @@ export default function NegotiatorPage() {
       .finally(() => setLoading(false));
   }, [user, refreshKey]);
 
+  // Compute analytics if data available (memoized to avoid recalc on every render)
+  const analytics = useMemo(() => (data ? computeAnalytics(data) : null), [data]);
+
+  // Separate active vs completed creators (memoized)
+  const { activeCreators, completedCreators } = useMemo(() => {
+    const active: { engagement: CreatorEngagement; campaignId: string; campaignName: string }[] = [];
+    const completed: { engagement: CreatorEngagement; campaignId: string; campaignName: string }[] = [];
+    if (data) {
+      for (const n of data.negotiations) {
+        for (const c of n.creators) {
+          const item = { engagement: c, campaignId: n.campaignId, campaignName: n.campaignName };
+          if (c.status === "agreed" || c.status === "declined") {
+            completed.push(item);
+          } else {
+            active.push(item);
+          }
+        }
+      }
+    }
+    return { activeCreators: active, completedCreators: completed };
+  }, [data]);
+
   if (checking) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
       </div>
     );
-  }
-
-  // Compute analytics if data available
-  const analytics = data ? computeAnalytics(data) : null;
-
-  // Separate active vs completed creators
-  const activeCreators: { engagement: CreatorEngagement; campaignId: string; campaignName: string }[] = [];
-  const completedCreators: { engagement: CreatorEngagement; campaignId: string; campaignName: string }[] = [];
-
-  if (data) {
-    for (const n of data.negotiations) {
-      for (const c of n.creators) {
-        const item = { engagement: c, campaignId: n.campaignId, campaignName: n.campaignName };
-        if (c.status === "agreed" || c.status === "declined") {
-          completedCreators.push(item);
-        } else {
-          activeCreators.push(item);
-        }
-      }
-    }
   }
 
   const tabs: { key: TabKey; label: string; count?: number }[] = [

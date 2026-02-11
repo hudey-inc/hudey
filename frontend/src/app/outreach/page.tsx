@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import type { AggregateOutreach, CreatorEngagement } from "@/lib/api";
 import { getAggregateOutreach, replyToCreator, updateEngagementStatus } from "@/lib/api";
@@ -574,9 +574,9 @@ export default function OutreachPage() {
       .finally(() => setLoading(false));
   }, [user, refreshKey]);
 
-  function handleDataChange() {
+  const handleDataChange = useCallback(() => {
     setTimeout(() => setRefreshKey((k) => k + 1), 500);
-  }
+  }, []);
 
   function handleSaveTemplate(t: Template) {
     setTemplates((prev) => {
@@ -613,6 +613,49 @@ export default function OutreachPage() {
     });
   }
 
+  // Build inbox messages from real data (memoized)
+  const inboxMessages = useMemo(() => (data ? buildInboxMessages(data) : []), [data]);
+  const selectedMessage = useMemo(
+    () => inboxMessages.find((m) => m.id === selectedMessageId) || null,
+    [inboxMessages, selectedMessageId]
+  );
+
+  // Apply filters (memoized)
+  const filteredMessages = useMemo(() => {
+    let msgs = inboxMessages;
+    if (selectedFilter === "unread") msgs = msgs.filter((m) => m.unread);
+    else if (selectedFilter === "starred") msgs = msgs.filter((m) => m.starred);
+    else if (selectedFilter === "important") msgs = msgs.filter((m) => m.important);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      msgs = msgs.filter((msg) =>
+        msg.creatorName.toLowerCase().includes(q) ||
+        msg.subject.toLowerCase().includes(q) ||
+        msg.preview.toLowerCase().includes(q) ||
+        msg.campaignName.toLowerCase().includes(q)
+      );
+    }
+    return msgs;
+  }, [inboxMessages, selectedFilter, searchQuery]);
+
+  // Compute quick stats from real data (memoized)
+  const { totalSent, totalResponses, responseRate, openRate, unreadCount } = useMemo(() => {
+    const sent = data?.totalSent || 0;
+    const responses = data
+      ? (data.engagementsByStatus["responded"] || 0) +
+        (data.engagementsByStatus["negotiating"] || 0) +
+        (data.engagementsByStatus["agreed"] || 0)
+      : 0;
+    const rRate = data && data.totalEngagements > 0
+      ? Math.round((responses / data.totalEngagements) * 100)
+      : 0;
+    const oRate = data && data.totalSent > 0
+      ? Math.round((data.totalOpened / data.totalSent) * 100)
+      : 0;
+    const unread = inboxMessages.filter((m) => m.unread).length;
+    return { totalSent: sent, totalResponses: responses, responseRate: rRate, openRate: oRate, unreadCount: unread };
+  }, [data, inboxMessages]);
+
   if (checking) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -620,43 +663,6 @@ export default function OutreachPage() {
       </div>
     );
   }
-
-  // Build inbox messages from real data
-  const inboxMessages = data ? buildInboxMessages(data) : [];
-  const selectedMessage = inboxMessages.find((m) => m.id === selectedMessageId) || null;
-
-  // Apply filters
-  const filteredMessages = inboxMessages.filter((msg) => {
-    if (selectedFilter === "unread") return msg.unread;
-    if (selectedFilter === "starred") return msg.starred;
-    if (selectedFilter === "important") return msg.important;
-    return true;
-  }).filter((msg) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      msg.creatorName.toLowerCase().includes(q) ||
-      msg.subject.toLowerCase().includes(q) ||
-      msg.preview.toLowerCase().includes(q) ||
-      msg.campaignName.toLowerCase().includes(q)
-    );
-  });
-
-  // Compute quick stats from real data
-  const totalSent = data?.totalSent || 0;
-  const totalResponses = data
-    ? (data.engagementsByStatus["responded"] || 0) +
-      (data.engagementsByStatus["negotiating"] || 0) +
-      (data.engagementsByStatus["agreed"] || 0)
-    : 0;
-  const responseRate = data && data.totalEngagements > 0
-    ? Math.round((totalResponses / data.totalEngagements) * 100)
-    : 0;
-  const openRate = data && data.totalSent > 0
-    ? Math.round((data.totalOpened / data.totalSent) * 100)
-    : 0;
-
-  const unreadCount = inboxMessages.filter((m) => m.unread).length;
 
   const tabs: { key: TabKey; label: string; count?: number }[] = [
     { key: "inbox", label: "Inbox", count: unreadCount },

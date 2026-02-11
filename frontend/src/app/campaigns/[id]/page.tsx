@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type { Campaign, Approval, EmailDeliverySummary } from "@/lib/api";
@@ -160,6 +160,30 @@ export default function CampaignDetail() {
     }
   }
 
+  // Memoized computations (must be before early returns for hook ordering)
+  const pendingApprovals = useMemo(() => approvals.filter((a) => a.status === "pending"), [approvals]);
+  const pastApprovals = useMemo(() => approvals.filter((a) => a.status !== "pending"), [approvals]);
+  const { totalCreators, respondedCount, agreedCount, negotiatingCount, declinedCount, emailsSent, emailsDelivered, deliveryRate, responseRate } = useMemo(() => {
+    const total = engagements.length;
+    const responded = engagements.filter((e: { status: string }) => e.status !== "contacted").length;
+    const agreed = engagements.filter((e: { status: string }) => e.status === "agreed").length;
+    const negotiating = engagements.filter((e: { status: string }) => e.status === "negotiating").length;
+    const declined = engagements.filter((e: { status: string }) => e.status === "declined").length;
+    const sent = emailSummary.total_sent;
+    const delivered = emailSummary.delivered;
+    return {
+      totalCreators: total,
+      respondedCount: responded,
+      agreedCount: agreed,
+      negotiatingCount: negotiating,
+      declinedCount: declined,
+      emailsSent: sent,
+      emailsDelivered: delivered,
+      deliveryRate: sent > 0 ? Math.round((delivered / sent) * 100) : 0,
+      responseRate: total > 0 ? Math.round((responded / total) * 100) : 0,
+    };
+  }, [engagements, emailSummary]);
+
   // ── Loading / Error states ──
 
   if (checking || (loading && !error)) {
@@ -191,8 +215,6 @@ export default function CampaignDetail() {
   const brief = (campaign.brief || result?.brief) as Record<string, any> | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const strategy = (campaign.strategy || result?.strategy) as Record<string, any> | undefined;
-  const pendingApprovals = approvals.filter((a) => a.status === "pending");
-  const pastApprovals = approvals.filter((a) => a.status !== "pending");
   const isRunning = campaign.status === "running" || campaign.status === "awaiting_approval";
   const isCompleted = campaign.status === "completed";
   const isFailed = campaign.status === "failed";
@@ -203,15 +225,6 @@ export default function CampaignDetail() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const metrics = (result?.metrics || reportObj.metrics || {}) as Record<string, any>;
   const budgetGBP = brief?.budget_gbp ? Number(brief.budget_gbp) : 0;
-
-  // Compute dynamic stats from engagements + email summary
-  const totalCreators = engagements.length;
-  const respondedCount = engagements.filter((e: { status: string }) => e.status !== "contacted").length;
-  const agreedCount = engagements.filter((e: { status: string }) => e.status === "agreed").length;
-  const emailsSent = emailSummary.total_sent;
-  const emailsDelivered = emailSummary.delivered;
-  const deliveryRate = emailsSent > 0 ? Math.round((emailsDelivered / emailsSent) * 100) : 0;
-  const responseRate = totalCreators > 0 ? Math.round((respondedCount / totalCreators) * 100) : 0;
 
   // Campaign status helpers
   const getStatusStyles = (status: string) => {
@@ -558,9 +571,9 @@ export default function CampaignDetail() {
                   {[
                     { label: "Contacted", count: totalCreators, color: "bg-blue-500" },
                     { label: "Responded", count: respondedCount, color: "bg-purple-500" },
-                    { label: "Negotiating", count: engagements.filter((e: { status: string }) => e.status === "negotiating").length, color: "bg-[#D16B42]" },
+                    { label: "Negotiating", count: negotiatingCount, color: "bg-[#D16B42]" },
                     { label: "Agreed", count: agreedCount, color: "bg-green-500" },
-                    { label: "Declined", count: engagements.filter((e: { status: string }) => e.status === "declined").length, color: "bg-red-400" },
+                    { label: "Declined", count: declinedCount, color: "bg-red-400" },
                   ].map((stage) => (
                     <div key={stage.label}>
                       <div className="flex items-center justify-between mb-1.5">

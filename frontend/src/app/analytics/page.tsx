@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import type { FullAnalytics } from "@/lib/api";
 import { getFullAnalytics } from "@/lib/api";
@@ -245,73 +245,71 @@ export default function AnalyticsPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Derive filtered data from campaignFilter
-  const filteredData: FullAnalytics | null = data
-    ? campaignFilter === "all"
-      ? data
-      : (() => {
-          const pc = data.perCampaign.filter((c) => c.id === campaignFilter);
-          const creators = data.allCreators.filter((c) => c.campaignId === campaignFilter);
-          const emails = data.emailBreakdown.filter((e) => e.campaignId === campaignFilter);
-          const totalContacted = creators.length;
-          const totalAgreed = creators.filter((c) => c.agreed).length;
-          const totalDeclined = creators.filter((c) => c.status === "declined").length;
-          const totalResponded = creators.filter((c) => c.responded).length;
-          const funnel: Record<string, number> = {};
-          for (const c of creators) funnel[c.status] = (funnel[c.status] || 0) + 1;
-          const emailTotals = emails.reduce(
-            (acc, e) => ({
-              sent: acc.sent + e.sent,
-              delivered: acc.delivered + e.delivered,
-              opened: acc.opened + e.opened,
-              clicked: acc.clicked + e.clicked,
-              bounced: acc.bounced + e.bounced,
-            }),
-            { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 }
-          );
-          const platMap: Record<string, { creators: number; responded: number; agreed: number; declined: number }> = {};
-          for (const c of creators) {
-            const p = c.platform || "unknown";
-            if (!platMap[p]) platMap[p] = { creators: 0, responded: 0, agreed: 0, declined: 0 };
-            platMap[p].creators++;
-            if (c.responded) platMap[p].responded++;
-            if (c.agreed) platMap[p].agreed++;
-            if (c.status === "declined") platMap[p].declined++;
-          }
-          return {
-            ...data,
-            totalCampaigns: pc.length,
-            byStatus: pc.reduce((acc, c) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; }, {} as Record<string, number>),
-            totalCreatorsContacted: totalContacted,
-            totalAgreed,
-            totalDeclined,
-            responseRate: totalContacted > 0 ? Math.round((totalResponded / totalContacted) * 100) : 0,
-            conversionRate: totalContacted > 0 ? Math.round((totalAgreed / totalContacted) * 100) : 0,
-            emailStats: {
-              totalSent: emailTotals.sent,
-              deliveryRate: emailTotals.sent > 0 ? Math.round((emailTotals.delivered / emailTotals.sent) * 100) : 0,
-              openRate: emailTotals.sent > 0 ? Math.round((emailTotals.opened / emailTotals.sent) * 100) : 0,
-              clickRate: emailTotals.sent > 0 ? Math.round((emailTotals.clicked / emailTotals.sent) * 100) : 0,
-            },
-            perCampaign: pc,
-            emailBreakdown: emails,
-            allCreators: creators,
-            engagementFunnel: funnel,
-            negotiationStats: {
-              activeNegotiations: funnel["negotiating"] || 0,
-              avgResponseTimeHours: (() => {
-                const times = creators.filter((c) => c.responseTimeHours !== null).map((c) => c.responseTimeHours!);
-                return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
-              })(),
-            },
-            platformBreakdown: Object.entries(platMap).map(([platform, s]) => ({
-              platform: platform.charAt(0).toUpperCase() + platform.slice(1),
-              ...s,
-              responseRate: s.creators > 0 ? Math.round((s.responded / s.creators) * 100) : 0,
-            })).sort((a, b) => b.creators - a.creators),
-          };
-        })()
-    : null;
+  // Derive filtered data from campaignFilter (memoized)
+  const filteredData: FullAnalytics | null = useMemo(() => {
+    if (!data) return null;
+    if (campaignFilter === "all") return data;
+    const pc = data.perCampaign.filter((c) => c.id === campaignFilter);
+    const creators = data.allCreators.filter((c) => c.campaignId === campaignFilter);
+    const emails = data.emailBreakdown.filter((e) => e.campaignId === campaignFilter);
+    const totalContacted = creators.length;
+    const totalAgreed = creators.filter((c) => c.agreed).length;
+    const totalDeclined = creators.filter((c) => c.status === "declined").length;
+    const totalResponded = creators.filter((c) => c.responded).length;
+    const funnel: Record<string, number> = {};
+    for (const c of creators) funnel[c.status] = (funnel[c.status] || 0) + 1;
+    const emailTotals = emails.reduce(
+      (acc, e) => ({
+        sent: acc.sent + e.sent,
+        delivered: acc.delivered + e.delivered,
+        opened: acc.opened + e.opened,
+        clicked: acc.clicked + e.clicked,
+        bounced: acc.bounced + e.bounced,
+      }),
+      { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 }
+    );
+    const platMap: Record<string, { creators: number; responded: number; agreed: number; declined: number }> = {};
+    for (const c of creators) {
+      const p = c.platform || "unknown";
+      if (!platMap[p]) platMap[p] = { creators: 0, responded: 0, agreed: 0, declined: 0 };
+      platMap[p].creators++;
+      if (c.responded) platMap[p].responded++;
+      if (c.agreed) platMap[p].agreed++;
+      if (c.status === "declined") platMap[p].declined++;
+    }
+    return {
+      ...data,
+      totalCampaigns: pc.length,
+      byStatus: pc.reduce((acc, c) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; }, {} as Record<string, number>),
+      totalCreatorsContacted: totalContacted,
+      totalAgreed,
+      totalDeclined,
+      responseRate: totalContacted > 0 ? Math.round((totalResponded / totalContacted) * 100) : 0,
+      conversionRate: totalContacted > 0 ? Math.round((totalAgreed / totalContacted) * 100) : 0,
+      emailStats: {
+        totalSent: emailTotals.sent,
+        deliveryRate: emailTotals.sent > 0 ? Math.round((emailTotals.delivered / emailTotals.sent) * 100) : 0,
+        openRate: emailTotals.sent > 0 ? Math.round((emailTotals.opened / emailTotals.sent) * 100) : 0,
+        clickRate: emailTotals.sent > 0 ? Math.round((emailTotals.clicked / emailTotals.sent) * 100) : 0,
+      },
+      perCampaign: pc,
+      emailBreakdown: emails,
+      allCreators: creators,
+      engagementFunnel: funnel,
+      negotiationStats: {
+        activeNegotiations: funnel["negotiating"] || 0,
+        avgResponseTimeHours: (() => {
+          const times = creators.filter((c) => c.responseTimeHours !== null).map((c) => c.responseTimeHours!);
+          return times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+        })(),
+      },
+      platformBreakdown: Object.entries(platMap).map(([platform, s]) => ({
+        platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+        ...s,
+        responseRate: s.creators > 0 ? Math.round((s.responded / s.creators) * 100) : 0,
+      })).sort((a, b) => b.creators - a.creators),
+    };
+  }, [data, campaignFilter]);
 
   const handleExport = useCallback(() => {
     if (!data) return;
