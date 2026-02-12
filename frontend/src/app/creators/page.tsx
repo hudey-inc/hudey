@@ -53,6 +53,34 @@ function platformColor(platform: string): string {
   return "bg-gray-500 text-white";
 }
 
+// ── Creator Avatar ───────────────────────────────────────────
+
+function CreatorAvatar({ creator }: { creator: DiscoveredCreator }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = (creator.display_name || creator.username).charAt(0).toUpperCase();
+
+  if (creator.image_url && !imgError) {
+    return (
+      <div className="w-14 h-14 rounded-full mx-auto mb-3 overflow-hidden bg-gray-100">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={creator.image_url}
+          alt={creator.display_name || creator.username}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+          referrerPolicy="no-referrer"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#2F4538] to-[#1f2f26] flex items-center justify-center text-white text-lg font-bold mx-auto mb-3">
+      {initial}
+    </div>
+  );
+}
+
 // ── Creator Card ─────────────────────────────────────────────
 
 function CreatorCard({
@@ -91,10 +119,8 @@ function CreatorCard({
         />
       </button>
 
-      {/* Avatar placeholder */}
-      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#2F4538] to-[#1f2f26] flex items-center justify-center text-white text-lg font-bold mx-auto mb-3">
-        {(creator.display_name || creator.username).charAt(0).toUpperCase()}
-      </div>
+      {/* Avatar */}
+      <CreatorAvatar creator={creator} />
 
       {/* Name */}
       <div className="text-center mb-3">

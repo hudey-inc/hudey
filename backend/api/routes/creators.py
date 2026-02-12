@@ -12,6 +12,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/creators", tags=["creators"])
 
 
+def _extract_image_url(c: dict) -> str | None:
+    """Pull profile image URL from profile_data (InsightIQ raw response)."""
+    pd = c.get("profile_data")
+    if not isinstance(pd, dict):
+        return None
+    # InsightIQ uses image_url; fall back to common alternatives
+    return (
+        pd.get("image_url")
+        or pd.get("profile_image_url")
+        or pd.get("picture_url")
+        or pd.get("avatar_url")
+    )
+
+
 def _creator_to_dict(c) -> dict:
     """Normalise a creator row (dict or model) for JSON response."""
     if hasattr(c, "model_dump"):
@@ -28,6 +42,7 @@ def _creator_to_dict(c) -> dict:
         "location": c.get("location"),
         "email": c.get("email"),
         "is_saved": c.get("is_saved", False),
+        "image_url": _extract_image_url(c),
     }
 
 
