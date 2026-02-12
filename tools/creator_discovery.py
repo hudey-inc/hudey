@@ -54,6 +54,10 @@ def _map_phyllo_to_creator(raw: dict) -> Creator:
 
     # Location from creator_location or contact_details
     location = raw.get("creator_location")
+    if isinstance(location, dict):
+        # InsightIQ returns {city, state, country} — join non-null parts
+        parts = [location.get("city"), location.get("state"), location.get("country")]
+        location = ", ".join(p for p in parts if p) or None
     if not location:
         contact = raw.get("contact_details")
         if isinstance(contact, dict):
