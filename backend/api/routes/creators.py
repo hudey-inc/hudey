@@ -13,17 +13,49 @@ router = APIRouter(prefix="/api/creators", tags=["creators"])
 
 
 def _extract_image_url(c: dict) -> str | None:
-    """Pull profile image URL from profile_data (InsightIQ raw response)."""
+    """Pull profile image URL from profile_data stored in the DB.
+
+    DB layout: ``profile_data`` is the full Creator model_dump, so the raw
+    InsightIQ payload lives at ``profile_data.profile_data``.  We check
+    both levels so this works regardless of nesting.
+
+    Falls back to unavatar.io which resolves social profile pictures by
+    platform + username when no direct image URL is stored.
+    """
+    # Try top-level profile_data (direct InsightIQ response)
     pd = c.get("profile_data")
-    if not isinstance(pd, dict):
-        return None
-    # InsightIQ uses image_url; fall back to common alternatives
-    return (
-        pd.get("image_url")
-        or pd.get("profile_image_url")
-        or pd.get("picture_url")
-        or pd.get("avatar_url")
-    )
+    if isinstance(pd, dict):
+        # Check the raw InsightIQ response nested inside model_dump
+        raw = pd.get("profile_data") if isinstance(pd.get("profile_data"), dict) else pd
+        url = (
+            raw.get("image_url")
+            or raw.get("profile_image_url")
+            or raw.get("picture_url")
+            or raw.get("avatar_url")
+            or raw.get("profile_picture_url")
+        )
+        if url:
+            return url
+
+    # Fallback: construct a URL via unavatar.io (resolves social avatars)
+    username = c.get("username")
+    platform = (c.get("platform") or "").lower()
+    if username:
+        # unavatar.io supports: instagram, youtube, twitter/x, tiktok, github, etc.
+        platform_map = {
+            "instagram": "instagram",
+            "youtube": "youtube",
+            "tiktok": "tiktok",
+            "x": "twitter",
+            "twitter": "twitter",
+        }
+        svc = platform_map.get(platform)
+        if svc:
+            return f"https://unavatar.io/{svc}/{username}"
+        # Generic fallback
+        return f"https://unavatar.io/{username}"
+
+    return None
 
 
 def _creator_to_dict(c) -> dict:
