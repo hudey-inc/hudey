@@ -264,14 +264,13 @@ function CampaignsContent() {
   ];
 
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
       {/* ── Header ──────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-8 py-4 sm:py-5">
+      <div className="mb-6">
           {/* Top bar */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 Campaigns
               </h1>
               <p className="text-sm text-gray-500 mt-1">
@@ -322,11 +321,10 @@ function CampaignsContent() {
               </button>
             </div>
           </div>
-        </div>
       </div>
 
       {/* ── Content ─────────────────────────────────────────── */}
-      <div className="px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {loading ? (
           <CampaignsSkeleton />
         ) : (

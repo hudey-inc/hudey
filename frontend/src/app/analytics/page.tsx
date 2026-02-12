@@ -366,12 +366,16 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
-      {/* ── Sticky Header ─────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 sm:px-8 py-4 sm:py-5">
-          {/* Top bar: controls */}
-          <div className="flex items-center justify-end gap-2 sm:gap-3 mb-4">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+      {/* ── Header ─────────────────────────────────────── */}
+      <div className="mb-6">
+          {/* Title + controls */}
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Analytics</h1>
+              <p className="text-sm text-gray-500 mt-1">Performance insights from your campaigns</p>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
             {/* Campaign Filter */}
             <div className="relative" ref={filterRef}>
               <button
@@ -461,15 +465,10 @@ export default function AnalyticsPage() {
               <RefreshCw className={`w-5 h-5 text-gray-600 ${refreshing ? "animate-spin" : ""}`} />
             </button>
           </div>
-
-          {/* Title row */}
-          <div className="mb-5">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Analytics</h1>
-            <p className="text-sm text-gray-500 mt-1">Performance insights from your campaigns</p>
-          </div>
+        </div>
 
           {/* Tabs */}
-          <div className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide -mb-px">
+          <div className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide border-b border-gray-200 -mb-px">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -487,11 +486,10 @@ export default function AnalyticsPage() {
               </button>
             ))}
           </div>
-        </div>
       </div>
 
       {/* ── Content ───────────────────────────────────────────── */}
-      <div className="px-4 sm:px-8 py-6 sm:py-8">
+      <div className="mt-6">
         {loading ? (
           <AnalyticsSkeleton />
         ) : !filteredData ? (
