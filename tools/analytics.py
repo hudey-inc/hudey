@@ -23,6 +23,8 @@ REPORT_PROMPT = """You are Hudey, an AI marketing analyst. Generate a campaign r
 3. What could improve (3 bullets)
 4. ROI/impact snapshot
 5. Recommendations (3 bullets)
+6. Purchase intent summary (if data available)
+7. Comments relevance summary (if data available)
 
 Campaign brief:
 {brief_json}
@@ -33,13 +35,18 @@ Strategy summary:
 Aggregated metrics:
 {metrics_json}
 
+Campaign insights (purchase intent & comments relevance):
+{insights_json}
+
 Return JSON:
 {{
   "executive_summary": [],
   "highlights": [],
   "improvements": [],
   "roi": "",
-  "recommendations": []
+  "recommendations": [],
+  "purchase_intent_summary": "",
+  "comments_relevance_summary": ""
 }}
 
 Return ONLY the JSON object."""
@@ -93,10 +100,20 @@ class AnalyticsTool(BaseTool):
                 "recommendations": ["Collect real metrics for analysis."],
             }
 
+        # Load campaign insights if available
+        insights_path = self.output_dir / f"campaign_insights_{context.campaign_id}.json"
+        insights_data = {}
+        if insights_path.exists():
+            try:
+                insights_data = json.loads(insights_path.read_text()).get("summary", {})
+            except Exception:
+                pass
+
         prompt = REPORT_PROMPT.format(
             brief_json=context.brief.model_dump_json(indent=2) if context.brief else "{}",
             strategy_json=context.strategy.model_dump_json(indent=2) if context.strategy else "{}",
             metrics_json=json.dumps(metrics, indent=2),
+            insights_json=json.dumps(insights_data, indent=2) if insights_data else "No insights data available",
         )
         message = client.messages.create(
             model="claude-sonnet-4-5",
@@ -126,15 +143,39 @@ class AnalyticsTool(BaseTool):
                 "recommendations": ["Re-run report for full analysis."],
             }
 
+    def _run_campaign_insights(self, context: CampaignContext) -> dict:
+        """Run Purchase Intent + Comments Relevance via campaign_insights tool."""
+        try:
+            from tools.campaign_insights import CampaignInsightsTool
+            tool = CampaignInsightsTool(output_dir=self.output_dir)
+            product_name = context.brief.brand_name if context.brief else "Product"
+            product_desc = context.brief.key_message if context.brief else ""
+            results = tool.analyze_campaign_posts(
+                context=context,
+                product_name=product_name,
+                product_description=product_desc,
+            )
+            return tool._build_summary(results)
+        except Exception:
+            return {}
+
     def execute(
         self,
         context: CampaignContext,
         action: AgentAction,
     ) -> ToolResult:
         metrics = self._aggregate_metrics(context)
+
+        # Run campaign insights (purchase intent + comments relevance)
+        campaign_insights = self._run_campaign_insights(context)
+
         insights = self._generate_insights(context, metrics)
 
-        report = {"metrics": metrics, "insights": insights}
+        report = {
+            "metrics": metrics,
+            "insights": insights,
+            "campaign_insights": campaign_insights,
+        }
         path = self.output_dir / f"campaign_report_{context.campaign_id}.json"
         path.write_text(json.dumps(report, indent=2))
 

@@ -1,6 +1,7 @@
 """Creator discovery tool - find and rank creators."""
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -18,6 +19,8 @@ from models.context import CampaignContext
 from tools.base import BaseTool
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+logger = logging.getLogger(__name__)
 
 
 def _map_phyllo_to_creator(raw: dict) -> Creator:
@@ -87,10 +90,11 @@ Target audience: {target_audience}
 Key message: {key_message}
 
 Rank by:
-1. Audience authenticity (engagement patterns)
-2. Content style fit with brand
-3. Past brand collaboration history (infer from categories)
-4. Growth trajectory (use follower count and engagement as proxy)
+1. Brand fit score (if available — higher is better, 0-100 scale)
+2. Audience authenticity (engagement patterns)
+3. Content style fit with brand
+4. Past brand collaboration history (infer from categories)
+5. Growth trajectory (use follower count and engagement as proxy)
 
 Creators (JSON array):
 {creators_json}
@@ -124,7 +128,10 @@ class CreatorDiscoveryTool(BaseTool):
         return self._client
 
     def find_creators(self, criteria: CreatorCriteria) -> list[Creator]:
-        """Find creators matching criteria. Uses Phyllo if API key set, else mock."""
+        """Find creators matching criteria. Uses Phyllo if API key set, else mock.
+
+        Flow: Search → Brand Fit enrichment (top 10) → Claude ranking
+        """
         raw: list[Creator] = []
 
         phyllo = self._get_phyllo()
@@ -149,7 +156,36 @@ class CreatorDiscoveryTool(BaseTool):
                     c.setdefault("external_id", None)  # Mock has no Phyllo ID
                 raw.append(Creator(**c) if isinstance(c, dict) else c)
 
+        # Enrich top creators with Brand Fit before ranking
+        if raw and criteria.brand_name:
+            raw = self._enrich_brand_fit(raw, criteria)
+
         return self.agent_rank(raw, criteria)
+
+    def _enrich_brand_fit(
+        self, creators: list[Creator], criteria: CreatorCriteria
+    ) -> list[Creator]:
+        """Enrich top creators with InsightIQ Brand Fit scores.
+
+        Only runs if InsightIQ is configured and not on sandbox.
+        Enriches top 10 creators to keep API calls manageable.
+        """
+        try:
+            from tools.creator_insights import CreatorInsightsTool
+            insights = CreatorInsightsTool(max_creators=10)
+            brand_desc = " ".join(filter(None, [
+                criteria.brand_name,
+                criteria.target_audience,
+                criteria.key_message,
+            ]))
+            return insights.enrich_with_brand_fit(
+                creators=creators,
+                brand_name=criteria.brand_name or "Brand",
+                brand_description=brand_desc,
+            )
+        except Exception as e:
+            logger.warning("Brand fit enrichment failed: %s", e)
+            return creators
 
     def agent_rank(
         self,
@@ -169,6 +205,7 @@ class CreatorDiscoveryTool(BaseTool):
                 "engagement_rate": c.engagement_rate,
                 "categories": c.categories,
                 "location": c.location,
+                **({"brand_fit_score": c.brand_fit_score} if c.brand_fit_score is not None else {}),
             }
             for c in creators
         ]
