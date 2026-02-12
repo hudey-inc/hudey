@@ -118,6 +118,25 @@ def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
             })
             logger.info("Campaign %s completed", campaign_id)
 
+            # Create in-app notification (non-fatal)
+            try:
+                from backend.db.repositories.notification_repo import maybe_create_notification
+                from backend.db.repositories.campaign_repo import get_campaign as _get_cmp
+                cmp = _get_cmp(campaign_id)
+                if cmp and cmp.get("brand_id"):
+                    campaign_name = cmp.get("name", "Campaign")
+                    short_id = cmp.get("short_id") or campaign_id
+                    maybe_create_notification(
+                        brand_id=cmp["brand_id"],
+                        notification_type="campaign_completion",
+                        title=f"{campaign_name} completed",
+                        body="Campaign has finished running",
+                        campaign_id=campaign_id,
+                        link=f"/campaigns/{short_id}",
+                    )
+            except Exception:
+                pass
+
         except Exception as e:
             logger.exception("Campaign %s failed: %s", campaign_id, e)
             try:

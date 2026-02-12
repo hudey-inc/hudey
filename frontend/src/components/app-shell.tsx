@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { listCampaigns, getOutreachInboxCount, getBrand } from "@/lib/api";
-import type { CampaignSummary, Brand } from "@/lib/api";
+import { listCampaigns, getOutreachInboxCount, getBrand, listNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from "@/lib/api";
+import type { CampaignSummary, Brand, AppNotification } from "@/lib/api";
 import type { User } from "@supabase/supabase-js";
 import {
   Home,
@@ -25,6 +25,7 @@ import {
   X,
   ChevronsLeft,
   ChevronsRight,
+  CheckCheck,
 } from "lucide-react";
 
 import { HudeyLogo } from "@/components/hudey-logo";
@@ -161,6 +162,35 @@ function SearchModal({
   );
 }
 
+// ── Notification Helpers ────────────────────────────────────────
+
+function timeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const seconds = Math.floor((now - then) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function notifDotColor(type: string): string {
+  switch (type) {
+    case "campaign_approval":
+      return "bg-purple-500";
+    case "creator_response":
+      return "bg-blue-500";
+    case "campaign_completion":
+      return "bg-green-500";
+    default:
+      return "bg-gray-400";
+  }
+}
+
 // ── Sidebar ─────────────────────────────────────────────────────
 
 function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggleCollapse: () => void }) {
@@ -174,6 +204,8 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [inboxCount, setInboxCount] = useState(0);
   const [brand, setBrand] = useState<Brand | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -193,6 +225,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
     if (user) {
       listCampaigns().then(setCampaigns).catch(() => {});
       getOutreachInboxCount().then(setInboxCount).catch(() => {});
+      getUnreadCount().then(setUnreadCount).catch(() => {});
       getBrand()
         .then((b) => {
           setBrand(b);
@@ -205,6 +238,22 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         .catch(() => {});
     }
   }, [user, router]);
+
+  // Poll unread notification count every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      getUnreadCount().then(setUnreadCount).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch full notification list when panel opens
+  useEffect(() => {
+    if (notificationsOpen && user) {
+      listNotifications().then(setNotifications).catch(() => {});
+    }
+  }, [notificationsOpen, user]);
 
   // Global Cmd+K shortcut
   useEffect(() => {
@@ -254,10 +303,26 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const isNegotiator = pathname === "/negotiator";
   const isSettings = pathname === "/settings";
 
-  // Memoized campaign subsets for notifications
-  const awaitingCampaigns = useMemo(() => campaigns.filter((c) => c.status === "awaiting_approval"), [campaigns]);
-  const runningCampaigns = useMemo(() => campaigns.filter((c) => c.status === "running"), [campaigns]);
-  const awaitingCount = awaitingCampaigns.length;
+  // Notification handlers
+  async function handleNotifClick(notif: AppNotification) {
+    if (!notif.is_read) {
+      markNotificationRead(notif.id).catch(() => {});
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
+    setNotificationsOpen(false);
+    if (notif.link) {
+      router.push(notif.link);
+    }
+  }
+
+  async function handleMarkAllRead() {
+    markAllNotificationsRead().catch(() => {});
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+  }
 
   // Mobile sidebar always shows full content (not collapsed)
   const mobileSidebarContent = (
@@ -428,60 +493,58 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               title="Notifications"
             >
               <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} />
-              {awaitingCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
               )}
             </button>
             {notificationsOpen && (
-              <div className="fixed bottom-14 left-3 w-[210px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60]">
+              <div className="fixed bottom-14 left-3 w-[280px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60]">
                 <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-900">Notifications</p>
-                  {awaitingCount > 0 && (
-                    <span className="bg-red-100 text-red-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
-                      {awaitingCount}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <span className="bg-red-100 text-red-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Mark all as read"
+                      >
+                        <CheckCheck className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="max-h-[300px] overflow-y-auto overscroll-contain">
-                  {awaitingCampaigns.length > 0 ? (
-                    awaitingCampaigns.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setNotificationsOpen(false);
-                            router.push(`/campaigns/${c.short_id || c.id}`);
-                          }}
-                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                        >
-                          <span className="mt-1.5 h-2 w-2 rounded-full bg-purple-500 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{c.name}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Awaiting your approval</p>
-                          </div>
-                        </button>
-                      ))
-                  ) : runningCampaigns.length > 0 ? (
-                    runningCampaigns.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setNotificationsOpen(false);
-                            router.push(`/campaigns/${c.short_id || c.id}`);
-                          }}
-                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                        >
-                          <span className="mt-1.5 h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{c.name}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Campaign running</p>
-                          </div>
-                        </button>
-                      ))
+                <div className="max-h-[360px] overflow-y-auto overscroll-contain">
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <button
+                        key={notif.id}
+                        onClick={() => handleNotifClick(notif)}
+                        className={`w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 ${
+                          notif.is_read ? "opacity-60" : ""
+                        }`}
+                      >
+                        <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${
+                          notif.is_read ? "bg-gray-200" : notifDotColor(notif.type)
+                        }`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{notif.title}</p>
+                          {notif.body && (
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">{notif.body}</p>
+                          )}
+                          <p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(notif.created_at)}</p>
+                        </div>
+                      </button>
+                    ))
                   ) : (
                     <div className="px-4 py-6 text-center">
                       <Bell className="w-5 h-5 text-gray-300 mx-auto mb-1.5" />
                       <p className="text-[13px] text-gray-400">All caught up</p>
-                      <p className="text-[11px] text-gray-300 mt-0.5">No pending actions</p>
+                      <p className="text-[11px] text-gray-300 mt-0.5">No notifications yet</p>
                     </div>
                   )}
                 </div>
@@ -754,62 +817,60 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               title="Notifications"
             >
               <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} />
-              {awaitingCount > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
               )}
             </button>
             {notificationsOpen && (
-              <div className={`fixed bottom-14 w-[210px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60] ${
+              <div className={`fixed bottom-14 w-[280px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60] ${
                 collapsed ? "left-[68px]" : "left-3"
               }`}>
                 <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-900">Notifications</p>
-                  {awaitingCount > 0 && (
-                    <span className="bg-red-100 text-red-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
-                      {awaitingCount}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <span className="bg-red-100 text-red-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Mark all as read"
+                      >
+                        <CheckCheck className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="max-h-[300px] overflow-y-auto overscroll-contain">
-                  {awaitingCampaigns.length > 0 ? (
-                    awaitingCampaigns.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setNotificationsOpen(false);
-                            router.push(`/campaigns/${c.short_id || c.id}`);
-                          }}
-                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                        >
-                          <span className="mt-1.5 h-2 w-2 rounded-full bg-purple-500 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{c.name}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Awaiting your approval</p>
-                          </div>
-                        </button>
-                      ))
-                  ) : runningCampaigns.length > 0 ? (
-                    runningCampaigns.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setNotificationsOpen(false);
-                            router.push(`/campaigns/${c.short_id || c.id}`);
-                          }}
-                          className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                        >
-                          <span className="mt-1.5 h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{c.name}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5">Campaign running</p>
-                          </div>
-                        </button>
-                      ))
+                <div className="max-h-[360px] overflow-y-auto overscroll-contain">
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <button
+                        key={notif.id}
+                        onClick={() => handleNotifClick(notif)}
+                        className={`w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 ${
+                          notif.is_read ? "opacity-60" : ""
+                        }`}
+                      >
+                        <span className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${
+                          notif.is_read ? "bg-gray-200" : notifDotColor(notif.type)
+                        }`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] text-gray-900 truncate font-medium leading-tight">{notif.title}</p>
+                          {notif.body && (
+                            <p className="text-[11px] text-gray-500 mt-0.5 truncate">{notif.body}</p>
+                          )}
+                          <p className="text-[10px] text-gray-300 mt-0.5">{timeAgo(notif.created_at)}</p>
+                        </div>
+                      </button>
+                    ))
                   ) : (
                     <div className="px-4 py-6 text-center">
                       <Bell className="w-5 h-5 text-gray-300 mx-auto mb-1.5" />
                       <p className="text-[13px] text-gray-400">All caught up</p>
-                      <p className="text-[11px] text-gray-300 mt-0.5">No pending actions</p>
+                      <p className="text-[11px] text-gray-300 mt-0.5">No notifications yet</p>
                     </div>
                   )}
                 </div>

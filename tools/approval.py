@@ -177,6 +177,25 @@ class WebApprovalTool(ApprovalTool):
                 error="Failed to create approval in database",
             )
 
+        # Create in-app notification (non-fatal)
+        try:
+            from backend.db.repositories.notification_repo import maybe_create_notification
+            from backend.db.repositories.campaign_repo import get_campaign as _get_campaign
+            campaign = _get_campaign(self.campaign_db_id)
+            if campaign and campaign.get("brand_id"):
+                campaign_name = campaign.get("name", "Campaign")
+                short_id = campaign.get("short_id") or self.campaign_db_id
+                maybe_create_notification(
+                    brand_id=campaign["brand_id"],
+                    notification_type="campaign_approval",
+                    title=f"{campaign_name} needs approval",
+                    body=f"{approval_type.replace('_', ' ').title()} ready for review",
+                    campaign_id=self.campaign_db_id,
+                    link=f"/campaigns/{short_id}",
+                )
+        except Exception:
+            pass
+
         # Update campaign status
         update_campaign(self.campaign_db_id, {
             "status": "awaiting_approval",

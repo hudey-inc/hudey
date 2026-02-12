@@ -843,6 +843,54 @@ export type AggregateNegotiations = {
   }[];
 };
 
+// ── Notifications ────────────────────────────────────────────
+
+export type AppNotification = {
+  id: string;
+  brand_id: string;
+  type: "campaign_approval" | "creator_response" | "campaign_completion";
+  title: string;
+  body: string | null;
+  campaign_id: string | null;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+export async function listNotifications(): Promise<AppNotification[]> {
+  const res = await authFetch(`${API_URL}/api/notifications`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getUnreadCount(): Promise<number> {
+  const res = await authFetch(`${API_URL}/api/notifications/unread-count`);
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return data.count || 0;
+}
+
+export async function markNotificationRead(
+  notificationId: string
+): Promise<{ ok: boolean }> {
+  const res = await authFetch(
+    `${API_URL}/api/notifications/${notificationId}/read`,
+    { method: "PUT" }
+  );
+  if (!res.ok) return { ok: false };
+  return res.json();
+}
+
+export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/notifications/read-all`, {
+    method: "PUT",
+  });
+  if (!res.ok) return { ok: false };
+  return res.json();
+}
+
+// ── Aggregate Negotiations ──────────────────────────────────────
+
 export async function getAggregateNegotiations(): Promise<AggregateNegotiations> {
   const campaigns = await listCampaigns();
 
