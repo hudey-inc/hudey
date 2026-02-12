@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import Optional
 from backend.db.client import get_supabase
@@ -156,3 +157,85 @@ def lookup_by_email_id(email_id: str) -> Optional[dict]:
     except Exception as e:
         logger.warning("Failed to lookup email_id %s: %s", email_id, e)
     return None
+
+
+# ── Idempotency & Webhook Logging ────────────────────────────────
+
+
+def event_exists(email_id: str, event_type: str) -> bool:
+    """Check if an email event with this (email_id, event_type) already exists.
+
+    Fail-open: returns False on error so events aren't silently dropped.
+    """
+    sb = get_supabase()
+    if not sb:
+        return False
+    try:
+        r = (
+            sb.table("email_events")
+            .select("id")
+            .eq("email_id", email_id)
+            .eq("event_type", event_type)
+            .limit(1)
+            .execute()
+        )
+        return bool(r.data and len(r.data) > 0)
+    except Exception as e:
+        logger.warning("Failed to check event existence: %s", e)
+        return False
+
+
+def inbound_reply_exists(dedup_key: str) -> bool:
+    """Check if an inbound reply with this dedup key has already been processed."""
+    sb = get_supabase()
+    if not sb:
+        return False
+    try:
+        r = (
+            sb.table("processed_inbound_replies")
+            .select("id")
+            .eq("dedup_key", dedup_key)
+            .limit(1)
+            .execute()
+        )
+        return bool(r.data and len(r.data) > 0)
+    except Exception as e:
+        logger.warning("Failed to check inbound reply existence: %s", e)
+        return False
+
+
+def record_inbound_reply(dedup_key: str, from_email: str = "") -> None:
+    """Record that an inbound reply has been processed (for deduplication)."""
+    sb = get_supabase()
+    if not sb:
+        return
+    try:
+        sb.table("processed_inbound_replies").insert({
+            "dedup_key": dedup_key,
+            "from_email": from_email,
+        }).execute()
+    except Exception as e:
+        logger.warning("Failed to record inbound reply dedup: %s", e)
+
+
+def log_webhook(
+    endpoint: str,
+    webhook_id: str,
+    body_bytes: bytes,
+    status_code: int,
+    result: str,
+) -> None:
+    """Log a webhook request to webhook_log table. Non-fatal."""
+    try:
+        sb = get_supabase()
+        if not sb:
+            return
+        sb.table("webhook_log").insert({
+            "endpoint": endpoint,
+            "webhook_id": webhook_id or "",
+            "body_hash": hashlib.sha256(body_bytes).hexdigest(),
+            "status_code": status_code,
+            "result_summary": result[:255],
+        }).execute()
+    except Exception:
+        pass  # Never let logging break webhooks
