@@ -1,7 +1,8 @@
-"""InsightIQ (formerly Phyllo) API client for creator discovery and content monitoring."""
+"""InsightIQ (formerly Phyllo) API client for creator discovery, content monitoring, and insights."""
 
 import logging
 import os
+import time
 from typing import Any, Optional
 
 import requests
@@ -183,3 +184,198 @@ class PhylloClient:
         if isinstance(data, list):
             return data[:limit]
         return []
+
+    # ── Async job helpers ───────────────────────────────────────
+
+    def _poll_job(self, job_id: str, path_prefix: str, max_wait: int = 60) -> Optional[dict]:
+        """Poll an async InsightIQ job until complete or timeout.
+
+        InsightIQ analysis endpoints (brand fit, purchase intent, comments relevance)
+        are async: POST creates a job, GET retrieves results when ready.
+        """
+        elapsed = 0
+        interval = 3
+        while elapsed < max_wait:
+            resp = self._get(f"{path_prefix}/{job_id}")
+            if resp:
+                status = resp.get("status", "").upper()
+                if status in ("COMPLETED", "SUCCESS", "DONE"):
+                    return resp
+                if status in ("FAILED", "ERROR"):
+                    logger.warning("InsightIQ job %s failed: %s", job_id, resp)
+                    return None
+            time.sleep(interval)
+            elapsed += interval
+            interval = min(interval * 1.5, 10)  # Back off
+        logger.warning("InsightIQ job %s timed out after %ds", job_id, max_wait)
+        return None
+
+    # ── Brand Fit Analysis ──────────────────────────────────────
+
+    def create_brand_fit(
+        self,
+        creator_id: str,
+        brand_name: str,
+        brand_description: str,
+        work_platform_id: Optional[str] = None,
+    ) -> Optional[dict]:
+        """Create a brand fit analysis request.
+
+        Evaluates compatibility between a creator's content/audience and
+        a brand's tone, aesthetics, and interest areas.
+
+        InsightIQ endpoint: POST /v1/social/creators/brand-fit
+        Returns the job/analysis object or None on failure.
+        """
+        if not self.is_configured or not creator_id:
+            return None
+        if "sandbox" in self.base_url:
+            return None
+
+        body: dict[str, Any] = {
+            "creator_identifier": creator_id,
+            "brand_name": brand_name,
+            "brand_description": brand_description,
+        }
+        if work_platform_id:
+            body["work_platform_id"] = work_platform_id
+
+        return self._post("/social/creators/brand-fit", body)
+
+    def get_brand_fit(self, analysis_id: str) -> Optional[dict]:
+        """Get brand fit analysis results.
+
+        InsightIQ endpoint: GET /v1/social/creators/brand-fit/{id}
+        """
+        if not self.is_configured:
+            return None
+        return self._get(f"/social/creators/brand-fit/{analysis_id}")
+
+    def analyze_brand_fit(
+        self,
+        creator_id: str,
+        brand_name: str,
+        brand_description: str,
+        work_platform_id: Optional[str] = None,
+        max_wait: int = 60,
+    ) -> Optional[dict]:
+        """Create and poll brand fit analysis (convenience method).
+
+        Returns completed analysis or None.
+        """
+        resp = self.create_brand_fit(creator_id, brand_name, brand_description, work_platform_id)
+        if not resp:
+            return None
+        job_id = resp.get("id") or resp.get("analysis_id") or resp.get("request_id")
+        if not job_id:
+            # Response might be synchronous
+            return resp
+        return self._poll_job(job_id, "/social/creators/brand-fit", max_wait)
+
+    # ── Purchase Intent Analysis ────────────────────────────────
+
+    def create_purchase_intent(
+        self,
+        content_id: str,
+        product_name: str,
+        product_description: str = "",
+    ) -> Optional[dict]:
+        """Create a purchase intent analysis on post comments.
+
+        Checks if creator's audience shows interest in buying the promoted
+        product/service based on comment analysis.
+
+        InsightIQ endpoint: POST /v1/social/creators/comments/purchase-intent
+        """
+        if not self.is_configured or not content_id:
+            return None
+        if "sandbox" in self.base_url:
+            return None
+
+        body: dict[str, Any] = {
+            "content_id": content_id,
+            "product_name": product_name,
+        }
+        if product_description:
+            body["product_description"] = product_description
+
+        return self._post("/social/creators/comments/purchase-intent", body)
+
+    def get_purchase_intent(self, analysis_id: str) -> Optional[dict]:
+        """Get purchase intent analysis results.
+
+        InsightIQ endpoint: GET /v1/social/creators/comments/purchase-intent/{id}
+        """
+        if not self.is_configured:
+            return None
+        return self._get(f"/social/creators/comments/purchase-intent/{analysis_id}")
+
+    def analyze_purchase_intent(
+        self,
+        content_id: str,
+        product_name: str,
+        product_description: str = "",
+        max_wait: int = 60,
+    ) -> Optional[dict]:
+        """Create and poll purchase intent analysis (convenience method)."""
+        resp = self.create_purchase_intent(content_id, product_name, product_description)
+        if not resp:
+            return None
+        job_id = resp.get("id") or resp.get("analysis_id") or resp.get("request_id")
+        if not job_id:
+            return resp
+        return self._poll_job(job_id, "/social/creators/comments/purchase-intent", max_wait)
+
+    # ── Comments Relevance Analysis ─────────────────────────────
+
+    def create_comments_relevance(
+        self,
+        content_id: str,
+        product_name: str,
+        product_description: str = "",
+    ) -> Optional[dict]:
+        """Create a comments relevance analysis.
+
+        Identifies comments on a post that are relevant to the
+        product/service being promoted, filtering out noise.
+
+        InsightIQ endpoint: POST /v1/social/creators/comments/relevance
+        """
+        if not self.is_configured or not content_id:
+            return None
+        if "sandbox" in self.base_url:
+            return None
+
+        body: dict[str, Any] = {
+            "content_id": content_id,
+            "product_name": product_name,
+        }
+        if product_description:
+            body["product_description"] = product_description
+
+        return self._post("/social/creators/comments/relevance", body)
+
+    def get_comments_relevance(self, analysis_id: str) -> Optional[dict]:
+        """Get comments relevance analysis results.
+
+        InsightIQ endpoint: GET /v1/social/creators/comments/relevance/{id}
+        """
+        if not self.is_configured:
+            return None
+        return self._get(f"/social/creators/comments/relevance/{analysis_id}")
+
+    def analyze_comments_relevance(
+        self,
+        content_id: str,
+        product_name: str,
+        product_description: str = "",
+        max_wait: int = 60,
+    ) -> Optional[dict]:
+        """Create and poll comments relevance analysis (convenience method)."""
+        resp = self.create_comments_relevance(content_id, product_name, product_description)
+        if not resp:
+            return None
+        job_id = resp.get("id") or resp.get("analysis_id") or resp.get("request_id")
+        if not job_id:
+            return resp
+        return self._poll_job(job_id, "/social/creators/comments/relevance", max_wait)

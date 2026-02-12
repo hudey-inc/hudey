@@ -953,6 +953,7 @@ export type DiscoveredCreator = {
   email: string | null;
   is_saved: boolean;
   image_url: string | null;
+  brand_fit_score: number | null;
 };
 
 export type CreatorSearchParams = {
@@ -1016,3 +1017,22 @@ export async function unsaveCreator(
   }
   return res.json();
 }
+
+// ── Campaign Insights ──────────────────────────────────────────
+
+export type CampaignInsightsSummary = {
+  posts_analyzed: number;
+  purchase_intent: {
+    avg_score: number | null;
+    total_intent_comments: number;
+    total_comments_analyzed: number;
+    by_creator: { username: string; avg_score: number; posts: number }[];
+  };
+  comments_relevance: {
+    avg_relevance_pct: number | null;
+    total_relevant: number;
+    total_analyzed: number;
+    sentiment: { positive: number; neutral: number; negative: number };
+    by_creator: { username: string; avg_relevance_pct: number; posts: number }[];
+  };
+};

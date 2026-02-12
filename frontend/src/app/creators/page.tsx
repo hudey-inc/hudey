@@ -146,6 +146,17 @@ function CreatorCard({
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Engagement</p>
           </div>
         )}
+        {creator.brand_fit_score != null && (
+          <div className="text-center">
+            <p className={`text-sm font-bold ${
+              creator.brand_fit_score >= 70 ? "text-emerald-600" :
+              creator.brand_fit_score >= 40 ? "text-amber-600" : "text-red-500"
+            }`}>
+              {Math.round(creator.brand_fit_score)}
+            </p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Brand Fit</p>
+          </div>
+        )}
       </div>
 
       {/* Location */}

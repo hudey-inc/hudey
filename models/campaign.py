@@ -65,3 +65,6 @@ class Creator(BaseModel):
     location: Optional[str] = Field(None, description="Location")
     email: Optional[str] = Field(None, description="Contact email")
     profile_data: Optional[dict] = Field(None, description="Full profile snapshot")
+    # InsightIQ enrichment fields
+    brand_fit_score: Optional[float] = Field(None, ge=0, le=100, description="Brand fit score (0-100)")
+    brand_fit_data: Optional[dict] = Field(None, description="Full brand fit analysis from InsightIQ")
