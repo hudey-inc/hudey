@@ -144,6 +144,25 @@ def ingest_response(
     except Exception:
         pass
 
+    # Create in-app notification (non-fatal)
+    try:
+        from backend.db.repositories.notification_repo import maybe_create_notification
+        from backend.db.repositories.campaign_repo import get_campaign as _get_campaign
+        campaign = _get_campaign(campaign_id)
+        if campaign and campaign.get("brand_id"):
+            campaign_name = campaign.get("name", "Campaign")
+            short_id = campaign.get("short_id") or campaign_id
+            maybe_create_notification(
+                brand_id=campaign["brand_id"],
+                notification_type="creator_response",
+                title=f"New reply from {from_email or 'a creator'}",
+                body=f"Response on {campaign_name}",
+                campaign_id=campaign.get("id"),
+                link=f"/campaigns/{short_id}",
+            )
+    except Exception:
+        pass
+
     return {
         "success": True,
         "campaign_id": campaign_id,
