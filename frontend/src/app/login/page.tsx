@@ -259,9 +259,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#2F4538] rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold">
-              H
-            </div>
+            <HudeyLogo className="w-7 h-7 sm:w-8 sm:h-8" />
             <span className="font-bold text-lg sm:text-xl text-gray-900">Hudey</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">Welcome back</h1>
