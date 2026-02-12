@@ -473,40 +473,37 @@ function ActiveNegotiationCard({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-start gap-4 flex-1">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+          <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
             {/* Avatar */}
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
-              <span className="text-lg font-semibold text-white">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
+              <span className="text-sm sm:text-lg font-semibold text-white">
                 {(engagement.creator_name || engagement.creator_id || "?").charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1 flex-wrap">
-                <h3 className="text-lg font-bold text-gray-900">
+              <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
                   {engagement.creator_name || engagement.creator_id}
                 </h3>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}>
+                <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold ${style.bg} ${style.text}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
                   {style.label}
                 </span>
-                {engagement.platform && (
-                  <span className="text-sm text-gray-500 capitalize">{engagement.platform}</span>
-                )}
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
-                {engagement.creator_email && <span>{engagement.creator_email}</span>}
-                <span className="text-gray-300">•</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-gray-500 mb-3">
+                {engagement.platform && (
+                  <span className="capitalize">{engagement.platform}</span>
+                )}
+                {engagement.creator_email && <span className="truncate">{engagement.creator_email}</span>}
+                <span className="hidden sm:inline text-gray-300">•</span>
                 <span>Campaign: {campaignName}</span>
                 {responseTimeLabel && (
-                  <>
-                    <span className="text-gray-300">•</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {responseTimeLabel}
-                    </span>
-                  </>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {responseTimeLabel}
+                  </span>
                 )}
               </div>
 
@@ -570,7 +567,7 @@ function ActiveNegotiationCard({
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 flex-shrink-0"
+            className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 flex-shrink-0 self-start sm:self-auto"
           >
             {expanded ? "Hide" : "View Details"}
             <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
@@ -579,11 +576,14 @@ function ActiveNegotiationCard({
 
         {/* AI Recommendation Banner */}
         {canNegotiate && !counterOffer && !isTerminal && (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start gap-3">
-              <Bot className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Bot className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 hidden sm:block" />
               <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 mb-1">AI Recommendation</h4>
+                <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-blue-600 sm:hidden" />
+                  AI Recommendation
+                </h4>
                 <p className="text-sm text-gray-600 mb-3">
                   Based on {engagement.creator_name || "this creator"}&apos;s response and engagement data, the AI can generate a tailored counter-offer to move this negotiation forward.
                 </p>
@@ -707,20 +707,19 @@ function CompletedNegotiationCard({
   }
 
   return (
-    <div className="p-6 hover:bg-gray-50 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4 flex-1">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
+    <div className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+      <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#2F4538] to-[#D16B42] flex items-center justify-center flex-shrink-0">
             <span className="text-sm font-semibold text-white">
               {(engagement.creator_name || engagement.creator_id || "?").charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1 flex-wrap">
-              <h3 className="text-lg font-bold text-gray-900">
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">
                 {engagement.creator_name || engagement.creator_id}
               </h3>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isAgreed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+              <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold ${isAgreed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
                 {isAgreed ? "Accepted" : "Declined"}
               </span>
               {engagement.platform && (
@@ -773,7 +772,6 @@ function CompletedNegotiationCard({
               <span>Handled by AI Negotiator</span>
             </div>
           </div>
-        </div>
       </div>
     </div>
   );
@@ -1255,14 +1253,14 @@ export default function NegotiatorPage() {
           {selectedTab === "active" && (
             <div className="space-y-6">
               {/* AI Status Banner */}
-              <div className="bg-gradient-to-br from-[#2F4538] to-[#1f2f26] text-white rounded-xl p-6">
+              <div className="bg-gradient-to-br from-[#2F4538] to-[#1f2f26] text-white rounded-xl p-4 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Zap className="w-6 h-6 text-[#D16B42]" />
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[#D16B42]" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold mb-2">AI Negotiator is Active</h3>
+                      <h3 className="text-lg sm:text-xl font-bold mb-2">AI Negotiator is Active</h3>
                       <p className="text-[#E8DCC8] mb-4 text-sm">
                         Currently managing {activeCreators.length} active negotiation{activeCreators.length !== 1 ? "s" : ""} across {data.negotiations.length} campaign{data.negotiations.length !== 1 ? "s" : ""}.
                         {data.totalAgreed > 0 && ` ${data.totalAgreed} deal${data.totalAgreed !== 1 ? "s" : ""} agreed so far.`}
