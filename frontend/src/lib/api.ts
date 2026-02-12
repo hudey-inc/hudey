@@ -45,6 +45,23 @@ async function authFetch(
 
 // ── Types ────────────────────────────────────────────────────
 
+export type Brand = {
+  id: string;
+  user_id: string;
+  name: string;
+  industry: string | null;
+  brand_voice: Record<string, unknown> | null;
+  contact_email: string | null;
+  created_at: string;
+};
+
+export type BrandUpdate = {
+  name?: string;
+  industry?: string;
+  contact_email?: string;
+  brand_voice?: Record<string, unknown>;
+};
+
 export type CampaignSummary = {
   id: string;
   short_id?: string;
@@ -87,6 +104,30 @@ export async function deleteCampaign(id: string): Promise<{ ok: boolean }> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Failed to delete campaign (${res.status})`);
+  }
+  return res.json();
+}
+
+// ── Brand ─────────────────────────────────────────────────────
+
+export async function getBrand(): Promise<Brand> {
+  const res = await authFetch(`${API_URL}/api/brands/me`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch brand (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateBrand(updates: BrandUpdate): Promise<Brand> {
+  const res = await authFetch(`${API_URL}/api/brands/me`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to update brand (${res.status})`);
   }
   return res.json();
 }

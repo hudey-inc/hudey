@@ -1,20 +1,217 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { Settings, User, Bell, Shield } from "lucide-react";
+import { getBrand, updateBrand } from "@/lib/api";
+import type { Brand } from "@/lib/api";
+import {
+  Settings,
+  User,
+  Bell,
+  Shield,
+  Building2,
+  Mail,
+  Briefcase,
+  Calendar,
+  Lock,
+  LogOut,
+  AlertTriangle,
+  Check,
+  Loader2,
+} from "lucide-react";
+
+// ── Constants ────────────────────────────────────────────────
+
+type TabKey = "profile" | "notifications" | "security";
+
+const INDUSTRY_OPTIONS = [
+  "Fashion & Apparel",
+  "Beauty & Skincare",
+  "Health & Fitness",
+  "Food & Beverage",
+  "Technology",
+  "Travel & Hospitality",
+  "Entertainment & Media",
+  "Finance & Fintech",
+  "Education",
+  "Home & Lifestyle",
+  "Automotive",
+  "Other",
+];
+
+// ── Component ────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { user, checking } = useRequireAuth();
-  const [email, setEmail] = useState("");
   const supabase = createClient();
 
-  useEffect(() => {
-    if (user?.email) setEmail(user.email);
-  }, [user]);
+  // Tabs
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
-  if (checking) {
+  // Brand data
+  const [brand, setBrand] = useState<Brand | null>(null);
+  const [brandLoading, setBrandLoading] = useState(true);
+
+  // Profile form
+  const [profileName, setProfileName] = useState("");
+  const [profileIndustry, setProfileIndustry] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileError, setProfileError] = useState("");
+
+  // Notifications form
+  const [notifApprovals, setNotifApprovals] = useState(true);
+  const [notifResponses, setNotifResponses] = useState(true);
+  const [notifCompletion, setNotifCompletion] = useState(true);
+  const [notifSaving, setNotifSaving] = useState(false);
+  const [notifSuccess, setNotifSuccess] = useState(false);
+  const [notifError, setNotifError] = useState("");
+
+  // Security form
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwError, setPwError] = useState("");
+
+  // Delete modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  // ── Load brand ──────────────────────────────────────────────
+
+  const loadBrand = useCallback(async () => {
+    try {
+      setBrandLoading(true);
+      const b = await getBrand();
+      setBrand(b);
+      setProfileName(b.name || "");
+      setProfileIndustry(b.industry || "");
+      setProfileEmail(b.contact_email || "");
+      // Load notification preferences from brand_voice
+      const prefs = (b.brand_voice as Record<string, unknown>)?.notification_preferences as Record<string, boolean> | undefined;
+      if (prefs) {
+        setNotifApprovals(prefs.campaign_approvals !== false);
+        setNotifResponses(prefs.creator_responses !== false);
+        setNotifCompletion(prefs.campaign_completion !== false);
+      }
+    } catch {
+      // Brand not available yet
+    } finally {
+      setBrandLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) loadBrand();
+  }, [user, loadBrand]);
+
+  // ── Dirty tracking ─────────────────────────────────────────
+
+  const profileDirty =
+    brand !== null &&
+    (profileName !== (brand.name || "") ||
+      profileIndustry !== (brand.industry || "") ||
+      profileEmail !== (brand.contact_email || ""));
+
+  const notifDirty = (() => {
+    if (!brand) return false;
+    const prefs = (brand.brand_voice as Record<string, unknown>)?.notification_preferences as Record<string, boolean> | undefined;
+    const orig = {
+      campaign_approvals: prefs?.campaign_approvals !== false,
+      creator_responses: prefs?.creator_responses !== false,
+      campaign_completion: prefs?.campaign_completion !== false,
+    };
+    return (
+      notifApprovals !== orig.campaign_approvals ||
+      notifResponses !== orig.creator_responses ||
+      notifCompletion !== orig.campaign_completion
+    );
+  })();
+
+  // ── Save profile ───────────────────────────────────────────
+
+  const saveProfile = async () => {
+    setProfileSaving(true);
+    setProfileError("");
+    setProfileSuccess(false);
+    try {
+      const updated = await updateBrand({
+        name: profileName.trim(),
+        industry: profileIndustry,
+        contact_email: profileEmail.trim(),
+      });
+      setBrand(updated);
+      setProfileSuccess(true);
+      setTimeout(() => setProfileSuccess(false), 3000);
+    } catch (e: unknown) {
+      setProfileError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  // ── Save notifications ─────────────────────────────────────
+
+  const saveNotifications = async () => {
+    setNotifSaving(true);
+    setNotifError("");
+    setNotifSuccess(false);
+    try {
+      const currentVoice = (brand?.brand_voice as Record<string, unknown>) || {};
+      const updated = await updateBrand({
+        brand_voice: {
+          ...currentVoice,
+          notification_preferences: {
+            campaign_approvals: notifApprovals,
+            creator_responses: notifResponses,
+            campaign_completion: notifCompletion,
+          },
+        },
+      });
+      setBrand(updated);
+      setNotifSuccess(true);
+      setTimeout(() => setNotifSuccess(false), 3000);
+    } catch (e: unknown) {
+      setNotifError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setNotifSaving(false);
+    }
+  };
+
+  // ── Change password ────────────────────────────────────────
+
+  const changePassword = async () => {
+    if (newPassword.length < 8) {
+      setPwError("Password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("Passwords do not match");
+      return;
+    }
+    setPwSaving(true);
+    setPwError("");
+    setPwSuccess(false);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPwSuccess(true);
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (e: unknown) {
+      setPwError(e instanceof Error ? e.message : "Failed to update password");
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  // ── Loading state ──────────────────────────────────────────
+
+  if (checking || brandLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
@@ -22,101 +219,471 @@ export default function SettingsPage() {
     );
   }
 
+  // ── Tabs definition ────────────────────────────────────────
+
+  const tabs: { key: TabKey; label: string; icon: typeof User }[] = [
+    { key: "profile", label: "Profile", icon: User },
+    { key: "notifications", label: "Notifications", icon: Bell },
+    { key: "security", label: "Security", icon: Shield },
+  ];
+
+  // ── Render ─────────────────────────────────────────────────
+
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-gray-400" />
-          Settings
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">Manage your account and preferences</p>
-      </div>
-
-      <div className="space-y-6 max-w-2xl">
-        {/* Profile Section */}
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-            <User className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900">Profile</h2>
-          </div>
-          <div className="p-5 space-y-4">
+    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
+      {/* Sticky Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="px-4 sm:px-8 py-4 sm:py-5">
+          <div className="flex items-start justify-between">
             <div>
-              <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                Email
-              </label>
-              <p className="text-sm text-gray-900">{email}</p>
-            </div>
-            <div>
-              <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                Account ID
-              </label>
-              <p className="text-sm text-gray-500 font-mono text-[13px]">{user?.id?.slice(0, 8)}...</p>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 flex items-center gap-2">
+                <Settings className="w-6 h-6 sm:w-7 sm:h-7 text-gray-400" />
+                Settings
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">Manage your account and preferences</p>
             </div>
           </div>
-        </div>
 
-        {/* Notifications Section */}
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
-          </div>
-          <div className="p-5 space-y-3">
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <p className="text-sm text-gray-900">Campaign approvals</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">Get notified when campaigns need approval</p>
-              </div>
-              <div className="relative">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
-                <div className="w-9 h-5 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors" />
-                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
-              </div>
-            </label>
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <p className="text-sm text-gray-900">Creator responses</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">Get notified when creators respond to outreach</p>
-              </div>
-              <div className="relative">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
-                <div className="w-9 h-5 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors" />
-                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
-              </div>
-            </label>
-            <label className="flex items-center justify-between cursor-pointer">
-              <div>
-                <p className="text-sm text-gray-900">Campaign completion</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">Get notified when campaigns finish running</p>
-              </div>
-              <div className="relative">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
-                <div className="w-9 h-5 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors" />
-                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {/* Security Section */}
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-900">Security</h2>
-          </div>
-          <div className="p-5">
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                window.location.href = "/login";
-              }}
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
-            >
-              Sign out of all devices
-            </button>
+          {/* Tabs */}
+          <div className="flex gap-6 mt-6 border-b border-gray-200 -mb-[1px]">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 ${
+                    activeTab === tab.key
+                      ? "text-[#2F4538]"
+                      : "text-gray-500 hover:text-gray-900"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                  {activeTab === tab.key && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2F4538]"></div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {/* Content */}
+      <div className="px-4 sm:px-8 py-6 sm:py-8">
+        <div className="max-w-2xl">
+          {/* ─── Profile Tab ─────────────────────────────── */}
+          {activeTab === "profile" && (
+            <div className="space-y-6">
+              {/* Brand Information — editable */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Brand Information</h2>
+                </div>
+                <div className="p-5 space-y-5">
+                  {/* Brand Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Brand Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Your brand name"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                    />
+                  </div>
+
+                  {/* Industry */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Industry
+                    </label>
+                    <select
+                      value={profileIndustry}
+                      onChange={(e) => setProfileIndustry(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors bg-white"
+                    >
+                      <option value="">Select an industry</option>
+                      {INDUSTRY_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Contact Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Contact Email
+                    </label>
+                    <input
+                      type="email"
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      placeholder="contact@yourbrand.com"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                    />
+                  </div>
+
+                  {/* Success / Error */}
+                  {profileSuccess && (
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+                      <Check className="w-4 h-4" />
+                      Brand profile saved
+                    </div>
+                  )}
+                  {profileError && (
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      {profileError}
+                    </div>
+                  )}
+
+                  {/* Save button */}
+                  {profileDirty && (
+                    <button
+                      onClick={saveProfile}
+                      disabled={profileSaving}
+                      className="bg-[#2F4538] hover:bg-[#243a2d] text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {profileSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Account — read-only */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Account</h2>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wider mb-0.5">
+                        Email
+                      </label>
+                      <p className="text-sm text-gray-900">{user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wider mb-0.5">
+                        Account ID
+                      </label>
+                      <p className="text-sm text-gray-500 font-mono text-[13px]">{user?.id}</p>
+                    </div>
+                  </div>
+                  {brand?.created_at && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <div>
+                        <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wider mb-0.5">
+                          Member Since
+                        </label>
+                        <p className="text-sm text-gray-900">
+                          {new Date(brand.created_at).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Notifications Tab ───────────────────────── */}
+          {activeTab === "notifications" && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Notification Preferences</h2>
+                </div>
+                <div className="p-5 space-y-4">
+                  {/* Campaign approvals */}
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <p className="text-sm text-gray-900 font-medium">Campaign approvals</p>
+                      <p className="text-[13px] text-gray-500 mt-0.5">Get notified when campaigns need your approval</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={notifApprovals}
+                      onClick={() => setNotifApprovals(!notifApprovals)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        notifApprovals ? "bg-indigo-600" : "bg-gray-200"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                          notifApprovals ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </label>
+
+                  <div className="border-t border-gray-100" />
+
+                  {/* Creator responses */}
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <p className="text-sm text-gray-900 font-medium">Creator responses</p>
+                      <p className="text-[13px] text-gray-500 mt-0.5">Get notified when creators respond to outreach</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={notifResponses}
+                      onClick={() => setNotifResponses(!notifResponses)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        notifResponses ? "bg-indigo-600" : "bg-gray-200"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                          notifResponses ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </label>
+
+                  <div className="border-t border-gray-100" />
+
+                  {/* Campaign completion */}
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <p className="text-sm text-gray-900 font-medium">Campaign completion</p>
+                      <p className="text-[13px] text-gray-500 mt-0.5">Get notified when campaigns finish running</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={notifCompletion}
+                      onClick={() => setNotifCompletion(!notifCompletion)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        notifCompletion ? "bg-indigo-600" : "bg-gray-200"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                          notifCompletion ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </label>
+
+                  {/* Success / Error */}
+                  {notifSuccess && (
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+                      <Check className="w-4 h-4" />
+                      Notification preferences saved
+                    </div>
+                  )}
+                  {notifError && (
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      {notifError}
+                    </div>
+                  )}
+
+                  {/* Save button */}
+                  {notifDirty && (
+                    <button
+                      onClick={saveNotifications}
+                      disabled={notifSaving}
+                      className="bg-[#2F4538] hover:bg-[#243a2d] text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {notifSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Preferences"
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Security Tab ────────────────────────────── */}
+          {activeTab === "security" && (
+            <div className="space-y-6">
+              {/* Change Password */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Change Password</h2>
+                </div>
+                <div className="p-5 space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                    />
+                  </div>
+
+                  {/* Success / Error */}
+                  {pwSuccess && (
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+                      <Check className="w-4 h-4" />
+                      Password updated successfully
+                    </div>
+                  )}
+                  {pwError && (
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm">
+                      <AlertTriangle className="w-4 h-4" />
+                      {pwError}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={changePassword}
+                    disabled={pwSaving || !newPassword || !confirmPassword}
+                    className="bg-[#2F4538] hover:bg-[#243a2d] text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {pwSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Password"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sign Out */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <LogOut className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Sign Out</h2>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-4">
+                    Sign out of your account on this device.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      window.location.href = "/login";
+                    }}
+                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="bg-white rounded-xl border border-red-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-red-100 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <h2 className="text-sm font-semibold text-red-700">Danger Zone</h2>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-4">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </p>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    disabled
+                    className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 opacity-50 cursor-not-allowed"
+                  >
+                    Delete Account — Coming soon
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+                <p className="text-sm text-gray-500">This action is permanent</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Type <span className="font-mono font-bold text-red-700">DELETE</span> to confirm account deletion.
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder='Type "DELETE"'
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText("");
+                }}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white opacity-50 cursor-not-allowed"
+              >
+                Coming soon
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
