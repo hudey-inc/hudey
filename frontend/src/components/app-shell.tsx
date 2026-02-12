@@ -29,7 +29,7 @@ import {
 
 import { HudeyLogo } from "@/components/hudey-logo";
 
-const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund", "/onboarding"];
+const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund", "/onboarding", "/verify-email"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
