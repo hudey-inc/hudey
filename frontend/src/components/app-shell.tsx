@@ -299,6 +299,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
     pathname.startsWith("/campaigns/") && pathname !== "/campaigns/new";
   const isNewCampaign = pathname === "/campaigns/new";
   const isOutreach = pathname === "/outreach";
+  const isCreators = pathname === "/creators";
   const isAnalytics = pathname === "/analytics";
   const isNegotiator = pathname === "/negotiator";
   const isSettings = pathname === "/settings";
@@ -442,6 +443,18 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               {inboxCount}
             </span>
           )}
+        </Link>
+
+        <Link
+          href="/creators"
+          className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-lg mb-1 transition-colors ${
+            isCreators
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-gray-50"
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          <span>Creators</span>
         </Link>
 
         <Link
@@ -757,6 +770,19 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               {inboxCount}
             </span>
           )}
+        </Link>
+
+        <Link
+          href="/creators"
+          className={`flex items-center w-full rounded-lg mb-1 transition-colors ${
+            isCreators
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-gray-50"
+          } ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2 text-sm"}`}
+          title={collapsed ? "Creators" : undefined}
+        >
+          <Search className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && <span>Creators</span>}
         </Link>
 
         <Link
