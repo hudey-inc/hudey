@@ -47,15 +47,28 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // If no user and not on auth pages, redirect to login
-    if (
-      !user &&
-      !request.nextUrl.pathname.startsWith("/login") &&
-      !request.nextUrl.pathname.startsWith("/signup") &&
-      !request.nextUrl.pathname.startsWith("/auth")
-    ) {
+    const pathname = request.nextUrl.pathname;
+
+    // Routes accessible without any auth
+    const isPublicRoute =
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/signup") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/terms") ||
+      pathname.startsWith("/privacy") ||
+      pathname.startsWith("/refund");
+
+    // If no user and not on public pages, redirect to login
+    if (!user && !isPublicRoute) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
+    // If user exists but email is not verified, redirect to /verify-email
+    if (user && !user.email_confirmed_at && !isPublicRoute && pathname !== "/verify-email") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/verify-email";
       return NextResponse.redirect(url);
     }
 
