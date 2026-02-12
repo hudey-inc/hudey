@@ -295,9 +295,11 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   }
 
   const isHome = pathname === "/";
+  const isCampaigns = pathname === "/campaigns";
   const isCampaignDetail =
     pathname.startsWith("/campaigns/") && pathname !== "/campaigns/new";
   const isNewCampaign = pathname === "/campaigns/new";
+  const isCampaignSection = isCampaigns || isCampaignDetail || isNewCampaign;
   const isOutreach = pathname === "/outreach";
   const isCreators = pathname === "/creators";
   const isAnalytics = pathname === "/analytics";
@@ -382,30 +384,31 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         </Link>
 
         <div className="mb-1">
-          <button
-            onClick={() => setShowCampaignsSub(!showCampaignsSub)}
-            className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-lg transition-colors ${
-              isCampaignDetail || isNewCampaign
-                ? "bg-gray-100 text-gray-900 font-medium"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <Target className="w-4 h-4" />
-            <span>Campaigns</span>
-            <ChevronDown
-              className={`w-3 h-3 ml-auto transition-transform ${
-                showCampaignsSub ? "rotate-0" : "-rotate-90"
-              }`}
-            />
-          </button>
+          <div className={`flex items-center w-full rounded-lg transition-colors ${
+            isCampaignSection
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-gray-50"
+          }`}>
+            <Link
+              href="/campaigns"
+              className="flex items-center gap-3 flex-1 px-3 py-2 text-sm"
+            >
+              <Target className="w-4 h-4" />
+              <span>Campaigns</span>
+            </Link>
+            <button
+              onClick={() => setShowCampaignsSub(!showCampaignsSub)}
+              className="px-2 py-2 hover:bg-gray-200/60 rounded-lg transition-colors"
+            >
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${
+                  showCampaignsSub ? "rotate-0" : "-rotate-90"
+                }`}
+              />
+            </button>
+          </div>
           {showCampaignsSub && (
             <div className="ml-9 mt-1 space-y-1">
-              <Link
-                href="/campaigns"
-                className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                All Campaigns
-              </Link>
               <Link
                 href="/campaigns?filter=active"
                 className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
@@ -692,9 +695,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         <div className="mb-1">
           {collapsed ? (
             <Link
-              href="/"
+              href="/campaigns"
               className={`flex items-center justify-center w-full p-2.5 rounded-lg transition-colors ${
-                isCampaignDetail || isNewCampaign
+                isCampaignSection
                   ? "bg-gray-100 text-gray-900 font-medium"
                   : "text-gray-500 hover:bg-gray-50"
               }`}
@@ -704,30 +707,31 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             </Link>
           ) : (
             <>
-              <button
-                onClick={() => setShowCampaignsSub(!showCampaignsSub)}
-                className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-lg transition-colors ${
-                  isCampaignDetail || isNewCampaign
-                    ? "bg-gray-100 text-gray-900 font-medium"
-                    : "text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                <Target className="w-4 h-4" />
-                <span>Campaigns</span>
-                <ChevronDown
-                  className={`w-3 h-3 ml-auto transition-transform ${
-                    showCampaignsSub ? "rotate-0" : "-rotate-90"
-                  }`}
-                />
-              </button>
+              <div className={`flex items-center w-full rounded-lg transition-colors ${
+                isCampaignSection
+                  ? "bg-gray-100 text-gray-900 font-medium"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}>
+                <Link
+                  href="/campaigns"
+                  className="flex items-center gap-3 flex-1 px-3 py-2 text-sm"
+                >
+                  <Target className="w-4 h-4" />
+                  <span>Campaigns</span>
+                </Link>
+                <button
+                  onClick={() => setShowCampaignsSub(!showCampaignsSub)}
+                  className="px-2 py-2 hover:bg-gray-200/60 rounded-lg transition-colors"
+                >
+                  <ChevronDown
+                    className={`w-3 h-3 transition-transform ${
+                      showCampaignsSub ? "rotate-0" : "-rotate-90"
+                    }`}
+                  />
+                </button>
+              </div>
               {showCampaignsSub && (
                 <div className="ml-9 mt-1 space-y-1">
-                  <Link
-                    href="/campaigns"
-                    className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
-                  >
-                    All Campaigns
-                  </Link>
                   <Link
                     href="/campaigns?filter=active"
                     className="block w-full text-left px-3 py-1.5 text-sm rounded text-gray-500 hover:bg-gray-50 transition-colors"
