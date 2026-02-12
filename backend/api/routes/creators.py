@@ -58,6 +58,33 @@ def _extract_image_url(c: dict) -> str | None:
     return None
 
 
+def _normalise_location(loc) -> str | None:
+    """Turn a location value into a readable string.
+
+    Handles:
+    - Already a string → return as-is (unless it looks like a raw dict repr)
+    - A dict like {city, state, country} → join non-null parts
+    - None → None
+    """
+    if loc is None:
+        return None
+    if isinstance(loc, dict):
+        parts = [loc.get("city"), loc.get("state"), loc.get("country")]
+        return ", ".join(p for p in parts if p) or None
+    s = str(loc)
+    # Detect stringified dict from Python repr, e.g. "{'city': None, ...}"
+    if s.startswith("{") and ":" in s:
+        try:
+            import ast
+            parsed = ast.literal_eval(s)
+            if isinstance(parsed, dict):
+                parts = [parsed.get("city"), parsed.get("state"), parsed.get("country")]
+                return ", ".join(str(p) for p in parts if p) or None
+        except (ValueError, SyntaxError):
+            pass
+    return s if s else None
+
+
 def _creator_to_dict(c) -> dict:
     """Normalise a creator row (dict or model) for JSON response."""
     if hasattr(c, "model_dump"):
@@ -71,7 +98,7 @@ def _creator_to_dict(c) -> dict:
         "follower_count": c.get("follower_count", 0),
         "engagement_rate": c.get("engagement_rate"),
         "categories": c.get("categories") or [],
-        "location": c.get("location"),
+        "location": _normalise_location(c.get("location")),
         "email": c.get("email"),
         "is_saved": c.get("is_saved", False),
         "image_url": _extract_image_url(c),
