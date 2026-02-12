@@ -28,7 +28,9 @@ import {
   Trash2,
   Loader2,
   Mail,
+  FileDown,
 } from "lucide-react";
+import { generateCampaignPdf } from "@/lib/pdf/pdf-campaign";
 import {
   StepProgress,
   CampaignReport,
@@ -153,6 +155,7 @@ export default function CampaignDetail() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<DetailTab>("overview");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [exporting, setExporting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [engagements, setEngagements] = useState<any[]>([]);
   const [emailSummary, setEmailSummary] = useState<EmailDeliverySummary>(DEFAULT_EMAIL_SUMMARY);
@@ -221,6 +224,31 @@ export default function CampaignDetail() {
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Failed to delete");
       setDeleting(false);
+    }
+  }
+
+  async function handleExportPdf() {
+    if (!campaign) return;
+    setExporting(true);
+    try {
+      await generateCampaignPdf({
+        campaign,
+        engagements,
+        emailSummary,
+        totalCreators,
+        respondedCount,
+        agreedCount,
+        negotiatingCount,
+        declinedCount,
+        emailsSent,
+        emailsDelivered,
+        deliveryRate,
+        responseRate,
+      });
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -405,6 +433,16 @@ export default function CampaignDetail() {
                 >
                   <Play className="w-4 h-4" />
                   <span className="hidden sm:inline">{starting ? "Starting\u2026" : isFailed ? "Retry" : "Run Campaign"}</span>
+                </button>
+              )}
+              {(isRunning || isCompleted) && (
+                <button
+                  onClick={handleExportPdf}
+                  disabled={exporting}
+                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span className="hidden sm:inline">{exporting ? "Exporting\u2026" : "PDF Report"}</span>
                 </button>
               )}
               {isRunning && (

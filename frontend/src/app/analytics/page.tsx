@@ -30,7 +30,9 @@ import {
   Handshake,
   ChevronDown,
   X,
+  FileDown,
 } from "lucide-react";
+import { generateAnalyticsPdf } from "@/lib/pdf/pdf-analytics";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -316,6 +318,19 @@ export default function AnalyticsPage() {
     exportTab(selectedTab, data, campaignFilter);
   }, [data, selectedTab, campaignFilter]);
 
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const handleExportPdf = useCallback(async () => {
+    if (!data) return;
+    setExportingPdf(true);
+    try {
+      await generateAnalyticsPdf(data, campaignFilter);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [data, campaignFilter]);
+
   const fetchData = () => {
     if (!user) return;
     setRefreshing(true);
@@ -417,14 +432,24 @@ export default function AnalyticsPage() {
               )}
             </div>
 
-            {/* Export */}
+            {/* Export CSV */}
             <button
               onClick={handleExport}
               disabled={!data}
               className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">CSV</span>
+            </button>
+
+            {/* Export PDF */}
+            <button
+              onClick={handleExportPdf}
+              disabled={!data || exportingPdf}
+              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <FileDown className="w-4 h-4" />
+              <span className="hidden sm:inline">{exportingPdf ? "Exporting\u2026" : "PDF"}</span>
             </button>
 
             {/* Refresh */}
