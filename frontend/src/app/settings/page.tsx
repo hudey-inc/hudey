@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { getBrand, updateBrand } from "@/lib/api";
 import type { Brand } from "@/lib/api";
+import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import {
   Settings,
   User,
@@ -24,21 +25,6 @@ import {
 // ── Constants ────────────────────────────────────────────────
 
 type TabKey = "profile" | "notifications" | "security";
-
-const INDUSTRY_OPTIONS = [
-  "Fashion & Apparel",
-  "Beauty & Skincare",
-  "Health & Fitness",
-  "Food & Beverage",
-  "Technology",
-  "Travel & Hospitality",
-  "Entertainment & Media",
-  "Finance & Fintech",
-  "Education",
-  "Home & Lifestyle",
-  "Automotive",
-  "Other",
-];
 
 // ── Component ────────────────────────────────────────────────
 
