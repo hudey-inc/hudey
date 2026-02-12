@@ -18,6 +18,7 @@ import {
   MessageSquare,
   BarChart3,
 } from "lucide-react";
+import { HudeyLogo } from "@/components/hudey-logo";
 
 const APP_URL = "https://app.hudey.co";
 
@@ -157,9 +158,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#2F4538] rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold">
-                H
-              </div>
+              <HudeyLogo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-bold text-lg sm:text-xl text-gray-900">Hudey</span>
             </Link>
 
@@ -534,9 +533,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-12">
             <div className="col-span-2">
               <a href="https://hudey.co" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-                <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-gray-900 text-xs font-bold">
-                  H
-                </div>
+                <HudeyLogo className="w-7 h-7" bg="bg-white" fill="#111827" />
                 <span className="font-bold text-lg text-white">Hudey</span>
               </a>
               <p className="text-gray-500 mb-6 max-w-sm">

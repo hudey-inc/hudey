@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Mail, Lock, ArrowRight, Check, Sparkles, Loader2 } from "lucide-react";
+import { HudeyLogo } from "@/components/hudey-logo";
 
 type AuthMode = "password" | "magic-link";
 type View = "login" | "forgot" | "magic-sent" | "reset-sent";
@@ -170,9 +171,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#2F4538] rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold">
-                H
-              </div>
+              <HudeyLogo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-bold text-lg sm:text-xl text-gray-900">Hudey</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">Reset password</h1>

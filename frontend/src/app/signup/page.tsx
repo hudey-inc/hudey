@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Loader2,
 } from "lucide-react";
+import { HudeyLogo } from "@/components/hudey-logo";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -158,9 +159,7 @@ export default function SignupPage() {
         <div className="hidden lg:block">
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-[#2F4538] rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                H
-              </div>
+              <HudeyLogo />
               <span className="font-bold text-xl text-gray-900">Hudey</span>
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
@@ -222,9 +221,7 @@ export default function SignupPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-6 sm:mb-8">
             <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#2F4538] rounded-lg flex items-center justify-center text-white text-xs sm:text-sm font-bold">
-                H
-              </div>
+              <HudeyLogo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-bold text-lg sm:text-xl text-gray-900">Hudey</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">Create your account</h1>
