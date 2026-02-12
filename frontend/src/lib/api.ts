@@ -937,3 +937,81 @@ export async function getAggregateNegotiations(): Promise<AggregateNegotiations>
 
   return { activeNegotiations, totalAgreed, totalDeclined, avgResponseTimeHours, negotiations };
 }
+
+// ── Creator Discovery ───────────────────────────────────────────
+
+export type DiscoveredCreator = {
+  id: string;
+  external_id: string | null;
+  platform: string;
+  username: string;
+  display_name: string;
+  follower_count: number;
+  engagement_rate: number | null;
+  categories: string[];
+  location: string | null;
+  email: string | null;
+  is_saved: boolean;
+};
+
+export type CreatorSearchParams = {
+  platforms: string[];
+  follower_min: number;
+  follower_max: number;
+  categories?: string[];
+  locations?: string[];
+  limit?: number;
+};
+
+export type CreatorSearchResult = {
+  creators: DiscoveredCreator[];
+  total: number;
+  configured: boolean;
+};
+
+export async function searchCreators(
+  params: CreatorSearchParams
+): Promise<CreatorSearchResult> {
+  const res = await authFetch(`${API_URL}/api/creators/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Search failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function getSavedCreators(): Promise<DiscoveredCreator[]> {
+  const res = await authFetch(`${API_URL}/api/creators/saved`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function saveCreator(
+  creatorId: string
+): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/creators/${creatorId}/save`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Save failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function unsaveCreator(
+  creatorId: string
+): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/creators/${creatorId}/save`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Unsave failed (${res.status})`);
+  }
+  return res.json();
+}
