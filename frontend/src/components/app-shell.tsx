@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-gray-50 text-gray-900">
       <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
-        <div className="max-w-[1400px] mx-auto px-4 py-6 sm:p-8">{children}</div>
+        <div className="max-w-[1400px] mx-auto">{children}</div>
       </main>
     </div>
   );
