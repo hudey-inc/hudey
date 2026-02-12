@@ -882,23 +882,19 @@ function HomeContent() {
   }
 
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
       {/* ── Header ──────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-8 py-5 sm:py-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">{getGreeting()}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {campaigns.length === 0
-                ? "Get started by creating your first campaign"
-                : `${activeCampaigns.length} active campaign${activeCampaigns.length !== 1 ? "s" : ""} running`}
-            </p>
-          </div>
-        </div>
+      <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{getGreeting()}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {campaigns.length === 0
+              ? "Get started by creating your first campaign"
+              : `${activeCampaigns.length} active campaign${activeCampaigns.length !== 1 ? "s" : ""} running`}
+          </p>
       </div>
 
       {/* ── Content ─────────────────────────────────────────── */}
-      <div className="px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Quick Actions */}
         <QuickActions />
 
