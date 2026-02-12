@@ -1207,12 +1207,12 @@ export default function NegotiatorPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-6 border-b border-gray-200 -mb-px">
+          <div className="flex gap-3 sm:gap-6 border-b border-gray-200 -mb-px overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setSelectedTab(tab.key)}
-                className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 ${
+                className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
                   selectedTab === tab.key
                     ? "text-[#2F4538]"
                     : "text-gray-500 hover:text-gray-900"
@@ -1344,14 +1344,14 @@ export default function NegotiatorPage() {
           {/* ─── Templates Tab ─────────────────────────────── */}
           {selectedTab === "templates" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Negotiation Templates</h2>
                   <p className="text-sm text-gray-500 mt-1">AI-powered message templates for different negotiation scenarios</p>
                 </div>
                 <button
                   onClick={() => setEditingTemplate("new")}
-                  className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 self-start sm:self-auto"
                 >
                   <Plus className="w-4 h-4" />
                   Create Template

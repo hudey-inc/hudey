@@ -683,7 +683,7 @@ export default function OutreachPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 border border-blue-200">
                 <div className="text-[10px] sm:text-xs text-blue-700 font-medium mb-1">Inbox</div>
                 <div className="text-xl sm:text-2xl font-bold text-blue-900">{unreadCount}</div>
@@ -704,12 +704,12 @@ export default function OutreachPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-6 border-b border-gray-200 -mb-px">
+          <div className="flex gap-3 sm:gap-6 border-b border-gray-200 -mb-px overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setSelectedTab(tab.key)}
-                className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 ${
+                className={`pb-3 px-1 font-medium text-sm transition-colors relative flex items-center gap-2 whitespace-nowrap flex-shrink-0 ${
                   selectedTab === tab.key
                     ? "text-[#2F4538]"
                     : "text-gray-500 hover:text-gray-900"
@@ -1179,12 +1179,12 @@ export default function OutreachPage() {
           {/* ─── Sequences Tab ─────────────────────────────── */}
           {selectedTab === "sequences" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Outreach Sequences</h2>
                   <p className="text-sm text-gray-500 mt-1">Automated follow-up sequences for influencer outreach</p>
                 </div>
-                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                <button className="px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 self-start sm:self-auto">
                   <Plus className="w-4 h-4" />
                   Create Sequence
                 </button>
@@ -1205,7 +1205,7 @@ export default function OutreachPage() {
                             </span>
                           </div>
                           <div className="text-sm text-gray-500 mb-4">Campaign: {sequence.campaign}</div>
-                          <div className="grid grid-cols-5 gap-4 mb-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
                             <div className="p-3 bg-gray-50 rounded-lg">
                               <div className="text-xs text-gray-500 mb-1">Steps</div>
                               <div className="text-2xl font-bold text-gray-900">{sequence.steps}</div>

@@ -741,7 +741,7 @@ function CampaignDetailModal({
 
             {/* Email Stats Summary */}
             {emailData && emailData.total_sent > 0 && (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-gray-50 rounded-lg">
                   <p className="text-lg font-bold text-gray-900">{emailData.total_sent}</p>
                   <p className="text-[11px] text-gray-500">Sent</p>
