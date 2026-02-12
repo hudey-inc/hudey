@@ -492,23 +492,31 @@ function ActiveNegotiationCard({
                   {style.label}
                 </span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-gray-500 mb-3">
+              <div className="flex items-center gap-2 sm:gap-4 text-sm text-gray-500 mb-3 flex-wrap">
                 {engagement.platform && (
                   <span className="capitalize">{engagement.platform}</span>
                 )}
-                {engagement.creator_email && <span className="truncate">{engagement.creator_email}</span>}
-                <span className="hidden sm:inline text-gray-300">•</span>
-                <span>Campaign: {campaignName}</span>
+                {engagement.creator_email && (
+                  <>
+                    <span className="text-gray-300 hidden sm:inline">•</span>
+                    <span className="truncate">{engagement.creator_email}</span>
+                  </>
+                )}
+                <span className="text-gray-300">•</span>
+                <span>{campaignName}</span>
                 {responseTimeLabel && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {responseTimeLabel}
-                  </span>
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {responseTimeLabel}
+                    </span>
+                  </>
                 )}
               </div>
 
               {/* Negotiation Details Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
                 {latestFee != null && (
                   <div>
                     <div className="text-xs text-gray-500 mb-1">Their Ask</div>
@@ -550,14 +558,14 @@ function ActiveNegotiationCard({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+              <div className="flex items-center gap-4 mt-2 text-xs sm:text-sm text-gray-400">
                 <div className="flex items-center gap-1">
-                  <MessageSquare className="w-4 h-4" />
+                  <MessageSquare className="w-3.5 h-3.5" />
                   {engagement.message_history?.length || 0} messages
                 </div>
                 {engagement.updated_at && (
                   <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
+                    <Clock className="w-3.5 h-3.5" />
                     {formatTime(engagement.updated_at)}
                   </div>
                 )}
