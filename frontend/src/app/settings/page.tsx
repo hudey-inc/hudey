@@ -199,21 +199,19 @@ export default function SettingsPage() {
 
   if (checking || brandLoading) {
     return (
-      <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8 animate-pulse">
+      <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto animate-pulse">
         {/* Header skeleton */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="px-4 sm:px-8 py-4 sm:py-5">
+        <div className="mb-6">
             <div className="h-7 bg-gray-100 rounded w-40 mb-2" />
             <div className="h-4 bg-gray-100 rounded w-56 mb-6" />
-            <div className="flex gap-6 border-b border-gray-200 -mb-[1px]">
+            <div className="flex gap-6 border-b border-gray-200 -mb-px">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="h-4 bg-gray-100 rounded w-24 mb-3" />
               ))}
             </div>
-          </div>
         </div>
         {/* Content skeleton */}
-        <div className="px-4 sm:px-8 py-6 sm:py-8">
+        <div>
           <div className="max-w-2xl space-y-6">
             {[0, 1].map((i) => (
               <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -247,14 +245,13 @@ export default function SettingsPage() {
   // ── Render ─────────────────────────────────────────────────
 
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
-      {/* Sticky Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 sm:px-8 py-4 sm:py-5">
-          <div className="flex items-start justify-between">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+          <div className="flex items-start justify-between mb-5">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 flex items-center gap-2">
-                <Settings className="w-6 h-6 sm:w-7 sm:h-7 text-gray-400" />
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
                 Settings
               </h1>
               <p className="text-gray-500 text-sm mt-1">Manage your account and preferences</p>
@@ -262,7 +259,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-6 mt-6 border-b border-gray-200 -mb-[1px]">
+          <div className="flex gap-6 border-b border-gray-200 -mb-px">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -284,11 +281,10 @@ export default function SettingsPage() {
               );
             })}
           </div>
-        </div>
       </div>
 
       {/* Content */}
-      <div className="px-4 sm:px-8 py-6 sm:py-8">
+      <div>
         <div className="max-w-2xl">
           {/* ─── Profile Tab ─────────────────────────────── */}
           {activeTab === "profile" && (

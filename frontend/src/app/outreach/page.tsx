@@ -534,7 +534,7 @@ function TemplateEditorModal({
 
 function OutreachSkeleton() {
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8">
+    <div>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse">
@@ -673,13 +673,12 @@ export default function OutreachPage() {
   ];
 
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
-      {/* Sticky Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 sm:px-8 py-4 sm:py-5">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-5">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">Outreach</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Outreach</h1>
               <p className="text-gray-500 text-sm mt-1">Manage all your influencer communications</p>
             </div>
 
@@ -705,7 +704,7 @@ export default function OutreachPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-6 mt-6 border-b border-gray-200 -mb-[1px]">
+          <div className="flex gap-6 border-b border-gray-200 -mb-px">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -728,14 +727,13 @@ export default function OutreachPage() {
               </button>
             ))}
           </div>
-        </div>
       </div>
 
       {/* Main Content */}
       {loading ? (
         <OutreachSkeleton />
       ) : !data ? (
-        <div className="px-4 sm:px-8 py-6 sm:py-8">
+        <div>
           <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
             <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm font-medium">No outreach data yet</p>
@@ -745,7 +743,7 @@ export default function OutreachPage() {
           </div>
         </div>
       ) : (
-        <div className="px-4 sm:px-8 py-6 sm:py-8">
+        <div>
           {/* ─── Inbox Tab ─────────────────────────────────── */}
           {selectedTab === "inbox" && (
             <div className="grid lg:grid-cols-3 gap-6" style={{ minHeight: "calc(100vh - 300px)" }}>
