@@ -4,8 +4,8 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { listCampaigns, getOutreachInboxCount } from "@/lib/api";
-import type { CampaignSummary } from "@/lib/api";
+import { listCampaigns, getOutreachInboxCount, getBrand } from "@/lib/api";
+import type { CampaignSummary, Brand } from "@/lib/api";
 import type { User } from "@supabase/supabase-js";
 import {
   Home,
@@ -29,7 +29,7 @@ import {
 
 import { HudeyLogo } from "@/components/hudey-logo";
 
-const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund"];
+const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund", "/onboarding"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -173,6 +173,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const [mobileOpen, setMobileOpen] = useState(false);
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [inboxCount, setInboxCount] = useState(0);
+  const [brand, setBrand] = useState<Brand | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -187,13 +188,23 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch campaigns for search
+  // Fetch campaigns for search + brand for sidebar/onboarding
   useEffect(() => {
     if (user) {
       listCampaigns().then(setCampaigns).catch(() => {});
       getOutreachInboxCount().then(setInboxCount).catch(() => {});
+      getBrand()
+        .then((b) => {
+          setBrand(b);
+          // Redirect to onboarding if not completed
+          const voice = b.brand_voice as Record<string, unknown> | null;
+          if (!voice?.onboarding_completed) {
+            router.replace("/onboarding");
+          }
+        })
+        .catch(() => {});
     }
-  }, [user]);
+  }, [user, router]);
 
   // Global Cmd+K shortcut
   useEffect(() => {
@@ -260,7 +271,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           <HudeyLogo />
           <div>
             <span className="font-semibold text-sm text-gray-900">Hudey</span>
-            <div className="text-[11px] text-gray-400">All Campaigns</div>
+            <div className="text-[11px] text-gray-400 truncate max-w-[120px]">{brand?.name || "All Campaigns"}</div>
           </div>
         </Link>
       </div>
@@ -536,13 +547,13 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           className={`flex items-center hover:bg-gray-100 rounded-lg transition-colors ${
             collapsed ? "justify-center p-2" : "gap-2 p-2"
           }`}
-          title={collapsed ? "Hudey — All Campaigns" : undefined}
+          title={collapsed ? `Hudey — ${brand?.name || "All Campaigns"}` : undefined}
         >
           <HudeyLogo />
           {!collapsed && (
             <div>
               <span className="font-semibold text-sm text-gray-900">Hudey</span>
-              <div className="text-[11px] text-gray-400">All Campaigns</div>
+              <div className="text-[11px] text-gray-400 truncate max-w-[120px]">{brand?.name || "All Campaigns"}</div>
             </div>
           )}
         </Link>
