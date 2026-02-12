@@ -952,6 +952,7 @@ export type DiscoveredCreator = {
   location: string | null;
   email: string | null;
   is_saved: boolean;
+  image_url: string | null;
 };
 
 export type CreatorSearchParams = {
