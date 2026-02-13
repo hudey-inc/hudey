@@ -77,59 +77,55 @@ const DEFAULT_EMAIL_SUMMARY: EmailDeliverySummary = {
 
 function CampaignDetailSkeleton() {
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8 animate-pulse">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto animate-pulse">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-4 bg-gray-100 rounded w-32" />
-            <div className="flex gap-2">
-              <div className="w-24 h-9 bg-gray-100 rounded-lg" />
-            </div>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-4 bg-gray-100 rounded w-32" />
+          <div className="flex gap-2">
+            <div className="w-24 h-9 bg-gray-100 rounded-lg" />
           </div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="h-7 bg-gray-100 rounded w-56" />
-            <div className="w-20 h-6 bg-gray-100 rounded-full" />
-          </div>
-          <div className="h-4 bg-gray-100 rounded w-40 mb-4" />
-          <div className="flex gap-6 border-b border-gray-200 -mb-[1px]">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-4 bg-gray-100 rounded w-20 mb-3" />
-            ))}
-          </div>
+        </div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-7 bg-gray-100 rounded w-56" />
+          <div className="w-20 h-6 bg-gray-100 rounded-full" />
+        </div>
+        <div className="h-4 bg-gray-100 rounded w-40 mb-4" />
+        <div className="flex gap-6 border-b border-gray-200">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-4 bg-gray-100 rounded w-20 mb-3" />
+          ))}
         </div>
       </div>
       {/* Stats grid */}
-      <div className="px-4 sm:px-8 py-6 sm:py-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 bg-gray-100 rounded-lg" />
-                <div className="h-3 bg-gray-100 rounded w-24" />
-              </div>
-              <div className="h-7 bg-gray-100 rounded w-16 mb-1" />
-              <div className="h-3 bg-gray-100 rounded w-20" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 bg-gray-100 rounded-lg" />
+              <div className="h-3 bg-gray-100 rounded w-24" />
             </div>
-          ))}
-        </div>
-        {/* Content blocks */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="h-5 bg-gray-100 rounded w-32 mb-4" />
-            <div className="space-y-3">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-4 bg-gray-100 rounded w-full" />
-              ))}
-            </div>
+            <div className="h-7 bg-gray-100 rounded w-16 mb-1" />
+            <div className="h-3 bg-gray-100 rounded w-20" />
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="h-5 bg-gray-100 rounded w-32 mb-4" />
-            <div className="space-y-3">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-4 bg-gray-100 rounded w-full" />
-              ))}
-            </div>
+        ))}
+      </div>
+      {/* Content blocks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="h-5 bg-gray-100 rounded w-32 mb-4" />
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-4 bg-gray-100 rounded w-full" />
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="h-5 bg-gray-100 rounded w-32 mb-4" />
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-4 bg-gray-100 rounded w-full" />
+            ))}
           </div>
         </div>
       </div>
@@ -411,10 +407,9 @@ export default function CampaignDetail() {
   }
 
   return (
-    <div className="-mx-4 -mt-6 sm:-mx-8 sm:-mt-8">
-      {/* ── Sticky Header ── */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-8 py-4">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+      {/* ── Header ── */}
+      <div className="mb-6">
           {/* Top Row — Back + Actions */}
           <div className="flex items-center justify-between mb-4">
             <Link
@@ -594,7 +589,7 @@ export default function CampaignDetail() {
           )}
 
           {/* ── Tab Navigation ── */}
-          <div className="flex gap-4 sm:gap-6 mt-6 -mb-px overflow-x-auto">
+          <div className="flex gap-4 sm:gap-6 mt-6 border-b border-gray-200 overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -612,11 +607,10 @@ export default function CampaignDetail() {
               </button>
             ))}
           </div>
-        </div>
       </div>
 
       {/* ── Main Content ── */}
-      <div className="px-4 sm:px-8 py-6 sm:py-8">
+      <div>
         {/* ── Pending Approvals (always visible at top) ── */}
         {pendingApprovals.length > 0 && (
           <div className="mb-8">
