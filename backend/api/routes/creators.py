@@ -102,6 +102,7 @@ def _creator_to_dict(c) -> dict:
         "email": c.get("email"),
         "is_saved": c.get("is_saved", False),
         "image_url": _extract_image_url(c),
+        "brand_fit_score": c.get("brand_fit_score"),
     }
 
 
