@@ -1,5 +1,7 @@
 """Creator discovery API — search, save/unsave, list saved."""
 
+from __future__ import annotations
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
