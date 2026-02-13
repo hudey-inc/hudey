@@ -641,21 +641,25 @@ export default function CampaignDetail() {
         {selectedTab === "overview" && (
           <div className="space-y-6">
             {/* Key Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className={`grid gap-4 ${
+              overviewMetrics.length <= 4
+                ? "grid-cols-2 lg:grid-cols-4"
+                : overviewMetrics.length <= 6
+                ? "grid-cols-2 sm:grid-cols-3"
+                : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+            }`}>
               {overviewMetrics.slice(0, 6).map((metric, index) => {
                 const Icon = metric.icon;
                 return (
-                  <div key={index} className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-12 h-12 ${metric.bgColor} rounded-xl flex items-center justify-center`}>
-                        <Icon className={`w-6 h-6 ${metric.color}`} />
+                  <div key={index} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-9 h-9 ${metric.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                        <Icon className={`w-4.5 h-4.5 ${metric.color}`} />
                       </div>
-                      <div className="flex items-center gap-1 text-sm font-medium text-gray-500">
-                        <span className="text-xs">{metric.change}</span>
-                      </div>
+                      <span className="text-xs text-gray-500 font-medium">{metric.label}</span>
                     </div>
-                    <div className="text-sm text-gray-600 mb-1">{metric.label}</div>
-                    <div className="text-2xl sm:text-3xl font-bold text-gray-900">{metric.value}</div>
+                    <div className="text-2xl font-bold text-gray-900 mb-0.5">{metric.value}</div>
+                    <div className="text-[11px] text-gray-400">{metric.change}</div>
                   </div>
                 );
               })}
@@ -664,8 +668,8 @@ export default function CampaignDetail() {
             {/* Response Funnel */}
             {totalCreators > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Response Funnel</h2>
-                <div className="space-y-3">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Response Funnel</h2>
+                <div className="space-y-2.5">
                   {[
                     { label: "Contacted", count: totalCreators, color: "bg-blue-500" },
                     { label: "Responded", count: respondedCount, color: "bg-purple-500" },
@@ -700,7 +704,7 @@ export default function CampaignDetail() {
               {/* Brief */}
               {brief && (
                 <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Campaign Brief</h2>
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Campaign Brief</h2>
                   <div className="space-y-3 text-sm">
                     {brief.brand_name && (
                       <div>
@@ -751,7 +755,7 @@ export default function CampaignDetail() {
               {/* Strategy */}
               {strategy && typeof strategy === "object" && (
                 <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Strategy</h2>
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Strategy</h2>
                   <div className="space-y-3 text-sm">
                     {strategy.approach && (
                       <div>
@@ -802,7 +806,7 @@ export default function CampaignDetail() {
             {/* Email Delivery */}
             {(isRunning || isCompleted) && emailsSent > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Email Delivery</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Email Delivery</h2>
                 <EmailTracking campaignId={id} />
               </div>
             )}
@@ -810,7 +814,7 @@ export default function CampaignDetail() {
             {/* Approval History */}
             {pastApprovals.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Approval History</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Approval History</h2>
                 <div className="divide-y divide-gray-100">
                   {pastApprovals.map((a) => (
                     <PastApprovalRow key={a.id} approval={a} />
