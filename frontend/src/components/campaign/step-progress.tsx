@@ -35,47 +35,49 @@ export function StepProgress({ agentState, status }: { agentState?: string; stat
   const currentIdx = STEPS.findIndex((s) => s.key === currentStepKey);
 
   return (
-    <div className="flex items-center gap-1 w-full">
-      {STEPS.map((step, i) => {
-        const isDone = i < currentIdx || status === "completed";
-        const isCurrent = i === currentIdx && status !== "completed";
+    <div className="w-full overflow-hidden">
+      <div className="flex items-center w-full">
+        {STEPS.map((step, i) => {
+          const isDone = i < currentIdx || status === "completed";
+          const isCurrent = i === currentIdx && status !== "completed";
 
-        return (
-          <div key={step.key} className="flex items-center flex-1 min-w-0 last:flex-none">
-            {/* Step indicator */}
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className={`h-2 w-2 rounded-full flex-shrink-0 transition-colors ${
-                  isDone
-                    ? "bg-emerald-500"
-                    : isCurrent
-                    ? "bg-blue-500 ring-4 ring-blue-100"
-                    : "bg-stone-200"
-                }`}
-              />
-              <span
-                className={`text-[10px] leading-none whitespace-nowrap ${
-                  isDone
-                    ? "text-emerald-600 font-medium"
-                    : isCurrent
-                    ? "text-blue-700 font-medium"
-                    : "text-stone-400"
-                }`}
-              >
-                {step.label}
-              </span>
+          return (
+            <div key={step.key} className={`flex items-center ${i < STEPS.length - 1 ? "flex-1 min-w-0" : "flex-shrink-0"}`}>
+              {/* Step indicator */}
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <div
+                  className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                    isDone
+                      ? "bg-emerald-500"
+                      : isCurrent
+                      ? "bg-blue-500 ring-4 ring-blue-100"
+                      : "bg-stone-200"
+                  }`}
+                />
+                <span
+                  className={`text-[10px] leading-none whitespace-nowrap ${
+                    isDone
+                      ? "text-emerald-600 font-medium"
+                      : isCurrent
+                      ? "text-blue-700 font-medium"
+                      : "text-stone-400"
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {/* Connector line */}
+              {i < STEPS.length - 1 && (
+                <div
+                  className={`h-px flex-1 mx-2 mt-[-10px] ${
+                    i < currentIdx ? "bg-emerald-400" : "bg-stone-200"
+                  }`}
+                />
+              )}
             </div>
-            {/* Connector line */}
-            {i < STEPS.length - 1 && (
-              <div
-                className={`h-px flex-1 mx-1 mt-[-10px] ${
-                  i < currentIdx ? "bg-emerald-300" : "bg-stone-200"
-                }`}
-              />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
