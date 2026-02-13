@@ -1,7 +1,6 @@
 """Campaign API routes."""
 
 import logging
-import threading
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -16,9 +15,6 @@ from backend.db.repositories.campaign_repo import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
-
-# Track running campaign threads (in-memory, single instance)
-_running_campaigns: dict[str, threading.Thread] = {}
 
 
 @router.get("/")
@@ -52,7 +48,12 @@ def create_campaign(body: dict, brand: dict = Depends(get_current_brand)):
 
 @router.post("/{campaign_id}/run")
 def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
-    """Trigger background campaign execution with web-based approvals."""
+    """Trigger background campaign execution with web-based approvals.
+
+    Enqueues the campaign into the durable Postgres job queue.
+    The background worker picks it up and executes it. If the server
+    restarts, the job is recovered automatically on next startup.
+    """
     campaign = repo_get(campaign_id, brand_id=brand["id"])
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -60,96 +61,25 @@ def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     if campaign.get("status") == "running":
         raise HTTPException(status_code=409, detail="Campaign already running")
 
-    if campaign_id in _running_campaigns and _running_campaigns[campaign_id].is_alive():
-        raise HTTPException(status_code=409, detail="Campaign already running")
-
     brief_data = campaign.get("brief")
     if not brief_data:
         raise HTTPException(status_code=400, detail="Campaign has no brief")
 
-    # Mark as running
+    # Check if already queued
+    from backend.db.repositories.job_repo import enqueue, get_job_for_campaign
+
+    existing_job = get_job_for_campaign(campaign["id"])
+    if existing_job and existing_job["status"] in ("queued", "running"):
+        raise HTTPException(status_code=409, detail="Campaign already queued or running")
+
+    # Mark as running and enqueue
     repo_update(campaign_id, {"status": "running", "agent_state": "brief_received"})
+    job_id = enqueue(campaign["id"])
+    if not job_id:
+        raise HTTPException(status_code=503, detail="Failed to enqueue campaign job")
 
-    def _run():
-        try:
-            from models.brief import CampaignBrief
-            from agent.hudey_agent import HudeyAgent
-            from tools.approval import WebApprovalTool
-            from models.actions import AgentActionType
-            from backend.db.repositories.campaign_repo import (
-                update_campaign as db_update,
-            )
-
-            brief = CampaignBrief(**brief_data)
-            agent = HudeyAgent(no_send=False)
-
-            # Swap approval tool for web version
-            web_approval = WebApprovalTool(campaign_db_id=campaign_id)
-            agent.approval = web_approval
-            agent.tool_map[AgentActionType.REQUEST_APPROVAL] = web_approval
-            agent.tool_map[AgentActionType.REQUEST_TERMS_APPROVAL] = web_approval
-
-            def _on_step(ctx):
-                try:
-                    db_update(campaign_id, {"agent_state": ctx.state.value})
-                except Exception:
-                    # Reset client on connection errors and retry once
-                    try:
-                        from backend.db.client import reset_supabase
-                        reset_supabase()
-                        db_update(campaign_id, {"agent_state": ctx.state.value})
-                    except Exception:
-                        pass
-
-            context = agent.execute_campaign(brief, approve_all=False, on_step=_on_step)
-
-            # Save result
-            result = {
-                "brief": context.brief.model_dump() if context.brief else None,
-                "strategy": context.strategy.model_dump() if context.strategy else None,
-                "creators_count": len(context.creators),
-                "outreach_sent": context.outreach_sent,
-                "report": context.report,
-            }
-            db_update(campaign_id, {
-                "status": "completed",
-                "agent_state": "completed",
-                "result_json": result,
-            })
-            logger.info("Campaign %s completed", campaign_id)
-
-            # Create in-app notification (non-fatal)
-            try:
-                from backend.db.repositories.notification_repo import maybe_create_notification
-                from backend.db.repositories.campaign_repo import get_campaign as _get_cmp
-                cmp = _get_cmp(campaign_id)
-                if cmp and cmp.get("brand_id"):
-                    campaign_name = cmp.get("name", "Campaign")
-                    short_id = cmp.get("short_id") or campaign_id
-                    maybe_create_notification(
-                        brand_id=cmp["brand_id"],
-                        notification_type="campaign_completion",
-                        title=f"{campaign_name} completed",
-                        body="Campaign has finished running",
-                        campaign_id=campaign_id,
-                        link=f"/campaigns/{short_id}",
-                    )
-            except Exception:
-                pass
-
-        except Exception as e:
-            logger.exception("Campaign %s failed: %s", campaign_id, e)
-            try:
-                from backend.db.repositories.campaign_repo import update_campaign as db_update
-                db_update(campaign_id, {"status": "failed", "agent_state": f"error: {str(e)[:200]}"})
-            except Exception:
-                pass
-
-    thread = threading.Thread(target=_run, daemon=True, name=f"campaign-{campaign_id[:8]}")
-    thread.start()
-    _running_campaigns[campaign_id] = thread
-
-    return {"ok": True, "status": "running"}
+    logger.info("Campaign %s enqueued as job %s", campaign_id, job_id)
+    return {"ok": True, "status": "running", "job_id": job_id}
 
 
 @router.get("/{campaign_id}/email-events")

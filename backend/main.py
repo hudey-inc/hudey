@@ -49,6 +49,32 @@ app.include_router(notifications.router)
 app.include_router(webhooks.router)
 
 
+@app.on_event("startup")
+def _start_campaign_worker():
+    """Launch the background campaign worker on server startup.
+
+    The worker polls the campaign_jobs table and executes queued campaigns.
+    On startup it also recovers any jobs that were in-flight when the
+    previous server instance shut down (e.g. Railway redeploy).
+    """
+    try:
+        from backend.worker import start_worker
+        start_worker()
+        logger.info("Campaign worker started")
+    except Exception as e:
+        logger.warning("Failed to start campaign worker: %s", e)
+
+
+@app.on_event("shutdown")
+def _stop_campaign_worker():
+    """Gracefully stop the campaign worker."""
+    try:
+        from backend.worker import stop_worker
+        stop_worker()
+    except Exception:
+        pass
+
+
 @app.get("/health")
 def health():
     """Health check."""

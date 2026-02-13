@@ -100,14 +100,20 @@ class AnalyticsTool(BaseTool):
                 "recommendations": ["Collect real metrics for analysis."],
             }
 
-        # Load campaign insights if available
-        insights_path = self.output_dir / f"campaign_insights_{context.campaign_id}.json"
+        # Load campaign insights — try DB first, fall back to JSON file
         insights_data = {}
-        if insights_path.exists():
-            try:
-                insights_data = json.loads(insights_path.read_text()).get("summary", {})
-            except Exception:
-                pass
+        try:
+            from backend.db.repositories.insights_repo import get_insights_summary
+            insights_data = get_insights_summary(context.campaign_id)
+        except Exception:
+            pass
+        if not insights_data:
+            insights_path = self.output_dir / f"campaign_insights_{context.campaign_id}.json"
+            if insights_path.exists():
+                try:
+                    insights_data = json.loads(insights_path.read_text()).get("summary", {})
+                except Exception:
+                    pass
 
         prompt = REPORT_PROMPT.format(
             brief_json=context.brief.model_dump_json(indent=2) if context.brief else "{}",

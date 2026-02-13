@@ -286,7 +286,7 @@ class CampaignInsightsTool(BaseTool):
 
             summary = self._build_summary(results)
 
-            # Persist results
+            # Persist results to JSON file (for analytics tool)
             path = self.output_dir / f"campaign_insights_{context.campaign_id}.json"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps({
@@ -296,12 +296,25 @@ class CampaignInsightsTool(BaseTool):
                 "posts": results,
             }, indent=2, default=str))
 
+            # Persist to campaign_insights DB table (durable storage)
+            db_ids = []
+            try:
+                from backend.db.repositories.insights_repo import save_post_insights
+                for post_result in results:
+                    ids = save_post_insights(context.campaign_id, post_result)
+                    db_ids.extend(ids)
+                if db_ids:
+                    logger.info("Saved %d insight rows to DB for campaign %s", len(db_ids), context.campaign_id)
+            except Exception as db_err:
+                logger.warning("Failed to persist insights to DB (non-fatal): %s", db_err)
+
             return ToolResult(
                 success=True,
                 output={
                     "summary": summary,
                     "posts_analyzed": len(results),
                     "insights_path": str(path),
+                    "db_rows": len(db_ids),
                 },
             )
         except Exception as e:

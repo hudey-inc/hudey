@@ -99,24 +99,44 @@ def update_status(
 
 
 def append_message(campaign_id: str, creator_id: str, message: dict) -> bool:
-    """Append a message to the engagement's message_history."""
+    """Append a message to the engagement's message_history (atomic).
+
+    Uses a Postgres RPC function to atomically append to the JSONB array,
+    avoiding the read-modify-write race condition that can lose messages
+    when concurrent webhook deliveries or brand replies hit the same row.
+    """
+    import json as _json
+
     sb = get_supabase()
     if not sb:
         return False
     try:
-        # Read current history
-        existing = get_engagement(campaign_id, creator_id)
-        if not existing:
-            return False
-        history = existing.get("message_history") or []
-        if not isinstance(history, list):
-            history = []
-        history.append(message)
-        sb.table("creator_engagements").update({
-            "message_history": history,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("campaign_id", campaign_id).eq("creator_id", creator_id).execute()
+        sb.rpc(
+            "append_to_message_history",
+            {
+                "p_campaign_id": campaign_id,
+                "p_creator_id": creator_id,
+                "p_message": _json.dumps(message),
+            },
+        ).execute()
         return True
     except Exception as e:
-        logger.warning("Failed to append message: %s", e)
-        return False
+        # Fallback: if the RPC doesn't exist yet (migration not run),
+        # use the old read-modify-write approach
+        logger.warning("Atomic append failed (%s), falling back to read-modify-write", e)
+        try:
+            existing = get_engagement(campaign_id, creator_id)
+            if not existing:
+                return False
+            history = existing.get("message_history") or []
+            if not isinstance(history, list):
+                history = []
+            history.append(message)
+            sb.table("creator_engagements").update({
+                "message_history": history,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("campaign_id", campaign_id).eq("creator_id", creator_id).execute()
+            return True
+        except Exception as e2:
+            logger.warning("Fallback append also failed: %s", e2)
+            return False
