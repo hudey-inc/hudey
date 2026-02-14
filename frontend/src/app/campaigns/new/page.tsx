@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate } from "@/lib/api";
 import type { CampaignTemplate } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { Bookmark, Sparkles, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, Bookmark, Sparkles, ArrowRight, X } from "lucide-react";
 
 const PLATFORM_OPTIONS = ["Instagram", "TikTok", "YouTube", "Twitter/X"];
 
@@ -179,30 +179,38 @@ function NewCampaignInner() {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent transition-all";
-  const labelClass = "block text-sm font-medium text-gray-700 mb-2";
+    "w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2F4538]/30 focus:border-[#2F4538] transition-all";
+  const labelClass = "block text-sm font-medium text-gray-700 mb-1.5";
   const errorClass = "text-xs text-red-600 mt-1";
 
   if (checking) {
     return (
-      <div className="flex items-center justify-center py-20">
+      <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto flex items-center justify-center py-20">
         <div className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div>
-      <Link
-        href="/"
-        className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
-      >
-        &larr; Campaigns
-      </Link>
-
-      <h1 className="text-2xl font-semibold text-gray-900 mt-4 mb-6">
-        Create Campaign
-      </h1>
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+      {/* ── Header ── */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Back to Campaigns</span>
+          </Link>
+        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+          Create Campaign
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Set up your campaign brief and let AI handle the rest
+        </p>
+      </div>
 
       {/* ── Template Quick-Start ── */}
       {!appliedTemplate && templates.length > 0 && (
@@ -278,7 +286,7 @@ function NewCampaignInner() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Brand Details */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Brand Details</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Brand Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClass}>Brand Name *</label>
@@ -306,7 +314,7 @@ function NewCampaignInner() {
 
         {/* Campaign Brief */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Campaign Brief</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Campaign Brief</h2>
           <div className="space-y-4">
             <div>
               <label className={labelClass}>Objective *</label>
@@ -356,7 +364,7 @@ function NewCampaignInner() {
 
         {/* Creator Requirements */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Creator Requirements</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Creator Requirements</h2>
           <div className="space-y-4">
             <div>
               <label className={labelClass}>Platforms *</label>
@@ -421,7 +429,7 @@ function NewCampaignInner() {
 
         {/* Deliverables & Timeline */}
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Deliverables & Timeline</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Deliverables & Timeline</h2>
           <div className="space-y-4">
             <div>
               <label className={labelClass}>Deliverables *</label>
@@ -449,17 +457,17 @@ function NewCampaignInner() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Link
             href="/"
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-[#2F4538] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#2F4538]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-[#2F4538] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#243a2d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Creating\u2026" : "Create Campaign"}
           </button>
