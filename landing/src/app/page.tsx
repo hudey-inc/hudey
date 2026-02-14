@@ -227,7 +227,7 @@ export default function LandingPage() {
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 sm:mb-6 leading-[1.1] tracking-tight">
-              The AI Marketing Platform
+              The AI Marketing Agent
               <br />
               <span className="bg-gradient-to-r from-[#2F4538] via-[#3a5745] to-[#D16B42] bg-clip-text text-transparent">
                 That Runs Your Campaigns

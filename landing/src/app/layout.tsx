@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://hudey.co"),
   title: {
-    default: "Hudey — AI-Powered Influencer Marketing Platform",
+    default: "Hudey — AI-Powered Influencer Marketing Agent",
     template: "%s | Hudey",
   },
   description:
@@ -18,9 +18,9 @@ export const metadata: Metadata = {
     "influencer outreach",
     "campaign management",
     "influencer negotiation",
-    "creator marketing platform",
+    "creator marketing agent",
     "automated influencer marketing",
-    "AI influencer platform",
+    "AI influencer agent",
     "influencer campaign tracking",
   ],
   authors: [{ name: "Hudey" }],
@@ -31,13 +31,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://hudey.co",
     siteName: "Hudey",
-    title: "Hudey — AI-Powered Influencer Marketing Platform",
+    title: "Hudey — AI-Powered Influencer Marketing Agent",
     description:
       "Stop managing influencers manually. Hudey's AI agents find creators, write outreach, negotiate deals, and track every result — while you focus on strategy.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hudey — AI-Powered Influencer Marketing Platform",
+    title: "Hudey — AI-Powered Influencer Marketing Agent",
     description:
       "Stop managing influencers manually. Hudey's AI agents find creators, write outreach, negotiate deals, and track every result.",
     creator: "@hudeyco",
