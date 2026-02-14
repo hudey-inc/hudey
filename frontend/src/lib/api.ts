@@ -1036,3 +1036,110 @@ export type CampaignInsightsSummary = {
     by_creator: { username: string; avg_relevance_pct: number; posts: number }[];
   };
 };
+
+// ── Campaign Monitor ──────────────────────────────────────────
+
+export type MonitorSummary = {
+  total_creators: number;
+  posts_live: number;
+  total_likes: number;
+  total_comments: number;
+  total_shares: number;
+  total_saves: number;
+  avg_compliance_score: number;
+  compliance_issues: number;
+  fully_compliant: number;
+};
+
+export type ComplianceData = {
+  hashtags_found: string[];
+  hashtags_missing: string[];
+  hashtags_ok: boolean;
+  mentions_found: string[];
+  mentions_missing: string[];
+  mentions_ok: boolean;
+  deliverables_met: boolean;
+  compliance_score: number;
+  issues: string[];
+};
+
+export type MonitorUpdate = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  creator: Record<string, any>;
+  posted: boolean;
+  platform: string;
+  post_link: string;
+  posted_at: string | null;
+  metrics: {
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+  };
+  compliance: ComplianceData;
+};
+
+export type MonitorSnapshot = {
+  updates: MonitorUpdate[];
+  summary: MonitorSummary;
+  snapshot_id: string | null;
+  created_at: string | null;
+};
+
+export async function getCampaignMonitor(
+  campaignId: string
+): Promise<MonitorSnapshot> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/monitor`
+  );
+  if (!res.ok)
+    return { updates: [], summary: {} as MonitorSummary, snapshot_id: null, created_at: null };
+  return res.json();
+}
+
+export type CampaignInsightsResponse = {
+  summary: CampaignInsightsSummary | Record<string, never>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  insights: Record<string, any>[];
+  campaign_id: string;
+};
+
+export async function getCampaignInsights(
+  campaignId: string
+): Promise<CampaignInsightsResponse> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/insights`
+  );
+  if (!res.ok)
+    return { summary: {}, insights: [], campaign_id: campaignId };
+  return res.json();
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CampaignReportResponse = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  report: Record<string, any>;
+  monitor_summary: MonitorSummary | Record<string, never>;
+  insights_summary: CampaignInsightsSummary | Record<string, never>;
+  campaign_id: string;
+  status: string;
+  completed_at: string | null;
+};
+
+export async function getCampaignReport(
+  campaignId: string
+): Promise<CampaignReportResponse> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/report`
+  );
+  if (!res.ok)
+    return {
+      report: {},
+      monitor_summary: {},
+      insights_summary: {},
+      campaign_id: campaignId,
+      status: "",
+      completed_at: null,
+    };
+  return res.json();
+}

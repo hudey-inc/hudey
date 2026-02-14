@@ -82,6 +82,91 @@ def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     return {"ok": True, "status": "running", "job_id": job_id}
 
 
+@router.get("/{campaign_id}/monitor")
+def campaign_monitor(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Get the latest monitoring data for a campaign.
+
+    Returns the most recent snapshot with post metrics, compliance data,
+    and an aggregated summary.
+    """
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    from backend.db.repositories.monitor_repo import get_latest_snapshot
+
+    snapshot = get_latest_snapshot(campaign["id"])
+    if not snapshot:
+        # Fall back to result_json if no DB snapshot
+        result = campaign.get("result_json") or {}
+        report = result.get("report") or {}
+        return {
+            "updates": [],
+            "summary": report.get("metrics") or {},
+            "snapshot_id": None,
+            "created_at": None,
+        }
+    return {
+        "updates": snapshot.get("snapshot_data") or [],
+        "summary": snapshot.get("summary") or {},
+        "snapshot_id": snapshot.get("id"),
+        "created_at": snapshot.get("created_at"),
+    }
+
+
+@router.get("/{campaign_id}/insights")
+def campaign_insights(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Get campaign insights (purchase intent + comments relevance).
+
+    Returns aggregated insights from the campaign_insights table.
+    """
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    from backend.db.repositories.insights_repo import get_insights_summary, get_insights
+
+    summary = get_insights_summary(campaign["id"])
+    raw_insights = get_insights(campaign["id"])
+
+    return {
+        "summary": summary,
+        "insights": raw_insights,
+        "campaign_id": campaign["id"],
+    }
+
+
+@router.get("/{campaign_id}/report")
+def campaign_report(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Get the full campaign report.
+
+    Combines monitoring data, campaign insights, and AI-generated analysis
+    from result_json.
+    """
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    result = campaign.get("result_json") or {}
+    report = result.get("report") or {}
+
+    # Enrich with latest monitoring data
+    from backend.db.repositories.monitor_repo import get_monitor_summary
+    from backend.db.repositories.insights_repo import get_insights_summary
+
+    monitor_summary = get_monitor_summary(campaign["id"])
+    insights_summary = get_insights_summary(campaign["id"])
+
+    return {
+        "report": report,
+        "monitor_summary": monitor_summary,
+        "insights_summary": insights_summary,
+        "campaign_id": campaign["id"],
+        "status": campaign.get("status"),
+        "completed_at": campaign.get("completed_at"),
+    }
+
+
 @router.get("/{campaign_id}/email-events")
 def campaign_email_events(campaign_id: str, brand: dict = Depends(get_current_brand)):
     """Get email delivery tracking summary for a campaign."""
