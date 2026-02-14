@@ -30,7 +30,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Description of Service</h2>
             <p>
-              Hudey is an AI-powered marketing platform that automates influencer campaign management, including creator discovery, outreach, negotiation, and campaign tracking. The Service is provided on a subscription basis.
+              Hudey is an AI-powered marketing agent that automates influencer campaign management, including creator discovery, outreach, negotiation, and campaign tracking. The Service is provided on a subscription basis.
             </p>
           </section>
 
