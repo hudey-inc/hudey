@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { Suspense, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import type { FullAnalytics } from "@/lib/api";
 import { getFullAnalytics } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -245,15 +246,35 @@ function AnalyticsSkeleton() {
 
 // ── Main Page ───────────────────────────────────────────────
 
-export default function AnalyticsPage() {
+function AnalyticsPageInner() {
   const { user, checking } = useRequireAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [data, setData] = useState<FullAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState<TabKey>("overview");
+  const [error, setError] = useState<string | null>(null);
+
+  // Read initial state from URL query params
+  const validTabs: TabKey[] = ["overview", "campaigns", "content", "creators", "email", "engagement"];
+  const urlTab = searchParams.get("tab") as TabKey | null;
+  const [selectedTab, setSelectedTab] = useState<TabKey>(
+    urlTab && validTabs.includes(urlTab) ? urlTab : "overview"
+  );
+  const urlCampaign = searchParams.get("campaign");
   const [refreshing, setRefreshing] = useState(false);
-  const [campaignFilter, setCampaignFilter] = useState<string>("all");
+  const [campaignFilter, setCampaignFilter] = useState<string>(urlCampaign || "all");
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+
+  // Sync tab and campaign filter to URL query params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedTab !== "overview") params.set("tab", selectedTab);
+    if (campaignFilter !== "all") params.set("campaign", campaignFilter);
+    const qs = params.toString();
+    const newUrl = qs ? `?${qs}` : "/analytics";
+    router.replace(newUrl, { scroll: false });
+  }, [selectedTab, campaignFilter, router]);
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -383,9 +404,13 @@ export default function AnalyticsPage() {
   const fetchData = () => {
     if (!user) return;
     setRefreshing(true);
+    setError(null);
     getFullAnalytics()
       .then(setData)
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Analytics fetch failed:", err);
+        setError(err?.message || "Failed to load analytics data");
+      })
       .finally(() => {
         setLoading(false);
         setRefreshing(false);
@@ -542,6 +567,18 @@ export default function AnalyticsPage() {
       <div className="mt-6">
         {loading ? (
           <AnalyticsSkeleton />
+        ) : error ? (
+          <div className="bg-white rounded-xl border border-red-200 p-10 text-center">
+            <XCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
+            <p className="text-gray-900 font-medium text-sm">Failed to load analytics</p>
+            <p className="text-xs text-gray-500 mt-1 mb-4">{error}</p>
+            <button
+              onClick={fetchData}
+              className="px-4 py-2 bg-[#2F4538] text-white text-sm font-medium rounded-lg hover:bg-[#2F4538]/90 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         ) : !filteredData ? (
           <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
             <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -1537,5 +1574,13 @@ export default function AnalyticsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<AnalyticsSkeleton />}>
+      <AnalyticsPageInner />
+    </Suspense>
   );
 }
