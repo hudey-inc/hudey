@@ -10,6 +10,8 @@ import {
   decideApproval,
   runCampaign,
   deleteCampaign,
+  duplicateCampaign,
+  createTemplate,
   getEngagements,
   getEmailEvents,
 } from "@/lib/api";
@@ -26,6 +28,8 @@ import {
   CheckCircle,
   Sparkles,
   Trash2,
+  Copy,
+  Bookmark,
   Loader2,
   Mail,
   FileDown,
@@ -149,6 +153,11 @@ export default function CampaignDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDesc, setTemplateDesc] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [selectedTab, setSelectedTab] = useState<DetailTab>("overview");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -220,6 +229,31 @@ export default function CampaignDetail() {
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Failed to delete");
       setDeleting(false);
+    }
+  }
+
+  async function handleDuplicate(includeCreators = false) {
+    setDuplicating(true);
+    try {
+      const { id: newId } = await duplicateCampaign(id, { include_creators: includeCreators });
+      router.push(`/campaigns/${newId}`);
+    } catch {
+      setDuplicating(false);
+    }
+  }
+
+  async function handleSaveTemplate() {
+    if (!templateName.trim()) return;
+    setSavingTemplate(true);
+    try {
+      await createTemplate({ name: templateName.trim(), description: templateDesc.trim(), campaign_id: id });
+      setShowTemplateModal(false);
+      setTemplateName("");
+      setTemplateDesc("");
+    } catch {
+      // silent
+    } finally {
+      setSavingTemplate(false);
     }
   }
 
@@ -457,7 +491,32 @@ export default function CampaignDetail() {
                   {showMoreMenu && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setShowMoreMenu(false)} />
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                      <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                        <button
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            handleDuplicate(false);
+                          }}
+                          disabled={duplicating}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                          <Copy className="w-4 h-4" />
+                          {duplicating ? "Duplicating…" : "Duplicate Campaign"}
+                        </button>
+                        {(campaign.status === "completed" || campaign.status === "draft") && (
+                          <button
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setTemplateName(campaign.name || "");
+                              setShowTemplateModal(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Bookmark className="w-4 h-4" />
+                            Save as Template
+                          </button>
+                        )}
+                        <div className="border-t border-gray-100 my-1" />
                         <button
                           onClick={() => {
                             setShowMoreMenu(false);
@@ -989,6 +1048,61 @@ export default function CampaignDetail() {
                 className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deleting ? "Deleting\u2026" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Save as Template Modal ── */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#2F4538]/10 flex items-center justify-center flex-shrink-0">
+                <Bookmark className="w-5 h-5 text-[#2F4538]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Save as Template</h3>
+                <p className="text-[13px] text-gray-500 mt-0.5">Reuse this brief for future campaigns</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Template Name *</label>
+                <input
+                  type="text"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="e.g. Summer Product Launch"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={templateDesc}
+                  onChange={(e) => setTemplateDesc(e.target.value)}
+                  placeholder="Optional notes about when to use this template"
+                  rows={2}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowTemplateModal(false); setTemplateName(""); setTemplateDesc(""); }}
+                disabled={savingTemplate}
+                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTemplate}
+                disabled={savingTemplate || !templateName.trim()}
+                className="flex-1 rounded-lg bg-[#2F4538] px-4 py-2 text-sm font-medium text-white hover:bg-[#2F4538]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingTemplate ? "Saving…" : "Save Template"}
               </button>
             </div>
           </div>

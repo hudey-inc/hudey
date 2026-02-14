@@ -1,20 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createCampaign } from "@/lib/api";
+import { Suspense } from "react";
+import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate } from "@/lib/api";
+import type { CampaignTemplate } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { Bookmark, Sparkles, ArrowRight, X } from "lucide-react";
 
 const PLATFORM_OPTIONS = ["Instagram", "TikTok", "YouTube", "Twitter/X"];
 
-export default function NewCampaign() {
+function NewCampaignInner() {
   const { checking } = useRequireAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateIdParam = searchParams.get("template");
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Template picker state
+  const [templates, setTemplates] = useState<CampaignTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [appliedTemplate, setAppliedTemplate] = useState<CampaignTemplate | null>(null);
+
+  // Form state
   const [brandName, setBrandName] = useState("");
   const [industry, setIndustry] = useState("");
   const [objective, setObjective] = useState("");
@@ -27,6 +39,71 @@ export default function NewCampaign() {
   const [budgetGbp, setBudgetGbp] = useState("");
   const [deliverables, setDeliverables] = useState("");
   const [timeline, setTimeline] = useState("");
+
+  // Load templates on mount
+  useEffect(() => {
+    listTemplates()
+      .then(setTemplates)
+      .catch(() => {})
+      .finally(() => setLoadingTemplates(false));
+  }, []);
+
+  // If ?template=id is in URL, auto-apply that template
+  useEffect(() => {
+    if (templateIdParam && !appliedTemplate) {
+      getTemplate(templateIdParam).then((t) => {
+        if (t) applyTemplate(t);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateIdParam]);
+
+  function applyTemplate(t: CampaignTemplate) {
+    setAppliedTemplate(t);
+    const b = t.brief || {};
+    setBrandName((b.brand_name as string) || "");
+    setIndustry((b.industry as string) || "");
+    setObjective((b.objective as string) || "");
+    setTargetAudience((b.target_audience as string) || "");
+    setKeyMessage((b.key_message as string) || "");
+    setBrandVoice((b.brand_voice as string) || "");
+    // Platforms
+    const plats = (b.platforms as string[]) || [];
+    setPlatforms(
+      plats.map((p) => {
+        const lower = p.toLowerCase();
+        return PLATFORM_OPTIONS.find((o) => o.toLowerCase() === lower || o.toLowerCase().replace("/", "") === lower) || p;
+      })
+    );
+    // Follower range
+    const range = (b.follower_range as number[]) || [];
+    if (range[0] !== undefined) setMinFollowers(String(range[0]));
+    if (range[1] !== undefined) setMaxFollowers(String(range[1]));
+    // Budget
+    if (b.budget_gbp !== undefined) setBudgetGbp(String(b.budget_gbp));
+    // Deliverables
+    const dels = (b.deliverables as string[]) || [];
+    if (Array.isArray(dels)) setDeliverables(dels.join("\n"));
+    // Timeline
+    if (b.timeline) setTimeline(b.timeline as string);
+    setFieldErrors({});
+  }
+
+  function clearTemplate() {
+    setAppliedTemplate(null);
+    setBrandName("");
+    setIndustry("");
+    setObjective("");
+    setTargetAudience("");
+    setKeyMessage("");
+    setBrandVoice("");
+    setPlatforms([]);
+    setMinFollowers("");
+    setMaxFollowers("");
+    setBudgetGbp("");
+    setDeliverables("");
+    setTimeline("");
+  }
 
   function togglePlatform(p: string) {
     setPlatforms((prev) =>
@@ -87,8 +164,22 @@ export default function NewCampaign() {
     }
   }
 
+  async function handleQuickCreate(template: CampaignTemplate) {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { id } = await createCampaignFromTemplate(template.id, {
+        name: template.name,
+      });
+      router.push(`/campaigns/${id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create from template");
+      setSubmitting(false);
+    }
+  }
+
   const inputClass =
-    "w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all";
+    "w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2F4538] focus:border-transparent transition-all";
   const labelClass = "block text-sm font-medium text-gray-700 mb-2";
   const errorClass = "text-xs text-red-600 mt-1";
 
@@ -106,12 +197,77 @@ export default function NewCampaign() {
         href="/"
         className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
       >
-        ← Campaigns
+        &larr; Campaigns
       </Link>
 
       <h1 className="text-2xl font-semibold text-gray-900 mt-4 mb-6">
         Create Campaign
       </h1>
+
+      {/* ── Template Quick-Start ── */}
+      {!appliedTemplate && templates.length > 0 && (
+        <div className="mb-6 rounded-xl border border-[#2F4538]/20 bg-gradient-to-r from-[#2F4538]/5 to-transparent p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[#D16B42]" />
+            <h2 className="text-sm font-semibold text-gray-900">Quick Start from Template</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {templates.slice(0, 6).map((t) => (
+              <div
+                key={t.id}
+                className="group bg-white rounded-lg border border-gray-200 p-4 hover:border-[#2F4538]/40 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Bookmark className="w-4 h-4 text-[#2F4538] flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-900 truncate">{t.name}</span>
+                  </div>
+                  {t.usage_count > 0 && (
+                    <span className="text-[10px] text-gray-400 flex-shrink-0">{t.usage_count}x used</span>
+                  )}
+                </div>
+                {t.description && (
+                  <p className="text-xs text-gray-500 mb-3 line-clamp-2">{t.description}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => applyTemplate(t)}
+                    className="flex-1 text-xs text-[#2F4538] font-medium hover:underline"
+                  >
+                    Customise
+                  </button>
+                  <button
+                    onClick={() => handleQuickCreate(t)}
+                    disabled={submitting}
+                    className="flex items-center gap-1 text-xs font-medium text-white bg-[#2F4538] px-3 py-1 rounded-md hover:bg-[#2F4538]/90 transition-colors disabled:opacity-50"
+                  >
+                    Quick Create <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {!loadingTemplates && templates.length === 0 && (
+            <p className="text-xs text-gray-400">No templates saved yet. Complete a campaign and save it as a template.</p>
+          )}
+        </div>
+      )}
+
+      {/* Applied template banner */}
+      {appliedTemplate && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-[#2F4538]/30 bg-[#2F4538]/5 px-4 py-3">
+          <Bookmark className="w-4 h-4 text-[#2F4538] flex-shrink-0" />
+          <span className="text-sm text-gray-700 flex-1">
+            Using template: <span className="font-medium text-gray-900">{appliedTemplate.name}</span>
+          </span>
+          <button
+            onClick={clearTemplate}
+            className="p-1 hover:bg-gray-200 rounded transition-colors"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 mb-6">
@@ -212,8 +368,8 @@ export default function NewCampaign() {
                     onClick={() => togglePlatform(p)}
                     className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
                       platforms.includes(p)
-                        ? "border-indigo-600 bg-indigo-600 text-white"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-indigo-500 hover:bg-indigo-50"
+                        ? "border-[#2F4538] bg-[#2F4538] text-white"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-[#2F4538]/50 hover:bg-[#2F4538]/5"
                     }`}
                   >
                     {p}
@@ -303,12 +459,26 @@ export default function NewCampaign() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-[#2F4538] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#2F4538]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? "Creating…" : "Create Campaign"}
+            {submitting ? "Creating\u2026" : "Create Campaign"}
           </button>
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewCampaign() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-20">
+          <div className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+        </div>
+      }
+    >
+      <NewCampaignInner />
+    </Suspense>
   );
 }
