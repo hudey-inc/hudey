@@ -108,6 +108,88 @@ export async function deleteCampaign(id: string): Promise<{ ok: boolean }> {
   return res.json();
 }
 
+export async function duplicateCampaign(
+  id: string,
+  options?: { name?: string; include_creators?: boolean }
+): Promise<{ id: string; source_campaign_id: string }> {
+  const res = await authFetch(`${API_URL}/api/campaigns/${id}/duplicate`, {
+    method: "POST",
+    body: JSON.stringify(options || {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to duplicate campaign (${res.status})`);
+  }
+  return res.json();
+}
+
+// ── Templates ────────────────────────────────────────────────
+
+export type CampaignTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  brief: Record<string, unknown>;
+  strategy?: Record<string, unknown>;
+  usage_count: number;
+  created_at: string;
+};
+
+export async function listTemplates(): Promise<CampaignTemplate[]> {
+  const res = await authFetch(`${API_URL}/api/templates`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getTemplate(id: string): Promise<CampaignTemplate | null> {
+  const res = await authFetch(`${API_URL}/api/templates/${id}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function createTemplate(body: {
+  name: string;
+  description?: string;
+  brief?: Record<string, unknown>;
+  campaign_id?: string;
+}): Promise<{ id: string }> {
+  const res = await authFetch(`${API_URL}/api/templates`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to create template (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteTemplate(id: string): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/templates/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to delete template (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createCampaignFromTemplate(
+  templateId: string,
+  body?: { name?: string; brief_overrides?: Record<string, unknown> }
+): Promise<{ id: string; template_id: string }> {
+  const res = await authFetch(`${API_URL}/api/templates/${templateId}/create-campaign`, {
+    method: "POST",
+    body: JSON.stringify(body || {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to create campaign from template (${res.status})`);
+  }
+  return res.json();
+}
+
 // ── Brand ─────────────────────────────────────────────────────
 
 export async function getBrand(): Promise<Brand> {

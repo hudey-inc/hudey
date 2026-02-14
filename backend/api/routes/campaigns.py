@@ -542,6 +542,55 @@ def update_engagement_status(
     return {"ok": True, "status": new_status}
 
 
+@router.post("/{campaign_id}/duplicate")
+def duplicate_campaign(campaign_id: str, body: dict = None, brand: dict = Depends(get_current_brand)):
+    """Duplicate a campaign — copies brief/strategy into a new draft.
+
+    Optionally accepts { name: str, include_creators: bool } in body.
+    Returns { id: new_campaign_id }.
+    """
+    body = body or {}
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    brief = campaign.get("brief") or {}
+    strategy = {}
+    if campaign.get("target_audience"):
+        strategy["target_audience"] = campaign["target_audience"]
+    if campaign.get("deliverables"):
+        strategy["deliverables"] = campaign["deliverables"]
+    if campaign.get("timeline"):
+        strategy["timeline"] = campaign["timeline"]
+
+    original_name = campaign.get("name") or "Campaign"
+    name = body.get("name") or f"{original_name} (copy)"
+
+    new_id = repo_create(brief, strategy, name=name, brand_id=brand["id"])
+    if not new_id:
+        raise HTTPException(status_code=503, detail="Failed to duplicate campaign")
+
+    # Optionally carry over agreed creators
+    if body.get("include_creators"):
+        try:
+            from backend.db.repositories.engagement_repo import get_engagements, upsert_engagement
+            engagements = get_engagements(campaign["id"])
+            agreed = [e for e in engagements if e.get("status") == "agreed"]
+            for eng in agreed:
+                upsert_engagement(new_id, eng["creator_id"], {
+                    "creator_name": eng.get("creator_name", ""),
+                    "creator_email": eng.get("creator_email", ""),
+                    "platform": eng.get("platform", ""),
+                    "status": "contacted",
+                    "terms": eng.get("terms"),
+                    "notes": f"Carried over from {original_name}",
+                })
+        except Exception as e:
+            logger.warning("Failed to carry over creators during duplicate: %s", e)
+
+    return {"id": new_id, "source_campaign_id": campaign["id"]}
+
+
 @router.delete("/{campaign_id}")
 def delete_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     """Delete campaign. Verifies brand ownership. Prevents deletion of running campaigns."""
