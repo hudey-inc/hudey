@@ -678,6 +678,43 @@ export type FullAnalytics = AggregateAnalytics & {
     declined: number;
     responseRate: number;
   }[];
+  /** Content performance across all campaigns (from monitoring data) */
+  contentPerformance: {
+    totalPostsLive: number;
+    totalLikes: number;
+    totalComments: number;
+    totalShares: number;
+    totalSaves: number;
+    avgComplianceScore: number;
+    totalComplianceIssues: number;
+    totalFullyCompliant: number;
+    perCampaign: {
+      campaignId: string;
+      campaignName: string;
+      postsLive: number;
+      likes: number;
+      comments: number;
+      shares: number;
+      saves: number;
+      complianceScore: number;
+      complianceIssues: number;
+    }[];
+  };
+  /** ROI & budget tracking */
+  budgetTracking: {
+    totalBudget: number;
+    totalAgreedFees: number;
+    avgCostPerCreator: number;
+    avgCostPerEngagement: number;
+    perCampaign: {
+      campaignId: string;
+      campaignName: string;
+      budget: number;
+      agreedFees: number;
+      creatorsAgreed: number;
+      totalEngagements: number;
+    }[];
+  };
 };
 
 export async function getFullAnalytics(): Promise<FullAnalytics> {
@@ -689,11 +726,13 @@ export async function getFullAnalytics(): Promise<FullAnalytics> {
 
   const results = await Promise.allSettled(
     campaigns.map(async (c) => {
-      const [email, engagements] = await Promise.all([
+      const [email, engagements, campaign, monitor] = await Promise.all([
         getEmailEvents(c.id),
         getEngagements(c.id),
+        getCampaign(c.id),
+        getCampaignMonitor(c.id).catch(() => ({ updates: [], summary: {} as MonitorSummary, snapshot_id: null, created_at: null })),
       ]);
-      return { id: c.id, name: c.name, status: c.status, email, engagements };
+      return { id: c.id, name: c.name, status: c.status, email, engagements, campaign, monitor };
     })
   );
 
@@ -706,9 +745,20 @@ export async function getFullAnalytics(): Promise<FullAnalytics> {
   const platformMap: Record<string, { creators: number; responded: number; agreed: number; declined: number }> = {};
   const responseTimes: number[] = [];
 
+  // Content performance aggregation
+  const contentPerCampaign: FullAnalytics["contentPerformance"]["perCampaign"] = [];
+  let totalPostsLive = 0, cpTotalLikes = 0, cpTotalComments = 0, cpTotalShares = 0, cpTotalSaves = 0;
+  let totalComplianceIssues = 0, totalFullyCompliant = 0;
+  const complianceScores: number[] = [];
+
+  // Budget tracking aggregation
+  const budgetPerCampaign: FullAnalytics["budgetTracking"]["perCampaign"] = [];
+  let totalBudget = 0;
+  let overallAgreedFees = 0;
+
   for (const r of results) {
     if (r.status !== "fulfilled") continue;
-    const { id, name, status, email, engagements } = r.value;
+    const { id, name, status, email, engagements, campaign, monitor } = r.value;
 
     // Email totals
     totalSent += email.total_sent;
@@ -787,6 +837,54 @@ export async function getFullAnalytics(): Promise<FullAnalytics> {
         feeGbp: typeof feeGbp === "number" ? feeGbp : null,
       });
     }
+
+    // Content performance from monitoring data
+    const ms = (monitor?.summary || {}) as Partial<MonitorSummary>;
+    const cPosts = ms.posts_live || 0;
+    const cLikes = ms.total_likes || 0;
+    const cComments = ms.total_comments || 0;
+    const cShares = ms.total_shares || 0;
+    const cSaves = ms.total_saves || 0;
+    const cScore = ms.avg_compliance_score || 0;
+    const cIssues = ms.compliance_issues || 0;
+
+    totalPostsLive += cPosts;
+    cpTotalLikes += cLikes;
+    cpTotalComments += cComments;
+    cpTotalShares += cShares;
+    cpTotalSaves += cSaves;
+    totalComplianceIssues += cIssues;
+    totalFullyCompliant += ms.fully_compliant || 0;
+    if (cPosts > 0) complianceScores.push(cScore);
+
+    contentPerCampaign.push({
+      campaignId: id, campaignName: name,
+      postsLive: cPosts, likes: cLikes, comments: cComments,
+      shares: cShares, saves: cSaves,
+      complianceScore: cScore, complianceIssues: cIssues,
+    });
+
+    // Budget tracking
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const brief = (campaign?.brief || {}) as any;
+    const budget = typeof brief?.budget_gbp === "number" ? brief.budget_gbp : 0;
+    totalBudget += budget;
+    const campaignFees = engagements
+      .filter((e) => e.status === "agreed")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .reduce((sum: number, e) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fee = (e.terms as any)?.fee_gbp ?? (e.latest_proposal as any)?.fee_gbp ?? 0;
+        return sum + (typeof fee === "number" ? fee : 0);
+      }, 0);
+    overallAgreedFees += campaignFees;
+    const totalEng = cLikes + cComments + cShares + cSaves;
+
+    budgetPerCampaign.push({
+      campaignId: id, campaignName: name,
+      budget, agreedFees: campaignFees,
+      creatorsAgreed: agreed, totalEngagements: totalEng,
+    });
   }
 
   const platformBreakdown = Object.entries(platformMap)
@@ -825,6 +923,28 @@ export async function getFullAnalytics(): Promise<FullAnalytics> {
       avgResponseTimeHours,
     },
     platformBreakdown,
+    contentPerformance: {
+      totalPostsLive,
+      totalLikes: cpTotalLikes,
+      totalComments: cpTotalComments,
+      totalShares: cpTotalShares,
+      totalSaves: cpTotalSaves,
+      avgComplianceScore: complianceScores.length > 0
+        ? Math.round(complianceScores.reduce((a, b) => a + b, 0) / complianceScores.length * 10) / 10
+        : 0,
+      totalComplianceIssues,
+      totalFullyCompliant,
+      perCampaign: contentPerCampaign,
+    },
+    budgetTracking: {
+      totalBudget,
+      totalAgreedFees: overallAgreedFees,
+      avgCostPerCreator: totalAgreed > 0 ? Math.round(overallAgreedFees / totalAgreed) : 0,
+      avgCostPerEngagement: (cpTotalLikes + cpTotalComments + cpTotalShares + cpTotalSaves) > 0
+        ? Math.round((overallAgreedFees / (cpTotalLikes + cpTotalComments + cpTotalShares + cpTotalSaves)) * 100) / 100
+        : 0,
+      perCampaign: budgetPerCampaign,
+    },
   };
 }
 

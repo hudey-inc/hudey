@@ -31,12 +31,20 @@ import {
   ChevronDown,
   X,
   FileDown,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  ShieldCheck,
+  AlertTriangle,
+  DollarSign,
+  PieChart,
 } from "lucide-react";
 import { generateAnalyticsPdf } from "@/lib/pdf/pdf-analytics";
 
 // ── Types ────────────────────────────────────────────────────
 
-type TabKey = "overview" | "campaigns" | "creators" | "email" | "engagement";
+type TabKey = "overview" | "campaigns" | "creators" | "email" | "engagement" | "content";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -196,6 +204,17 @@ function exportTab(tab: TabKey, data: FullAnalytics, campaignFilter: string) {
         ])
       );
       break;
+
+    case "content":
+      downloadCSV(`analytics-content-${ts}.csv`,
+        ["Campaign", "Posts Live", "Likes", "Comments", "Shares", "Saves", "Compliance"],
+        (filtered.contentPerformance?.perCampaign || []).map((c) => [
+          c.campaignName, String(c.postsLive), String(c.likes),
+          String(c.comments), String(c.shares), String(c.saves),
+          `${c.complianceScore}%`,
+        ])
+      );
+      break;
   }
 }
 
@@ -310,6 +329,36 @@ export default function AnalyticsPage() {
         ...s,
         responseRate: s.creators > 0 ? Math.round((s.responded / s.creators) * 100) : 0,
       })).sort((a, b) => b.creators - a.creators),
+      contentPerformance: (() => {
+        const filtContent = data.contentPerformance.perCampaign.filter((c) => c.campaignId === campaignFilter);
+        return {
+          totalPostsLive: filtContent.reduce((a, c) => a + c.postsLive, 0),
+          totalLikes: filtContent.reduce((a, c) => a + c.likes, 0),
+          totalComments: filtContent.reduce((a, c) => a + c.comments, 0),
+          totalShares: filtContent.reduce((a, c) => a + c.shares, 0),
+          totalSaves: filtContent.reduce((a, c) => a + c.saves, 0),
+          avgComplianceScore: filtContent.filter((c) => c.postsLive > 0).length > 0
+            ? Math.round(filtContent.filter((c) => c.postsLive > 0).reduce((a, c) => a + c.complianceScore, 0) / filtContent.filter((c) => c.postsLive > 0).length * 10) / 10
+            : 0,
+          totalComplianceIssues: filtContent.reduce((a, c) => a + c.complianceIssues, 0),
+          totalFullyCompliant: data.contentPerformance.totalFullyCompliant, // approximate
+          perCampaign: filtContent,
+        };
+      })(),
+      budgetTracking: (() => {
+        const filtBudget = data.budgetTracking.perCampaign.filter((c) => c.campaignId === campaignFilter);
+        const tb = filtBudget.reduce((a, c) => a + c.budget, 0);
+        const tf = filtBudget.reduce((a, c) => a + c.agreedFees, 0);
+        const ta = filtBudget.reduce((a, c) => a + c.creatorsAgreed, 0);
+        const te = filtBudget.reduce((a, c) => a + c.totalEngagements, 0);
+        return {
+          totalBudget: tb,
+          totalAgreedFees: tf,
+          avgCostPerCreator: ta > 0 ? Math.round(tf / ta) : 0,
+          avgCostPerEngagement: te > 0 ? Math.round((tf / te) * 100) / 100 : 0,
+          perCampaign: filtBudget,
+        };
+      })(),
     };
   }, [data, campaignFilter]);
 
@@ -360,6 +409,7 @@ export default function AnalyticsPage() {
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "campaigns", label: "Campaigns" },
+    { key: "content", label: "Content" },
     { key: "creators", label: "Creators" },
     { key: "email", label: "Email" },
     { key: "engagement", label: "Engagement" },
@@ -628,6 +678,65 @@ export default function AnalyticsPage() {
                     <div className="text-xs text-gray-500 mt-1">{filteredData.negotiationStats.activeNegotiations} active negotiations</div>
                   </div>
                 </div>
+
+                {/* Content & Budget Snapshot */}
+                {(filteredData.contentPerformance.totalPostsLive > 0 || filteredData.budgetTracking.totalBudget > 0) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    {filteredData.contentPerformance.totalPostsLive > 0 && (
+                      <>
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Heart className="w-5 h-5 text-red-500" />
+                            <span className="text-sm text-gray-600">Total Engagements</span>
+                          </div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {(filteredData.contentPerformance.totalLikes +
+                              filteredData.contentPerformance.totalComments +
+                              filteredData.contentPerformance.totalShares +
+                              filteredData.contentPerformance.totalSaves).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{filteredData.contentPerformance.totalPostsLive} posts live</div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                            <span className="text-sm text-gray-600">Compliance Score</span>
+                          </div>
+                          <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.avgComplianceScore}%</div>
+                          <div className="text-xs text-gray-500 mt-1">{filteredData.contentPerformance.totalFullyCompliant} fully compliant</div>
+                        </div>
+                      </>
+                    )}
+                    {filteredData.budgetTracking.totalBudget > 0 && (
+                      <>
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <DollarSign className="w-5 h-5 text-green-600" />
+                            <span className="text-sm text-gray-600">Budget</span>
+                          </div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            £{filteredData.budgetTracking.totalBudget.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            £{filteredData.budgetTracking.totalAgreedFees.toLocaleString()} agreed
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <PieChart className="w-5 h-5 text-purple-500" />
+                            <span className="text-sm text-gray-600">Cost / Creator</span>
+                          </div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {filteredData.budgetTracking.avgCostPerCreator > 0
+                              ? `£${filteredData.budgetTracking.avgCostPerCreator.toLocaleString()}`
+                              : "—"}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{filteredData.totalAgreed} creators agreed</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Campaign Status Breakdown */}
                 {Object.keys(filteredData.byStatus).length > 0 && (
@@ -1180,6 +1289,246 @@ export default function AnalyticsPage() {
                           );
                         })}
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ════════════════════ CONTENT TAB ══════════════════════ */}
+            {selectedTab === "content" && (
+              <div className="space-y-6">
+                {/* Content Performance Overview */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <BarChart3 className="w-5 h-5 text-blue-500" />
+                      <span className="text-sm text-gray-600">Posts Live</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.totalPostsLive}</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Heart className="w-5 h-5 text-red-500" />
+                      <span className="text-sm text-gray-600">Likes</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.totalLikes.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <MessageCircle className="w-5 h-5 text-blue-500" />
+                      <span className="text-sm text-gray-600">Comments</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.totalComments.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Share2 className="w-5 h-5 text-green-500" />
+                      <span className="text-sm text-gray-600">Shares</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.totalShares.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Bookmark className="w-5 h-5 text-purple-500" />
+                      <span className="text-sm text-gray-600">Saves</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.totalSaves.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                      <span className="text-sm text-gray-600">Compliance</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{filteredData.contentPerformance.avgComplianceScore}%</div>
+                  </div>
+                </div>
+
+                {/* Compliance Summary */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h2 className="text-lg font-bold text-gray-900 mb-4">Compliance Overview</h2>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-5 h-5 text-green-500" />
+                          <span className="text-sm text-gray-700">Fully Compliant</span>
+                        </div>
+                        <span className="font-bold text-green-600">{filteredData.contentPerformance.totalFullyCompliant}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-amber-500" />
+                          <span className="text-sm text-gray-700">With Issues</span>
+                        </div>
+                        <span className="font-bold text-amber-600">{filteredData.contentPerformance.totalComplianceIssues}</span>
+                      </div>
+                      {filteredData.contentPerformance.totalPostsLive > 0 && (
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-gray-600">Overall Compliance</span>
+                            <span className="font-semibold">{filteredData.contentPerformance.avgComplianceScore}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className={`h-2.5 rounded-full transition-all ${
+                                filteredData.contentPerformance.avgComplianceScore >= 80
+                                  ? "bg-green-500"
+                                  : filteredData.contentPerformance.avgComplianceScore >= 50
+                                    ? "bg-amber-500"
+                                    : "bg-red-500"
+                              }`}
+                              style={{ width: `${filteredData.contentPerformance.avgComplianceScore}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ROI Summary Card */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h2 className="text-lg font-bold text-gray-900 mb-4">Budget & ROI</h2>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Total Budget</span>
+                        <span className="font-bold text-gray-900">
+                          {filteredData.budgetTracking.totalBudget > 0
+                            ? `£${filteredData.budgetTracking.totalBudget.toLocaleString()}`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Agreed Fees</span>
+                        <span className="font-bold text-gray-900">
+                          {filteredData.budgetTracking.totalAgreedFees > 0
+                            ? `£${filteredData.budgetTracking.totalAgreedFees.toLocaleString()}`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Cost per Creator</span>
+                        <span className="font-bold text-gray-900">
+                          {filteredData.budgetTracking.avgCostPerCreator > 0
+                            ? `£${filteredData.budgetTracking.avgCostPerCreator.toLocaleString()}`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Cost per Engagement</span>
+                        <span className="font-bold text-gray-900">
+                          {filteredData.budgetTracking.avgCostPerEngagement > 0
+                            ? `£${filteredData.budgetTracking.avgCostPerEngagement.toFixed(2)}`
+                            : "—"}
+                        </span>
+                      </div>
+                      {filteredData.budgetTracking.totalBudget > 0 && filteredData.budgetTracking.totalAgreedFees > 0 && (
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-gray-600">Budget Used</span>
+                            <span className="font-semibold">
+                              {Math.round((filteredData.budgetTracking.totalAgreedFees / filteredData.budgetTracking.totalBudget) * 100)}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className={`h-2.5 rounded-full transition-all ${
+                                filteredData.budgetTracking.totalAgreedFees <= filteredData.budgetTracking.totalBudget
+                                  ? "bg-gradient-to-r from-[#2F4538] to-[#D16B42]"
+                                  : "bg-red-500"
+                              }`}
+                              style={{
+                                width: `${Math.min(100, Math.round((filteredData.budgetTracking.totalAgreedFees / filteredData.budgetTracking.totalBudget) * 100))}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Per-Campaign Content Breakdown */}
+                {filteredData.contentPerformance.perCampaign.filter((c) => c.postsLive > 0).length > 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h2 className="text-lg font-bold text-gray-900 mb-6">Content by Campaign</h2>
+                    <div className="space-y-4">
+                      {filteredData.contentPerformance.perCampaign
+                        .filter((c) => c.postsLive > 0)
+                        .sort((a, b) => b.likes - a.likes)
+                        .map((c, i) => {
+                          const totalEng = c.likes + c.comments + c.shares + c.saves;
+                          return (
+                            <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-between mb-4">
+                                <Link
+                                  href={`/campaigns/${c.campaignId}`}
+                                  className="font-semibold text-gray-900 hover:text-[#2F4538] transition-colors"
+                                >
+                                  {c.campaignName}
+                                </Link>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm text-gray-500">{c.postsLive} posts</span>
+                                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                    c.complianceScore >= 80
+                                      ? "bg-green-100 text-green-700"
+                                      : c.complianceScore >= 50
+                                        ? "bg-amber-100 text-amber-700"
+                                        : "bg-red-100 text-red-700"
+                                  }`}>
+                                    {c.complianceScore}% compliant
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Heart className="w-4 h-4 text-red-400" />
+                                  <div>
+                                    <div className="text-sm font-bold text-gray-900">{c.likes.toLocaleString()}</div>
+                                    <div className="text-[10px] text-gray-500">Likes</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <MessageCircle className="w-4 h-4 text-blue-400" />
+                                  <div>
+                                    <div className="text-sm font-bold text-gray-900">{c.comments.toLocaleString()}</div>
+                                    <div className="text-[10px] text-gray-500">Comments</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Share2 className="w-4 h-4 text-green-400" />
+                                  <div>
+                                    <div className="text-sm font-bold text-gray-900">{c.shares.toLocaleString()}</div>
+                                    <div className="text-[10px] text-gray-500">Shares</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Bookmark className="w-4 h-4 text-purple-400" />
+                                  <div>
+                                    <div className="text-sm font-bold text-gray-900">{c.saves.toLocaleString()}</div>
+                                    <div className="text-[10px] text-gray-500">Saves</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <TrendingUp className="w-4 h-4 text-gray-400" />
+                                  <div>
+                                    <div className="text-sm font-bold text-gray-900">{totalEng.toLocaleString()}</div>
+                                    <div className="text-[10px] text-gray-500">Total</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {filteredData.contentPerformance.totalPostsLive === 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+                    <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">No content performance data yet.</p>
+                    <p className="text-xs text-gray-400 mt-1">Content metrics appear after campaigns reach the monitoring phase.</p>
                   </div>
                 )}
               </div>
