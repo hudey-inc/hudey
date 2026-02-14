@@ -62,13 +62,23 @@ def _execute_campaign(campaign_id: str) -> None:
 
     context = agent.execute_campaign(brief, approve_all=False, on_step=_on_step)
 
-    # Save result
+    # Build monitor summary from context
+    monitor_summary = {}
+    if context.monitor_updates:
+        try:
+            from tools.campaign_monitor import build_monitor_summary
+            monitor_summary = build_monitor_summary(context.monitor_updates)
+        except Exception:
+            pass
+
+    # Save result — includes monitor summary alongside report
     result = {
         "brief": context.brief.model_dump() if context.brief else None,
         "strategy": context.strategy.model_dump() if context.strategy else None,
         "creators_count": len(context.creators),
         "outreach_sent": context.outreach_sent,
         "report": context.report,
+        "monitor_summary": monitor_summary,
     }
     db_update(campaign_id, {
         "status": "completed",
@@ -77,18 +87,28 @@ def _execute_campaign(campaign_id: str) -> None:
     })
     logger.info("Campaign %s completed via job queue", campaign_id)
 
-    # Completion notification (non-fatal)
+    # Completion notification with metrics (non-fatal)
     try:
         from backend.db.repositories.notification_repo import maybe_create_notification
         cmp = get_campaign(campaign_id)
         if cmp and cmp.get("brand_id"):
             campaign_name = cmp.get("name", "Campaign")
             short_id = cmp.get("short_id") or campaign_id
+
+            # Build rich notification body with monitor metrics
+            body_parts = ["Campaign has finished running."]
+            if monitor_summary:
+                posts = monitor_summary.get("posts_live", 0)
+                likes = monitor_summary.get("total_likes", 0)
+                score = monitor_summary.get("avg_compliance_score", 0)
+                if posts > 0:
+                    body_parts.append(f"{posts} posts live \u2022 {likes:,} likes \u2022 {score}% compliance")
+
             maybe_create_notification(
                 brand_id=cmp["brand_id"],
                 notification_type="campaign_completion",
                 title=f"{campaign_name} completed",
-                body="Campaign has finished running",
+                body=" ".join(body_parts),
                 campaign_id=campaign_id,
                 link=f"/campaigns/{short_id}",
             )

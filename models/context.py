@@ -54,6 +54,7 @@ class CampaignContext(BaseModel):
         description="Creator ID for pending counter offer / payment",
     )
     monitor_updates: list[dict[str, Any]] = Field(default_factory=list)
+    monitor_summary: Optional[dict[str, Any]] = None
     report: Optional[dict[str, Any]] = None
     state: CampaignState = Field(default=CampaignState.BRIEF_RECEIVED)
     approval_queue: list[dict[str, Any]] = Field(default_factory=list)
@@ -130,6 +131,8 @@ class CampaignContext(BaseModel):
                 self.state = CampaignState.CAMPAIGN_ACTIVE
         elif "monitor_updates" in output:
             self.monitor_updates = output["monitor_updates"]
+            if "monitor_summary" in output:
+                self.monitor_summary = output["monitor_summary"]
             if output.get("state"):
                 self.state = CampaignState(output["state"])
             else:
