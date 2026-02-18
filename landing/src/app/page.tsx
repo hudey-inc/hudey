@@ -87,6 +87,18 @@ const features = [
     description:
       "See exactly what's working and what's not — in real time. Campaign performance, creator deliverables, spend tracking, and ROI — all in one dashboard, updated automatically.",
   },
+  {
+    icon: Shield,
+    title: "Brand Safety & Compliance Built In",
+    description:
+      "Every creator is vetted for brand alignment before you see them. Hudey checks content history, audience authenticity, and values fit — so your brand is never associated with the wrong voice.",
+  },
+  {
+    icon: Sparkles,
+    title: "Built for Sustainable Brands",
+    description:
+      "Hudey understands values-driven marketing. Search by sustainability categories, filter for ethical creators, and ensure every partnership reflects what your brand stands for.",
+  },
 ];
 
 
