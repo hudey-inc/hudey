@@ -148,7 +148,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── Hero ─── Dark background, single CTA */}
-      <section className="pt-24 sm:pt-36 lg:pt-44 pb-14 sm:pb-32 lg:pb-40 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
+      <section className="pt-24 sm:pt-36 lg:pt-44 pb-16 sm:pb-32 lg:pb-40 px-5 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
         {/* Subtle background glow */}
         <div className="absolute inset-0 -z-0">
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#D16B42]/8 rounded-full blur-[150px]" />
@@ -214,7 +214,7 @@ export default function LandingPage() {
       {/* ─── How It Works ─── */}
       <section
         id="how-it-works"
-        className="reveal-section py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white"
+        className="reveal-section py-16 sm:py-20 lg:py-28 px-5 sm:px-6 lg:px-8 bg-white"
       >
         <div className="max-w-7xl mx-auto">
           <div className="reveal-item text-center mb-10 sm:mb-16">
@@ -230,10 +230,10 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="reveal-item grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          <div className="reveal-item grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {steps.map((step, index) => (
               <div key={index} className="relative group">
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 h-full hover:border-[#2F4538] hover:shadow-xl transition-all duration-300">
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-8 h-full hover:border-[#2F4538] hover:shadow-xl transition-all duration-300">
                   <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-xl mb-4 sm:mb-6 shadow-lg shadow-[#2F4538]/20">
                     {step.number}
                   </div>
@@ -258,7 +258,7 @@ export default function LandingPage() {
       {/* ─── Features ─── 3-column grid */}
       <section
         id="features"
-        className="reveal-section py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50"
+        className="reveal-section py-16 sm:py-20 lg:py-28 px-5 sm:px-6 lg:px-8 bg-gray-50"
       >
         <div className="max-w-7xl mx-auto">
           <div className="reveal-item text-center mb-10 sm:mb-16">
@@ -271,7 +271,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="reveal-item grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="reveal-item grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -298,7 +298,7 @@ export default function LandingPage() {
       {/* ─── Founding Cohort ─── */}
       <section
         id="founding-cohort"
-        className="reveal-section py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white"
+        className="reveal-section py-16 sm:py-20 lg:py-28 px-5 sm:px-6 lg:px-8 bg-white"
       >
         <div className="max-w-4xl mx-auto text-center">
           <div className="reveal-item">
@@ -315,7 +315,7 @@ export default function LandingPage() {
               locked-in pricing, and a direct line to our team.
             </p>
           </div>
-          <div className="reveal-item grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
+          <div className="reveal-item grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-8 sm:mb-10">
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
               <div className="w-10 h-10 bg-[#E8DCC8] rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Shield className="w-5 h-5 text-[#2F4538]" />
@@ -365,7 +365,7 @@ export default function LandingPage() {
       {/* ─── Final CTA + Footer ─── Merged dark section */}
       <section className="reveal-section bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
         {/* CTA Area */}
-        <div className="pt-14 sm:pt-20 lg:pt-28 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="pt-16 sm:pt-20 lg:pt-28 pb-14 sm:pb-16 px-5 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center relative z-10">
             <div className="reveal-item">
               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
@@ -411,7 +411,7 @@ export default function LandingPage() {
         </div>
 
         {/* Footer — simplified, same dark section */}
-        <footer className="border-t border-white/10 px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <footer className="border-t border-white/10 px-5 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-2">
