@@ -22,15 +22,15 @@ const APP_URL = "https://app.hudey.co";
 
 const benefits = [
   "AI finds perfect creators",
-  "AI writes personalized outreach",
-  "AI negotiates on your behalf",
+  "AI drafts personalised outreach",
+  "You approve every message and deal",
   "AI monitors every campaign",
   "AI generates insights & reports",
 ];
 
 const whyHudey = [
   { value: "AI-First", label: "Discovery", sublabel: "Creators matched on real engagement data" },
-  { value: "Hands-Off", label: "Outreach", sublabel: "Personalised messages sent automatically" },
+  { value: "Your Call", label: "Outreach", sublabel: "AI drafts, you approve before anything sends" },
   { value: "Smart", label: "Negotiation", sublabel: "Deals optimised to your budget" },
   { value: "Live", label: "Reporting", sublabel: "Every metric, updated in real time" },
 ];
@@ -50,9 +50,9 @@ const steps = [
   },
   {
     number: "03",
-    title: "Outreach & Deals Run Themselves",
+    title: "You Approve. Hudey Executes.",
     description:
-      "Personalized messages go out, responses are handled, and deals are negotiated — all without you writing a single email.",
+      "AI drafts personalised outreach and negotiates terms — but nothing goes out until you say so. You stay in control at every step.",
   },
   {
     number: "04",
@@ -73,7 +73,7 @@ const features = [
     icon: MessageSquare,
     title: "Outreach That Gets Replies",
     description:
-      "Generic DMs get ignored. Hudey writes personalized outreach that references each creator's content and pitches your brand naturally. The result? Reply rates your team hasn't seen before.",
+      "Generic DMs get ignored. Hudey drafts personalised outreach that references each creator's content and pitches your brand naturally. You review and approve before anything sends.",
   },
   {
     icon: DollarSign,
@@ -201,9 +201,8 @@ export default function LandingPage() {
 
             {/* Subheadline */}
             <p className="text-base sm:text-xl lg:text-2xl text-gray-600 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-2">
-              From creator discovery to campaign reporting, Hudey&apos;s AI
-              agents handle everything&mdash;so you can focus on strategy, not
-              execution.
+              Hudey&apos;s AI handles creator discovery, outreach, and
+              negotiation&mdash;you approve every step before it happens.
             </p>
 
             {/* CTA Buttons */}
@@ -484,8 +483,8 @@ export default function LandingPage() {
                 <span className="font-bold text-lg text-white">Hudey</span>
               </a>
               <p className="text-gray-500 mb-6 max-w-sm">
-                AI-powered influencer marketing. Find creators, send outreach,
-                close deals, and track results — all on autopilot.
+                AI-powered influencer marketing. Find creators, draft outreach,
+                negotiate deals, and track results — with you in control.
               </p>
             </div>
 
