@@ -146,15 +146,16 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── Hero ─── Dark background, single CTA */}
-      <section className="pt-24 sm:pt-32 lg:pt-40 pb-16 sm:pb-24 lg:pb-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
+      <section className="pt-28 sm:pt-36 lg:pt-44 pb-20 sm:pb-32 lg:pb-40 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
         {/* Subtle background glow */}
         <div className="absolute inset-0 -z-0">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#D16B42]/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#D16B42]/8 rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#E8DCC8]/5 rounded-full blur-[100px]" />
         </div>
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-8 sm:mb-10 backdrop-blur-sm">
             <div className="w-2 h-2 bg-[#D16B42] rounded-full animate-pulse" />
             <span className="text-[#E8DCC8]">
               Now accepting UK sustainable brands for our founding cohort
@@ -162,14 +163,14 @@ export default function LandingPage() {
           </div>
 
           {/* Headline */}
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-4 sm:mb-6 leading-[1.1] tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-5 sm:mb-7 leading-[1.08] tracking-tight">
             Influencer marketing,
             <br />
             <span className="text-[#E8DCC8]">handled by AI</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-base sm:text-xl lg:text-2xl text-[#E8DCC8]/80 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed px-2">
+          <p className="text-base sm:text-xl lg:text-2xl text-[#E8DCC8]/80 mb-10 sm:mb-12 max-w-2xl mx-auto leading-relaxed px-2">
             Hudey finds creators, drafts outreach, and negotiates
             deals&mdash;you approve every step.
           </p>
@@ -177,11 +178,33 @@ export default function LandingPage() {
           {/* Single CTA */}
           <a
             href={`${APP_URL}/signup`}
-            className="inline-flex items-center gap-2 bg-[#D16B42] hover:bg-[#b85a36] text-white px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold text-base sm:text-lg transition-all hover:shadow-xl hover:shadow-[#D16B42]/30 hover:scale-105 group"
+            className="inline-flex items-center gap-2 bg-[#D16B42] hover:bg-[#b85a36] text-white px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold text-base sm:text-lg transition-all hover:shadow-xl hover:shadow-[#D16B42]/30 hover:scale-105 group mb-14 sm:mb-16"
           >
             Apply for Early Access
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </a>
+
+          {/* Trust indicators */}
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-6 sm:gap-10 pt-6 sm:pt-8 border-t border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center">
+                <Shield className="w-4 h-4 text-[#E8DCC8]" />
+              </div>
+              <span className="text-sm text-[#E8DCC8]/70">Human-in-the-loop</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4 text-[#E8DCC8]" />
+              </div>
+              <span className="text-sm text-[#E8DCC8]/70">Campaign live in minutes</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-[#E8DCC8]" />
+              </div>
+              <span className="text-sm text-[#E8DCC8]/70">Real-time reporting</span>
+            </div>
+          </div>
         </div>
       </section>
 
