@@ -149,15 +149,14 @@ export default function LandingPage() {
 
       {/* ─── Hero ─── Dark background, single CTA */}
       <section className="pt-24 sm:pt-36 lg:pt-44 pb-16 sm:pb-32 lg:pb-40 px-5 sm:px-6 lg:px-8 bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
-        {/* Subtle background glow */}
+        {/* Subtle background glow — radial gradient instead of blur for perf */}
         <div className="absolute inset-0 -z-0">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#D16B42]/8 rounded-full blur-[150px]" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#E8DCC8]/5 rounded-full blur-[100px]" />
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(209,107,66,0.08)_0%,transparent_70%)]" />
         </div>
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-10 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-10">
             <div className="w-2 h-2 bg-[#D16B42] rounded-full animate-pulse shrink-0" />
             <span className="text-[#E8DCC8]">
               <span className="sm:hidden">Founding cohort now open</span>
