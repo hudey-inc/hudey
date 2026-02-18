@@ -21,77 +21,74 @@ export default function RefundPage() {
 
         <div className="prose prose-gray prose-sm max-w-none space-y-8 text-gray-700 leading-relaxed">
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Subscription Refunds</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Overview</h2>
             <p>
-              Hudey subscriptions are billed in advance on a recurring basis (monthly or annually, depending on your plan). We offer the following refund terms:
+              Hudey offers a <strong>30-day money-back guarantee</strong> on all purchases. If you are not satisfied with your purchase for any reason, you can request a full refund within 30 days of the order completion date.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Eligibility</h2>
+            <p>
+              All customers are eligible for a full refund within 30 days of their purchase date. This applies to:
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1.5">
-              <li><strong>Within 14 days of initial purchase:</strong> If you are not satisfied with the Service, you may request a full refund within 14 days of your first subscription payment. This applies to new subscriptions only.</li>
-              <li><strong>After 14 days:</strong> Subscription fees are non-refundable after the 14-day period. You may cancel your subscription at any time, and you will retain access to the Service until the end of your current billing period.</li>
-              <li><strong>Annual plans:</strong> Annual subscriptions are eligible for a pro-rated refund within 30 days of purchase. After 30 days, annual subscriptions are non-refundable.</li>
+              <li>Per-campaign purchases</li>
+              <li>Add-ons and additional services</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Campaign Credits</h2>
-            <p>
-              If you have purchased campaign credits or add-ons separately, unused credits may be refunded within 30 days of purchase. Partially used credit packs are not eligible for refunds.
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">How to Request a Refund</h2>
+            <p>To request a refund, please contact us at{" "}
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>{" "}
+              with the subject line &quot;Refund Request&quot; and include your account email address.
+            </p>
+            <p className="mt-2">
+              Refund requests are processed by Paddle, our payment provider and Merchant of Record. We aim to respond to all refund requests within 2 business days.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Service Disruptions</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Refund Processing</h2>
             <p>
-              In the event of a significant service disruption that materially impacts your ability to use the Service for more than 48 consecutive hours, we may offer a pro-rated credit or refund for the affected period at our discretion.
+              Approved refunds will be processed to the original payment method. Please allow 5&ndash;10 business days for the refund to appear on your statement, depending on your payment provider.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">4. How to Request a Refund</h2>
-            <p>To request a refund:</p>
-            <ol className="list-decimal pl-5 mt-2 space-y-1.5">
-              <li>Email us at <a href="mailto:support@hudey.com" className="text-indigo-600 hover:underline">support@hudey.com</a> with the subject &quot;Refund Request&quot;</li>
-              <li>Include your account email and the reason for your refund request</li>
-              <li>We will review your request and respond within 3 business days</li>
-            </ol>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Refund Processing</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Cancellation</h2>
             <p>
-              Approved refunds will be processed to the original payment method within 5&ndash;10 business days. Refunds are issued via Stripe and may take additional time to appear on your statement depending on your payment provider.
+              You may close your account at any time through your account settings or by contacting us at{" "}
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>.
+              Since Hudey uses per-campaign pricing, there are no recurring charges to cancel. You will retain access to your campaign data and dashboard.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Cancellation</h2>
-            <p>
-              You may cancel your subscription at any time through your account settings or by contacting us at{" "}
-              <a href="mailto:support@hudey.com" className="text-indigo-600 hover:underline">support@hudey.com</a>.
-              Upon cancellation:
-            </p>
-            <ul className="list-disc pl-5 mt-2 space-y-1.5">
-              <li>You will retain access to the Service until the end of your current billing period</li>
-              <li>No further charges will be applied after cancellation</li>
-              <li>Your campaign data will be retained for 30 days after your subscription ends, after which it may be deleted</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">7. Exceptions</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Exceptions</h2>
             <p>Refunds will not be granted in cases of:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1.5">
-              <li>Account termination due to violation of our <Link href="/terms" className="text-indigo-600 hover:underline">Terms of Service</Link></li>
+              <li>Account termination due to violation of our <Link href="/terms" className="text-[#2F4538] hover:underline">Terms of Service</Link></li>
               <li>Dissatisfaction with campaign results, as outcomes depend on external factors beyond our control</li>
-              <li>Failure to cancel a subscription before the renewal date</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">8. Contact</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment Provider</h2>
+            <p>
+              All payments and refunds are processed by{" "}
+              <a href="https://www.paddle.com" className="text-[#2F4538] hover:underline" target="_blank" rel="noopener noreferrer">Paddle.com</a>,
+              which acts as our Merchant of Record. By making a purchase, you also agree to{" "}
+              <a href="https://www.paddle.com/legal/checkout-buyer-terms" className="text-[#2F4538] hover:underline" target="_blank" rel="noopener noreferrer">Paddle&apos;s Checkout Buyer Terms</a>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Contact</h2>
             <p>
               For questions about our refund policy, contact us at{" "}
-              <a href="mailto:support@hudey.com" className="text-indigo-600 hover:underline">support@hudey.com</a>.
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>.
             </p>
           </section>
         </div>

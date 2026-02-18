@@ -30,7 +30,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Description of Service</h2>
             <p>
-              Hudey is an AI-powered marketing platform that automates influencer campaign management, including creator discovery, outreach, negotiation, and campaign tracking. The Service is provided on a subscription basis.
+              Hudey is an AI-powered influencer marketing platform that assists with creator discovery, outreach, negotiation, and campaign tracking. The Service is provided on a per-campaign basis.
             </p>
           </section>
 
@@ -57,7 +57,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Payment Terms</h2>
             <p>
-              Paid subscriptions are billed in advance on a recurring basis. All fees are non-refundable except as expressly set forth in our <Link href="/refund" className="text-indigo-600 hover:underline">Refund Policy</Link>. We reserve the right to change our pricing with 30 days&apos; notice. Payment processing is handled by Stripe, and you agree to Stripe&apos;s terms of service when making payments.
+              Campaign fees are charged per campaign at the time of launch. All fees are non-refundable except as expressly set forth in our <Link href="/refund" className="text-[#2F4538] hover:underline">Refund Policy</Link>. We reserve the right to change our pricing with 30 days&apos; notice. Payment processing is handled by Paddle, our Merchant of Record, and you agree to Paddle&apos;s Checkout Buyer Terms when making payments.
             </p>
           </section>
 
@@ -71,7 +71,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">7. Data and Privacy</h2>
             <p>
-              Your use of the Service is subject to our <Link href="/privacy" className="text-indigo-600 hover:underline">Privacy Policy</Link>, which describes how we collect, use, and protect your personal information.
+              Your use of the Service is subject to our <Link href="/privacy" className="text-[#2F4538] hover:underline">Privacy Policy</Link>, which describes how we collect, use, and protect your personal information.
             </p>
           </section>
 
@@ -107,7 +107,7 @@ export default function TermsPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">12. Contact</h2>
             <p>
               If you have any questions about these Terms, please contact us at{" "}
-              <a href="mailto:support@hudey.com" className="text-indigo-600 hover:underline">support@hudey.com</a>.
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>.
             </p>
           </section>
         </div>

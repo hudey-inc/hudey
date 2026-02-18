@@ -252,7 +252,7 @@ function CampaignsContent() {
       value: analytics?.emailStats.totalSent || 0,
       change: `${analytics?.emailStats.openRate || 0}% open rate`,
       icon: Send,
-      iconBg: "bg-indigo-500",
+      iconBg: "bg-[#2F4538]",
     },
   ];
 

@@ -295,7 +295,7 @@ function DashboardMetrics() {
         chartColor="#6366f1"
         chartType="area"
         icon={Handshake}
-        iconBg="bg-indigo-500"
+        iconBg="bg-[#2F4538]"
       />
     </div>
   );
@@ -414,7 +414,7 @@ function QuickActions() {
   const actions = [
     { href: "/campaigns/new", icon: Plus, label: "New Campaign", desc: "Launch a new influencer campaign", bg: "bg-[#2F4538]" },
     { href: "/outreach", icon: Send, label: "Outreach", desc: "Manage creator communications", bg: "bg-[#D16B42]" },
-    { href: "/negotiator", icon: Sparkles, label: "AI Negotiator", desc: "Automate deal negotiations", bg: "bg-indigo-500" },
+    { href: "/negotiator", icon: Sparkles, label: "AI Negotiator", desc: "Automate deal negotiations", bg: "bg-[#2F4538]" },
     { href: "/analytics", icon: BarChart3, label: "Analytics", desc: "View performance insights", bg: "bg-purple-500" },
   ];
 

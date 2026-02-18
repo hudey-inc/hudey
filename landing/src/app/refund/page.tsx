@@ -33,16 +33,15 @@ export default function RefundPage() {
               All customers are eligible for a full refund within 30 days of their purchase date. This applies to:
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1.5">
-              <li>New subscriptions (monthly and annual plans)</li>
-              <li>Subscription renewals (within 30 days of the renewal date)</li>
-              <li>One-time purchases and add-ons</li>
+              <li>Per-campaign purchases</li>
+              <li>Add-ons and additional services</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">How to Request a Refund</h2>
             <p>To request a refund, please contact us at{" "}
-              <a href="mailto:support@hudey.co" className="text-indigo-600 hover:underline">support@hudey.co</a>{" "}
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>{" "}
               with the subject line &quot;Refund Request&quot; and include your account email address.
             </p>
             <p className="mt-2">
@@ -60,9 +59,9 @@ export default function RefundPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Cancellation</h2>
             <p>
-              You may cancel your subscription at any time through your account settings or by contacting us at{" "}
-              <a href="mailto:support@hudey.co" className="text-indigo-600 hover:underline">support@hudey.co</a>.
-              Upon cancellation, you will retain access to the Service until the end of your current billing period. No further charges will be applied after cancellation.
+              You may close your account at any time through your account settings or by contacting us at{" "}
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>.
+              Since Hudey uses per-campaign pricing, there are no recurring charges to cancel. You will retain access to your campaign data and dashboard.
             </p>
           </section>
 
@@ -70,9 +69,9 @@ export default function RefundPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment Provider</h2>
             <p>
               All payments and refunds are processed by{" "}
-              <a href="https://www.paddle.com" className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Paddle.com</a>,
+              <a href="https://www.paddle.com" className="text-[#2F4538] hover:underline" target="_blank" rel="noopener noreferrer">Paddle.com</a>,
               which acts as our Merchant of Record. By making a purchase, you also agree to{" "}
-              <a href="https://www.paddle.com/legal/checkout-buyer-terms" className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">Paddle&apos;s Checkout Buyer Terms</a>.
+              <a href="https://www.paddle.com/legal/checkout-buyer-terms" className="text-[#2F4538] hover:underline" target="_blank" rel="noopener noreferrer">Paddle&apos;s Checkout Buyer Terms</a>.
             </p>
           </section>
 
@@ -80,7 +79,7 @@ export default function RefundPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Contact</h2>
             <p>
               For questions about our refund policy, contact us at{" "}
-              <a href="mailto:support@hudey.co" className="text-indigo-600 hover:underline">support@hudey.co</a>.
+              <a href="mailto:support@hudey.co" className="text-[#2F4538] hover:underline">support@hudey.co</a>.
             </p>
           </section>
         </div>

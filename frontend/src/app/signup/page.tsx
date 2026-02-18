@@ -161,10 +161,10 @@ export default function SignupPage() {
               <span className="font-bold text-xl text-gray-900">Hudey</span>
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-              Start running campaigns<br />that actually convert
+              Influencer marketing,<br />handled by AI
             </h1>
             <p className="text-lg text-gray-600">
-              Apply for early access to our founding cohort of UK sustainable brands
+              Join our founding cohort of UK sustainable brands
             </p>
           </div>
 

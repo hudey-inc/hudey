@@ -244,11 +244,11 @@ function CounterOfferPreview({
   }
 
   return (
-    <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
+    <div className="rounded-lg border-2 border-[#2F4538]/20 bg-[#E8DCC8]/20 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-600" />
-          <span className="text-sm font-medium text-indigo-900">AI Counter-Offer Draft</span>
+          <Sparkles className="w-4 h-4 text-[#2F4538]" />
+          <span className="text-sm font-medium text-[#2F4538]">AI Counter-Offer Draft</span>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${scoreColor}`}>
@@ -256,7 +256,7 @@ function CounterOfferPreview({
           </span>
           <button
             onClick={() => setEditing(!editing)}
-            className="text-[11px] text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            className="text-[11px] text-[#2F4538] hover:text-[#1f2f26] flex items-center gap-1"
           >
             <Pencil className="w-3 h-3" />
             {editing ? "Preview" : "Edit"}
@@ -268,17 +268,17 @@ function CounterOfferPreview({
       {offer.proposed_terms && (
         <div className="flex items-center gap-3 text-[12px] flex-wrap">
           {offer.proposed_terms.fee_gbp != null && (
-            <span className="bg-white border border-indigo-100 rounded-md px-2 py-1 text-gray-700">
+            <span className="bg-white border border-[#2F4538]/10 rounded-md px-2 py-1 text-gray-700">
               💰 £{Number(offer.proposed_terms.fee_gbp).toLocaleString()}
             </span>
           )}
           {offer.proposed_terms.deliverables && offer.proposed_terms.deliverables.length > 0 && (
-            <span className="bg-white border border-indigo-100 rounded-md px-2 py-1 text-gray-700">
+            <span className="bg-white border border-[#2F4538]/10 rounded-md px-2 py-1 text-gray-700">
               📋 {offer.proposed_terms.deliverables.join(", ")}
             </span>
           )}
           {offer.proposed_terms.deadline && (
-            <span className="bg-white border border-indigo-100 rounded-md px-2 py-1 text-gray-700">
+            <span className="bg-white border border-[#2F4538]/10 rounded-md px-2 py-1 text-gray-700">
               📅 {offer.proposed_terms.deadline}
             </span>
           )}
@@ -290,7 +290,7 @@ function CounterOfferPreview({
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-white focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none"
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-white focus:border-[#2F4538]/30 focus:ring-1 focus:ring-[#2F4538]/20 outline-none"
           placeholder="Subject line"
         />
       ) : (
@@ -303,7 +303,7 @@ function CounterOfferPreview({
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={5}
-          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-white focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none resize-y"
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-white focus:border-[#2F4538]/30 focus:ring-1 focus:ring-[#2F4538]/20 outline-none resize-y"
         />
       ) : (
         <div className="text-[12px] text-gray-700 bg-white rounded-lg border border-gray-100 p-3 whitespace-pre-wrap leading-relaxed">
@@ -372,7 +372,7 @@ function NegotiatorReply({
           }
         }}
         placeholder="Type a manual reply..."
-        className="flex-1 text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none transition-colors"
+        className="flex-1 text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2F4538]/30 focus:ring-1 focus:ring-[#2F4538]/20 outline-none transition-colors"
         disabled={sending}
       />
       <button
@@ -1186,7 +1186,7 @@ export default function NegotiatorPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">AI Negotiator</h1>
-                <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
+                <span className="bg-gradient-to-r from-[#2F4538] to-[#D16B42] text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
                   NEW
                 </span>
               </div>

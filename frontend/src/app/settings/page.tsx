@@ -306,7 +306,7 @@ export default function SettingsPage() {
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
                       placeholder="Your brand name"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-[#2F4538] outline-none transition-colors"
                     />
                   </div>
 
@@ -318,7 +318,7 @@ export default function SettingsPage() {
                     <select
                       value={profileIndustry}
                       onChange={(e) => setProfileIndustry(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors bg-white"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-[#2F4538] outline-none transition-colors bg-white"
                     >
                       <option value="">Select an industry</option>
                       {INDUSTRY_OPTIONS.map((opt) => (
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                       value={profileEmail}
                       onChange={(e) => setProfileEmail(e.target.value)}
                       placeholder="contact@yourbrand.com"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-[#2F4538] outline-none transition-colors"
                     />
                   </div>
 
@@ -445,7 +445,7 @@ export default function SettingsPage() {
                       aria-checked={notifApprovals}
                       onClick={() => setNotifApprovals(!notifApprovals)}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        notifApprovals ? "bg-indigo-600" : "bg-gray-200"
+                        notifApprovals ? "bg-[#2F4538]" : "bg-gray-200"
                       }`}
                     >
                       <span
@@ -470,7 +470,7 @@ export default function SettingsPage() {
                       aria-checked={notifResponses}
                       onClick={() => setNotifResponses(!notifResponses)}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        notifResponses ? "bg-indigo-600" : "bg-gray-200"
+                        notifResponses ? "bg-[#2F4538]" : "bg-gray-200"
                       }`}
                     >
                       <span
@@ -495,7 +495,7 @@ export default function SettingsPage() {
                       aria-checked={notifCompletion}
                       onClick={() => setNotifCompletion(!notifCompletion)}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        notifCompletion ? "bg-indigo-600" : "bg-gray-200"
+                        notifCompletion ? "bg-[#2F4538]" : "bg-gray-200"
                       }`}
                     >
                       <span
@@ -561,7 +561,7 @@ export default function SettingsPage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Enter new password"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-[#2F4538] outline-none transition-colors"
                     />
                   </div>
                   <div>
@@ -573,7 +573,7 @@ export default function SettingsPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm new password"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-[#2F4538] outline-none transition-colors"
                     />
                   </div>
 

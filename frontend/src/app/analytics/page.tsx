@@ -83,7 +83,7 @@ const ENGAGEMENT_STATUS_BADGE: Record<string, string> = {
 
 const AVATAR_GRADIENTS = [
   "from-pink-400 to-rose-500",
-  "from-blue-400 to-indigo-500",
+  "from-[#2F4538] to-[#3a5745]",
   "from-violet-400 to-purple-500",
   "from-emerald-400 to-teal-500",
   "from-amber-400 to-orange-500",

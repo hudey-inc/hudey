@@ -27,7 +27,7 @@ export default function PrivacyPage() {
               <li><strong>Account Information:</strong> Email address, name, and authentication details when you create an account</li>
               <li><strong>Campaign Data:</strong> Campaign briefs, creator lists, outreach content, and negotiation records you create through the Service</li>
               <li><strong>Usage Data:</strong> Information about how you interact with the Service, including pages viewed, features used, and actions taken</li>
-              <li><strong>Payment Information:</strong> Billing details processed securely through Stripe. We do not store your full payment card details</li>
+              <li><strong>Payment Information:</strong> Billing details processed securely through Paddle, our Merchant of Record. We do not store your full payment card details</li>
               <li><strong>Device Information:</strong> Browser type, IP address, and device identifiers collected automatically</li>
             </ul>
           </section>
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Data Sharing</h2>
             <p>We do not sell your personal information. We may share your information with:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1.5">
-              <li><strong>Service Providers:</strong> Third-party vendors that help us operate the Service (e.g., Stripe for payments, Supabase for data storage, Vercel for hosting)</li>
+              <li><strong>Service Providers:</strong> Third-party vendors that help us operate the Service (e.g., Paddle for payments, Supabase for data storage, Vercel for hosting)</li>
               <li><strong>AI Providers:</strong> We use AI services to power campaign features. Campaign data may be processed by these providers to deliver Service functionality</li>
               <li><strong>Legal Requirements:</strong> When required by law, regulation, or legal process</li>
               <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Data Retention</h2>
             <p>
-              We retain your personal information for as long as your account is active or as needed to provide the Service. Campaign data is retained for the duration of your subscription. When you delete your account, we will delete or anonymise your personal information within 30 days, except where we are required to retain it for legal or compliance purposes.
+              We retain your personal information for as long as your account is active or as needed to provide the Service. Campaign data is retained for the duration of your account. When you delete your account, we will delete or anonymise your personal information within 30 days, except where we are required to retain it for legal or compliance purposes.
             </p>
           </section>
 
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-3">
               To exercise any of these rights, contact us at{" "}
-              <a href="mailto:privacy@hudey.com" className="text-indigo-600 hover:underline">privacy@hudey.com</a>.
+              <a href="mailto:privacy@hudey.co" className="text-[#2F4538] hover:underline">privacy@hudey.co</a>.
             </p>
           </section>
 
@@ -120,7 +120,7 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-3">11. Contact Us</h2>
             <p>
               For any privacy-related questions or requests, contact us at{" "}
-              <a href="mailto:privacy@hudey.com" className="text-indigo-600 hover:underline">privacy@hudey.com</a>.
+              <a href="mailto:privacy@hudey.co" className="text-[#2F4538] hover:underline">privacy@hudey.co</a>.
             </p>
           </section>
         </div>

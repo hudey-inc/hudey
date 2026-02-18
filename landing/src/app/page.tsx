@@ -21,83 +21,83 @@ import { HudeyLogo } from "@/components/hudey-logo";
 const APP_URL = "https://app.hudey.co";
 
 const benefits = [
-  "AI finds perfect creators",
-  "AI drafts personalised outreach",
-  "You approve every message and deal",
-  "AI monitors every campaign",
-  "AI generates insights & reports",
+  "AI-powered creator discovery",
+  "Personalised outreach, drafted for you",
+  "You approve every step",
+  "Live campaign tracking",
+  "Built for sustainable brands",
 ];
 
 const whyHudey = [
-  { value: "AI-First", label: "Discovery", sublabel: "Creators matched on real engagement data" },
-  { value: "Your Call", label: "Outreach", sublabel: "AI drafts, you approve before anything sends" },
-  { value: "Smart", label: "Negotiation", sublabel: "Deals optimised to your budget" },
-  { value: "Live", label: "Reporting", sublabel: "Every metric, updated in real time" },
+  { value: "AI-First", label: "Discovery", sublabel: "Matched on engagement, audience, and brand fit" },
+  { value: "Your Call", label: "Outreach", sublabel: "AI drafts. You review. Nothing sends without you." },
+  { value: "Smart", label: "Negotiation", sublabel: "Market-informed rates, optimised to your budget" },
+  { value: "Live", label: "Reporting", sublabel: "Campaign metrics, updated in real time" },
 ];
 
 const steps = [
   {
     number: "01",
-    title: "Describe Your Campaign",
+    title: "Define Your Brief",
     description:
-      "Drop in your goals, audience, and budget. Hudey's AI maps your brand voice and builds a targeting strategy in seconds — not days.",
+      "Set your goals, audience, and budget. Hudey builds a targeting strategy around your brand voice.",
   },
   {
     number: "02",
-    title: "AI Finds the Right Creators",
+    title: "Discover Creators",
     description:
-      "No more scrolling through profiles. Our agent surfaces creators matched on real engagement data, audience overlap, and brand alignment.",
+      "Hudey surfaces creators matched on engagement data, audience overlap, and brand alignment.",
   },
   {
     number: "03",
-    title: "You Approve. Hudey Executes.",
+    title: "Review and Approve",
     description:
-      "AI drafts personalised outreach and negotiates terms — but nothing goes out until you say so. You stay in control at every step.",
+      "AI drafts personalised outreach and negotiates terms. Nothing goes out until you approve it.",
   },
   {
     number: "04",
-    title: "Watch Results Roll In",
+    title: "Track Performance",
     description:
-      "Every post, every metric, every insight — delivered live to your dashboard. No manual tracking. No reporting lag.",
+      "Every metric, delivered live to your dashboard. No manual tracking. No spreadsheets.",
   },
 ];
 
 const features = [
   {
     icon: Users,
-    title: "Creator Discovery That Actually Works",
+    title: "Creator Discovery",
     description:
-      "Stop wasting hours on creator research. Hudey analyzes engagement authenticity, audience demographics, and brand fit to surface creators who will move the needle — not just look good on paper.",
+      "Find creators based on engagement authenticity, audience demographics, and brand fit — not just follower counts.",
   },
   {
     icon: MessageSquare,
-    title: "Outreach That Gets Replies",
+    title: "Personalised Outreach",
     description:
-      "Generic DMs get ignored. Hudey drafts personalised outreach that references each creator's content and pitches your brand naturally. You review and approve before anything sends.",
+      "AI drafts messages that reference each creator\u2019s content and pitch your brand naturally. You review before anything sends.",
   },
   {
     icon: DollarSign,
-    title: "Negotiate Better Deals, Automatically",
+    title: "AI-Powered Negotiation",
     description:
-      "Hudey's AI negotiates rates, deliverables, and timelines based on market data and your budget. You approve the final terms. Every deal is optimized before you sign off.",
+      "Negotiate rates, deliverables, and timelines using market data. You approve the final terms before any deal closes.",
   },
   {
     icon: BarChart3,
-    title: "Live Reporting Without the Busywork",
+    title: "Real-Time Reporting",
     description:
-      "See exactly what's working and what's not — in real time. Campaign performance, creator deliverables, spend tracking, and ROI — all in one dashboard, updated automatically.",
+      "Campaign performance, creator deliverables, and spend tracking — all in one dashboard, updated automatically.",
   },
   {
     icon: Shield,
-    title: "Brand Safety & Compliance Built In",
+    title: "Brand Safety",
     description:
-      "Every creator is vetted for brand alignment before you see them. Hudey checks content history, audience authenticity, and values fit — so your brand is never associated with the wrong voice.",
+      "Every creator is vetted for content history, audience authenticity, and values alignment before they reach your shortlist.",
   },
   {
     icon: Sparkles,
     title: "Built for Sustainable Brands",
     description:
-      "Hudey understands values-driven marketing. Search by sustainability categories, filter for ethical creators, and ensure every partnership reflects what your brand stands for.",
+      "Search by sustainability categories, filter for ethical creators, and ensure every partnership reflects your values.",
   },
 ];
 
@@ -105,23 +105,23 @@ const features = [
 const painPoints = [
   {
     icon: Clock,
-    before: "Weeks spent finding creators",
-    after: "Matched in minutes by AI",
+    before: "Weeks finding creators",
+    after: "Matched in minutes",
   },
   {
     icon: MessageSquare,
-    before: "Generic outreach, low replies",
-    after: "Personalised messages that land",
+    before: "Generic outreach",
+    after: "Personalised messages",
   },
   {
     icon: DollarSign,
-    before: "Overpaying on every deal",
-    after: "AI-optimised rates and terms",
+    before: "Manual rate negotiation",
+    after: "Market-informed deals",
   },
   {
     icon: BarChart3,
-    before: "Manual spreadsheet tracking",
-    after: "Real-time automated reporting",
+    before: "Spreadsheet tracking",
+    after: "Live dashboard reporting",
   },
 ];
 
@@ -204,17 +204,17 @@ export default function LandingPage() {
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 sm:mb-6 leading-[1.1] tracking-tight">
-              The AI Marketing Agent
+              Influencer marketing,
               <br />
               <span className="bg-gradient-to-r from-[#2F4538] via-[#3a5745] to-[#D16B42] bg-clip-text text-transparent">
-                That Runs Your Campaigns
+                handled by AI
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-base sm:text-xl lg:text-2xl text-gray-600 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-2">
-              Hudey&apos;s AI handles creator discovery, outreach, and
-              negotiation&mdash;you approve every step before it happens.
+              Hudey finds creators, drafts outreach, and negotiates
+              deals&mdash;you approve every step.
             </p>
 
             {/* CTA Buttons */}
@@ -253,10 +253,10 @@ export default function LandingPage() {
       <section className="py-10 sm:py-16 border-y border-gray-100 bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-xs sm:text-sm font-semibold text-[#D16B42] mb-2 uppercase tracking-wider">
-            The old way vs. the Hudey way
+            Before &amp; After
           </p>
           <h2 className="text-center text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-8 sm:mb-10">
-            Influencer marketing shouldn&apos;t be this hard
+            Replace the manual work
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {painPoints.map((point, index) => {
@@ -318,10 +318,10 @@ export default function LandingPage() {
               How It Works
             </div>
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
-              From brief to live campaign in 4 steps
+              From brief to live campaign
             </h2>
             <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-              What used to take your team 3 weeks now takes 48 hours
+              Four steps. You stay in control the entire way.
             </p>
           </div>
 
@@ -355,10 +355,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 sm:mb-16 lg:mb-20">
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Everything you need to succeed
+              One platform, end to end
             </h2>
             <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-              Powerful AI features designed for maximum ROI
+              Discovery, outreach, negotiation, and reporting — all in one place.
             </p>
           </div>
 
@@ -402,7 +402,7 @@ export default function LandingPage() {
             Be one of the first 10 brands
           </h2>
           <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto mb-8 sm:mb-10">
-            We&apos;re onboarding a small group of UK sustainable brands to shape Hudey alongside us. Founding members get hands-on support, priority access to new features, and a locked-in rate.
+            We&apos;re working with a small group of UK sustainable brands to build Hudey together. Founding members get hands-on support, locked-in pricing, and a direct line to our team.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
             <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
@@ -446,10 +446,10 @@ export default function LandingPage() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 px-2">
-            Ready to run your first AI campaign?
+            Join the founding cohort
           </h2>
           <p className="text-base sm:text-xl text-[#E8DCC8] mb-8 sm:mb-10 max-w-2xl mx-auto">
-            Apply now to join our founding cohort of UK sustainable brands
+            We&apos;re working with 10 UK sustainable brands to shape Hudey from the ground up.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-xl mx-auto mb-6 sm:mb-8">
@@ -471,15 +471,15 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 sm:gap-6 text-xs sm:text-sm text-[#E8DCC8]">
             <div className="flex items-center gap-2">
               <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Limited founding cohort spots</span>
+              <span>10 founding spots</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Hands-on onboarding support</span>
+              <span>Hands-on onboarding</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Launch your first campaign today</span>
+              <span>£250 per campaign, locked in</span>
             </div>
           </div>
         </div>
@@ -495,8 +495,7 @@ export default function LandingPage() {
                 <span className="font-bold text-lg text-white">Hudey</span>
               </a>
               <p className="text-gray-500 mb-6 max-w-sm">
-                AI-powered influencer marketing. Find creators, draft outreach,
-                negotiate deals, and track results — with you in control.
+                AI-powered influencer marketing for brands that care about who represents them.
               </p>
             </div>
 
@@ -531,7 +530,7 @@ export default function LandingPage() {
               <ul className="space-y-3 text-sm">
                 <li>
                   <a href={`${APP_URL}/signup`} className="hover:text-white transition-colors">
-                    Get Started
+                    Apply for Early Access
                   </a>
                 </li>
                 <li>

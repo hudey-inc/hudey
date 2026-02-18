@@ -430,7 +430,7 @@ export default function LoginPage() {
             href="/signup"
             className="font-semibold text-[#2F4538] hover:text-[#1f2f26] transition-colors"
           >
-            Sign up for free
+            Apply for early access
           </Link>
         </p>
 

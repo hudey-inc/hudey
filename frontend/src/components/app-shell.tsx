@@ -348,7 +348,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
       <div className="px-4 mb-3">
         <Link
           href="/campaigns/new"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-medium transition-colors"
+          className="w-full bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>Create New</span>
@@ -482,7 +482,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         >
           <Bot className="w-4 h-4" />
           <span>AI Negotiator</span>
-          <span className="ml-auto bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
+          <span className="ml-auto bg-gradient-to-r from-[#2F4538] to-[#D16B42] text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
             NEW
           </span>
         </Link>
@@ -590,7 +590,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
       <div className="p-4 border-t border-[#ebebeb]">
         {user && (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-medium text-indigo-700 flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-[#E8DCC8] flex items-center justify-center text-xs font-medium text-[#2F4538] flex-shrink-0">
               {(user.email || "U").charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -642,7 +642,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
       <div className={collapsed ? "px-2 mb-3" : "px-4 mb-3"}>
         <Link
           href="/campaigns/new"
-          className={`bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center font-medium transition-colors ${
+          className={`bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg flex items-center font-medium transition-colors ${
             collapsed
               ? "w-10 h-10 justify-center mx-auto"
               : "w-full px-4 py-2 gap-2 text-sm"
@@ -815,13 +815,13 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           {!collapsed && (
             <>
               <span>AI Negotiator</span>
-              <span className="ml-auto bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
+              <span className="ml-auto bg-gradient-to-r from-[#2F4538] to-[#D16B42] text-white text-[9px] px-1.5 py-0.5 rounded-full font-semibold">
                 NEW
               </span>
             </>
           )}
           {collapsed && (
-            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-indigo-500 to-purple-500 w-2.5 h-2.5 rounded-full" />
+            <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#2F4538] to-[#D16B42] w-2.5 h-2.5 rounded-full" />
           )}
         </Link>
       </nav>
@@ -953,7 +953,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         {user && (
           <div className={`flex items-center ${collapsed ? "justify-center" : "gap-2"}`}>
             <div
-              className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-medium text-indigo-700 flex-shrink-0 cursor-pointer"
+              className="w-7 h-7 rounded-full bg-[#E8DCC8] flex items-center justify-center text-xs font-medium text-[#2F4538] flex-shrink-0 cursor-pointer"
               title={collapsed ? `${user.email}\nClick to sign out` : undefined}
               onClick={collapsed ? handleSignOut : undefined}
             >

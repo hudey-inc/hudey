@@ -910,7 +910,7 @@ export default function OutreachPage() {
 
                     {/* AI Suggestion */}
                     {selectedMessage.aiSuggestion && (
-                      <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200">
+                      <div className="p-6 bg-gradient-to-br from-[#E8DCC8]/30 to-[#E8DCC8]/10 border-b border-gray-200">
                         <div className="flex items-start gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-lg flex items-center justify-center flex-shrink-0">
                             <Sparkles className="w-5 h-5 text-[#D16B42]" />
@@ -1069,8 +1069,8 @@ export default function OutreachPage() {
                       <div key={item.campaignId} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Mail className="w-4 h-4 text-indigo-600" />
+                            <div className="w-8 h-8 bg-[#E8DCC8]/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Mail className="w-4 h-4 text-[#2F4538]" />
                             </div>
                             <div className="min-w-0">
                               <Link
@@ -1083,7 +1083,7 @@ export default function OutreachPage() {
                           </div>
                           <Link
                             href={`/campaigns/${item.campaignId}`}
-                            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex-shrink-0"
+                            className="text-sm text-[#2F4538] hover:text-[#1f2f26] font-medium flex-shrink-0"
                           >
                             View Campaign →
                           </Link>
