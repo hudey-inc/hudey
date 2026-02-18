@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 export const metadata = {
   title: "Pricing | Hudey",
   description:
-    "Simple, transparent pricing for AI-powered influencer marketing. Start free, scale as you grow.",
+    "Per-campaign pricing for AI-powered influencer marketing. Pay only when you launch.",
 };
 
 const APP_URL = "https://app.hudey.co";
@@ -12,15 +12,14 @@ const APP_URL = "https://app.hudey.co";
 const plans = [
   {
     name: "Starter",
-    description: "For small teams testing influencer marketing",
-    price: "Free",
-    period: "",
-    cta: "Get Started Free",
+    description: "Run your first AI-powered campaign",
+    price: "£750",
+    period: "/campaign",
+    cta: "Apply for Early Access",
     ctaHref: `${APP_URL}/signup`,
     highlight: false,
     features: [
-      "1 active campaign",
-      "Up to 25 creator outreaches / month",
+      "Up to 25 creator outreaches",
       "AI creator discovery",
       "AI-written outreach emails",
       "Basic analytics dashboard",
@@ -29,18 +28,17 @@ const plans = [
   },
   {
     name: "Growth",
-    description: "For teams scaling their influencer programs",
-    price: "$99",
-    period: "/mo",
-    cta: "Start Free Trial",
+    description: "For brands scaling their influencer programmes",
+    price: "£1,500",
+    period: "/campaign",
+    cta: "Apply for Early Access",
     ctaHref: `${APP_URL}/signup?plan=growth`,
     highlight: true,
     badge: "Most Popular",
     features: [
-      "Unlimited active campaigns",
-      "Up to 500 creator outreaches / month",
+      "Up to 100 creator outreaches",
       "AI creator discovery & vetting",
-      "AI-written personalized outreach",
+      "AI-written personalised outreach",
       "AI-powered negotiation",
       "Campaign performance tracking",
       "Advanced analytics & reporting",
@@ -48,20 +46,18 @@ const plans = [
     ],
   },
   {
-    name: "Agency",
-    description: "For agencies managing multiple brands",
-    price: "$299",
-    period: "/mo",
-    cta: "Start Free Trial",
-    ctaHref: `${APP_URL}/signup?plan=agency`,
+    name: "Scale",
+    description: "Full-service campaigns with dedicated support",
+    price: "£3,000",
+    period: "/campaign",
+    cta: "Apply for Early Access",
+    ctaHref: `${APP_URL}/signup?plan=scale`,
     highlight: false,
     features: [
       "Everything in Growth",
       "Unlimited outreaches",
-      "Multi-brand workspaces",
       "Custom AI negotiation rules",
       "White-label reports",
-      "API access",
       "Dedicated account manager",
       "Slack & webhook integrations",
     ],
@@ -86,7 +82,7 @@ export default function PricingPage() {
             href={`${APP_URL}/signup`}
             className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all"
           >
-            Get Started Free
+            Apply for Early Access
           </a>
         </div>
       </nav>
@@ -95,11 +91,10 @@ export default function PricingPage() {
       <section className="pt-32 sm:pt-40 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
-            Simple, transparent pricing
+            Pay per campaign, not per month
           </h1>
           <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-            Start free. Upgrade when you&apos;re ready. No hidden fees, no
-            long-term contracts. Cancel anytime.
+            No subscriptions, no hidden fees. You only pay when you launch a campaign.
           </p>
         </div>
       </section>
@@ -170,18 +165,18 @@ export default function PricingPage() {
         {/* Trust note */}
         <div className="max-w-2xl mx-auto mt-12 sm:mt-16 text-center">
           <p className="text-sm text-gray-500">
-            All plans include a <strong>14-day free trial</strong>. No credit
-            card required to start. Protected by our{" "}
+            Founding cohort rate: <strong>£250 per campaign</strong> for our first 10 brands.{" "}
+            Protected by our{" "}
             <Link
               href="/refund"
-              className="text-indigo-600 hover:underline"
+              className="text-[#2F4538] hover:underline"
             >
               30-day money-back guarantee
             </Link>
             . Payments processed securely by{" "}
             <a
               href="https://www.paddle.com"
-              className="text-indigo-600 hover:underline"
+              className="text-[#2F4538] hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -201,16 +196,16 @@ export default function PricingPage() {
           <div className="space-y-6">
             {[
               {
-                q: "Can I try Hudey for free?",
-                a: "Yes. The Starter plan is free forever with up to 25 creator outreaches per month and 1 active campaign. No credit card needed.",
+                q: "How does per-campaign pricing work?",
+                a: "You pay once when you launch a campaign. The price depends on the tier you choose, which determines the number of creator outreaches and features included. No recurring charges.",
               },
               {
-                q: "What happens after the free trial on paid plans?",
-                a: "After your 14-day trial, you'll be charged for the plan you selected. You can cancel anytime before the trial ends and won't be charged.",
+                q: "What is the founding cohort rate?",
+                a: "Our first 10 brands pay just £250 per campaign — regardless of tier. This rate is locked in for as long as you remain in the cohort.",
               },
               {
-                q: "Can I change my plan later?",
-                a: "Absolutely. You can upgrade or downgrade at any time from your account settings. Changes take effect on your next billing cycle.",
+                q: "Can I run multiple campaigns?",
+                a: "Yes. Each campaign is priced independently. Run as many as you need, when you need them.",
               },
               {
                 q: "What is your refund policy?",
@@ -221,8 +216,8 @@ export default function PricingPage() {
                 a: "All payments are securely processed by Paddle, our Merchant of Record. Paddle handles billing, taxes, and compliance so you don't have to worry about anything.",
               },
               {
-                q: "Do you offer annual billing?",
-                a: "Yes. Annual plans are available at a discount. Contact us for annual pricing details.",
+                q: "How do I join the founding cohort?",
+                a: "Apply for early access and we'll review your brand. We're specifically looking for UK-based sustainable brands for our founding group.",
               },
             ].map((faq) => (
               <details

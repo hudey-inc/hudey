@@ -15,6 +15,7 @@ import {
 import type { DiscoveredCreator, CreatorSearchParams } from "@/lib/api";
 import { searchCreators, getSavedCreators, saveCreator, unsaveCreator } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { CREATOR_CATEGORIES } from "@/lib/constants";
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -221,7 +222,7 @@ export default function CreatorsPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["instagram"]);
   const [followerMin, setFollowerMin] = useState("10000");
   const [followerMax, setFollowerMax] = useState("500000");
-  const [categories, setCategories] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [locations, setLocations] = useState("");
 
   // Data state
@@ -240,6 +241,12 @@ export default function CreatorsPage() {
     );
   };
 
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
   const handleSearch = useCallback(async () => {
     if (selectedPlatforms.length === 0) return;
     setSearching(true);
@@ -251,11 +258,7 @@ export default function CreatorsPage() {
         follower_min: parseInt(followerMin) || 1000,
         follower_max: parseInt(followerMax) || 1_000_000,
       };
-      const cats = categories
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (cats.length > 0) params.categories = cats;
+      if (selectedCategories.length > 0) params.categories = selectedCategories;
       const locs = locations
         .split(",")
         .map((s) => s.trim())
@@ -271,7 +274,7 @@ export default function CreatorsPage() {
     } finally {
       setSearching(false);
     }
-  }, [selectedPlatforms, followerMin, followerMax, categories, locations]);
+  }, [selectedPlatforms, followerMin, followerMax, selectedCategories, locations]);
 
   const loadSaved = useCallback(async () => {
     setLoadingSaved(true);
@@ -334,7 +337,7 @@ export default function CreatorsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Creator Discovery</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Search 250M+ creators across Instagram, TikTok, YouTube, and more
+            Search creators across Instagram, TikTok, YouTube, and more
           </p>
         </div>
       </div>
@@ -421,19 +424,7 @@ export default function CreatorsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538]/20 focus:border-[#2F4538]"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Categories
-                </label>
-                <input
-                  type="text"
-                  value={categories}
-                  onChange={(e) => setCategories(e.target.value)}
-                  placeholder="fashion, beauty, fitness"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538]/20 focus:border-[#2F4538]"
-                />
-              </div>
-              <div>
+              <div className="lg:col-span-2">
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
                   Location
                 </label>
@@ -444,6 +435,28 @@ export default function CreatorsPage() {
                   placeholder="UK, US, Germany"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538]/20 focus:border-[#2F4538]"
                 />
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                Categories
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CREATOR_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      selectedCategories.includes(cat)
+                        ? "bg-[#2F4538] text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -476,7 +489,7 @@ export default function CreatorsPage() {
               <h3 className="font-semibold text-gray-900 mb-1">InsightIQ Not Configured</h3>
               <p className="text-sm text-gray-600">
                 Add your <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs">PHYLLO_API_KEY</code> to the
-                environment to search 250M+ real creator profiles.
+                environment to enable real creator search.
               </p>
             </div>
           )}

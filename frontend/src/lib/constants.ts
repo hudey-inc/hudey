@@ -1,4 +1,8 @@
 export const INDUSTRY_OPTIONS = [
+  "Sustainable Fashion",
+  "Conscious Beauty",
+  "Plant-Based Food",
+  "Eco-Lifestyle",
   "Fashion & Apparel",
   "Beauty & Skincare",
   "Health & Fitness",
@@ -11,4 +15,22 @@ export const INDUSTRY_OPTIONS = [
   "Home & Lifestyle",
   "Automotive",
   "Other",
+];
+
+export const CREATOR_CATEGORIES = [
+  "Sustainable Fashion",
+  "Ethical Beauty",
+  "Plant-Based Food",
+  "Eco-Lifestyle",
+  "Zero Waste",
+  "Fashion",
+  "Beauty",
+  "Fitness",
+  "Food",
+  "Travel",
+  "Tech",
+  "Lifestyle",
+  "Parenting",
+  "Gaming",
+  "Finance",
 ];

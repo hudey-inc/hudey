@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate } from "@/lib/api";
 import type { CampaignTemplate } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import { ArrowLeft, Bookmark, Sparkles, ArrowRight, X } from "lucide-react";
 
 const PLATFORM_OPTIONS = ["Instagram", "TikTok", "YouTube", "Twitter/X"];
@@ -29,6 +30,7 @@ function NewCampaignInner() {
   // Form state
   const [brandName, setBrandName] = useState("");
   const [industry, setIndustry] = useState("");
+  const [brandValues, setBrandValues] = useState("");
   const [objective, setObjective] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [keyMessage, setKeyMessage] = useState("");
@@ -63,6 +65,7 @@ function NewCampaignInner() {
     const b = t.brief || {};
     setBrandName((b.brand_name as string) || "");
     setIndustry((b.industry as string) || "");
+    setBrandValues((b.brand_values as string) || "");
     setObjective((b.objective as string) || "");
     setTargetAudience((b.target_audience as string) || "");
     setKeyMessage((b.key_message as string) || "");
@@ -93,6 +96,7 @@ function NewCampaignInner() {
     setAppliedTemplate(null);
     setBrandName("");
     setIndustry("");
+    setBrandValues("");
     setObjective("");
     setTargetAudience("");
     setKeyMessage("");
@@ -152,6 +156,7 @@ function NewCampaignInner() {
         key_message: keyMessage.trim(),
         timeline: timeline.trim(),
         ...(industry.trim() && { industry: industry.trim() }),
+        ...(brandValues.trim() && { brand_values: brandValues.trim() }),
         ...(brandVoice.trim() && { brand_voice: brandVoice.trim() }),
       };
 
@@ -301,14 +306,27 @@ function NewCampaignInner() {
             </div>
             <div>
               <label className={labelClass}>Industry</label>
-              <input
-                type="text"
+              <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
-                placeholder="e.g. Fashion, Tech, Food"
                 className={inputClass}
-              />
+              >
+                <option value="">Select industry</option>
+                {INDUSTRY_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
+          </div>
+          <div className="mt-4">
+            <label className={labelClass}>Brand Values</label>
+            <textarea
+              value={brandValues}
+              onChange={(e) => setBrandValues(e.target.value)}
+              placeholder="e.g. Sustainability, ethical sourcing, cruelty-free, carbon-neutral"
+              rows={2}
+              className={inputClass}
+            />
           </div>
         </div>
 

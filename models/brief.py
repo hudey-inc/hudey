@@ -21,6 +21,7 @@ class CampaignBrief(BaseModel):
     key_message: str = Field(..., description="Key message for the campaign")
     timeline: str = Field(..., description="Campaign timeline description")
     industry: Optional[str] = Field(None, description="Brand industry")
+    brand_values: Optional[str] = Field(None, description="Brand values (e.g. sustainability, ethical sourcing)")
     brand_voice: Optional[str] = Field(None, description="Brand voice guidelines")
 
 
