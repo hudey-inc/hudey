@@ -2,39 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Scroll reveal animations ─── */
-@keyframes reveal-up {
-  from {
-    opacity: 0;
-    transform: translateY(32px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.reveal {
+/* ─── Scroll reveal ─── */
+/* Children inside a reveal-section start hidden, slide up when section enters viewport */
+.reveal-section .reveal-item {
   opacity: 0;
+  translate: 0 24px;
+  transition: opacity 0.5s ease, translate 0.5s ease;
+  will-change: opacity, translate;
 }
 
-.reveal.revealed {
-  animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.reveal-section.is-visible .reveal-item {
+  opacity: 1;
+  translate: 0 0;
 }
 
-/* Stagger delays for grid children */
-.reveal-delay-1 { animation-delay: 0.1s; }
-.reveal-delay-2 { animation-delay: 0.2s; }
-.reveal-delay-3 { animation-delay: 0.3s; }
-.reveal-delay-4 { animation-delay: 0.4s; }
-.reveal-delay-5 { animation-delay: 0.5s; }
+/* Stagger children */
+.reveal-section.is-visible .reveal-item:nth-child(2) { transition-delay: 0.08s; }
+.reveal-section.is-visible .reveal-item:nth-child(3) { transition-delay: 0.16s; }
+.reveal-section.is-visible .reveal-item:nth-child(4) { transition-delay: 0.24s; }
 
-/* Respect reduced motion preference */
+/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
+  .reveal-section .reveal-item {
     opacity: 1;
-  }
-  .reveal.revealed {
-    animation: none;
+    translate: 0 0;
+    transition: none;
+    will-change: auto;
   }
 }

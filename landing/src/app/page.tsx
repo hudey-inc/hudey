@@ -214,10 +214,10 @@ export default function LandingPage() {
       {/* ─── How It Works ─── */}
       <section
         id="how-it-works"
-        className="py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white"
+        className="reveal-section py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="reveal text-center mb-10 sm:mb-16">
+          <div className="reveal-item text-center mb-10 sm:mb-16">
             <div className="inline-flex items-center gap-2 bg-[#E8DCC8] px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-[#2F4538] mb-4 sm:mb-6">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               How It Works
@@ -230,9 +230,9 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          <div className="reveal-item grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {steps.map((step, index) => (
-              <div key={index} className={`reveal reveal-delay-${index + 1} relative group`}>
+              <div key={index} className="relative group">
                 <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 h-full hover:border-[#2F4538] hover:shadow-xl transition-all duration-300">
                   <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-[#2F4538] to-[#1f2f26] rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-xl mb-4 sm:mb-6 shadow-lg shadow-[#2F4538]/20">
                     {step.number}
@@ -258,10 +258,10 @@ export default function LandingPage() {
       {/* ─── Features ─── 3-column grid */}
       <section
         id="features"
-        className="py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50"
+        className="reveal-section py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-gray-50"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="reveal text-center mb-10 sm:mb-16">
+          <div className="reveal-item text-center mb-10 sm:mb-16">
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
               One platform, end to end
             </h2>
@@ -271,13 +271,13 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="reveal-item grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={index}
-                  className={`reveal reveal-delay-${Math.min(index + 1, 3)} group bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-[#2F4538] hover:shadow-lg transition-all duration-300`}
+                  className="group bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 hover:border-[#2F4538] hover:shadow-lg transition-all duration-300"
                 >
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#E8DCC8] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#2F4538] transition-colors">
                     <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#2F4538] group-hover:text-white transition-colors" />
@@ -298,10 +298,10 @@ export default function LandingPage() {
       {/* ─── Founding Cohort ─── */}
       <section
         id="founding-cohort"
-        className="py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white"
+        className="reveal-section py-14 sm:py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white"
       >
         <div className="max-w-4xl mx-auto text-center">
-          <div className="reveal">
+          <div className="reveal-item">
             <div className="inline-flex items-center gap-2 bg-[#E8DCC8] px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-[#2F4538] mb-4 sm:mb-6">
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Founding Cohort
@@ -315,8 +315,8 @@ export default function LandingPage() {
               locked-in pricing, and a direct line to our team.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
-            <div className="reveal reveal-delay-1 bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
+          <div className="reveal-item grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
               <div className="w-10 h-10 bg-[#E8DCC8] rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Shield className="w-5 h-5 text-[#2F4538]" />
               </div>
@@ -327,7 +327,7 @@ export default function LandingPage() {
                 Locked-in pricing that won&apos;t change
               </p>
             </div>
-            <div className="reveal reveal-delay-2 bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
               <div className="w-10 h-10 bg-[#E8DCC8] rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Users className="w-5 h-5 text-[#2F4538]" />
               </div>
@@ -338,7 +338,7 @@ export default function LandingPage() {
                 Work directly with the founding team
               </p>
             </div>
-            <div className="reveal reveal-delay-3 bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 sm:p-6">
               <div className="w-10 h-10 bg-[#E8DCC8] rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Zap className="w-5 h-5 text-[#2F4538]" />
               </div>
@@ -350,7 +350,7 @@ export default function LandingPage() {
               </p>
             </div>
           </div>
-          <div className="reveal">
+          <div className="reveal-item">
             <a
               href={`${APP_URL}/signup`}
               className="inline-flex items-center gap-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-semibold text-base sm:text-lg transition-all hover:shadow-xl hover:shadow-[#2F4538]/20 hover:scale-105 group"
@@ -363,11 +363,11 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Final CTA + Footer ─── Merged dark section */}
-      <section className="bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
+      <section className="reveal-section bg-gradient-to-br from-[#2F4538] via-[#1f2f26] to-[#2F4538] relative overflow-hidden">
         {/* CTA Area */}
         <div className="pt-14 sm:pt-20 lg:pt-28 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center relative z-10">
-            <div className="reveal">
+            <div className="reveal-item">
               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
                 Join the founding cohort
               </h2>
@@ -377,7 +377,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="reveal reveal-delay-1 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-xl mx-auto mb-6 sm:mb-8">
+            <div className="reveal-item flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-xl mx-auto mb-6 sm:mb-8">
               <input
                 type="email"
                 value={email}

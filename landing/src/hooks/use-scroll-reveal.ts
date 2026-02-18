@@ -3,9 +3,8 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Observes elements with the `.reveal` class and adds `.revealed`
- * when they enter the viewport (once). Lightweight alternative to
- * framer-motion or AOS — zero dependencies.
+ * Observes only section-level `.reveal-section` elements (5 total)
+ * and toggles a class that cascades to children via CSS.
  */
 export function useScrollReveal() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,23 +13,22 @@ export function useScrollReveal() {
     const container = containerRef.current;
     if (!container) return;
 
-    const targets = container.querySelectorAll(".reveal");
-    if (!targets.length) return;
+    const sections = container.querySelectorAll(".reveal-section");
+    if (!sections.length) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("revealed");
-            observer.unobserve(entry.target);
+        for (let i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            entries[i].target.classList.add("is-visible");
+            observer.unobserve(entries[i].target);
           }
-        });
+        }
       },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.08 }
     );
 
-    targets.forEach((el) => observer.observe(el));
-
+    sections.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
