@@ -12,8 +12,6 @@ import {
   ArrowRight,
   Check,
   Sparkles,
-  Star,
-  TrendingUp,
   Loader2,
 } from "lucide-react";
 import { HudeyLogo } from "@/components/hudey-logo";
@@ -94,10 +92,10 @@ export default function SignupPage() {
 
   const benefits = [
     "AI-powered creator discovery",
-    "Automated campaign management",
+    "You approve every step",
     "Real-time analytics dashboard",
-    "24/7 email & chat support",
-    "No credit card required",
+    "Built for sustainable brands",
+    "Per-campaign pricing, no subscriptions",
   ];
 
   if (success) {
@@ -166,7 +164,7 @@ export default function SignupPage() {
               Start running campaigns<br />that actually convert
             </h1>
             <p className="text-lg text-gray-600">
-              Join 500+ marketing teams using AI to scale their influencer programs
+              Apply for early access to our founding cohort of UK sustainable brands
             </p>
           </div>
 
@@ -181,38 +179,20 @@ export default function SignupPage() {
             ))}
           </div>
 
-          {/* Social Proof */}
+          {/* Founding Cohort */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex -space-x-2">
-                {["/testimonials/sarah.jpg", "/testimonials/marcus.jpg", "/testimonials/emma.jpg"].map((src, i) => (
-                  <img
-                    key={i}
-                    src={src}
-                    alt=""
-                    className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                  />
-                ))}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#E8DCC8] rounded-full flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-[#2F4538]" />
               </div>
               <div>
-                <div className="flex gap-1 mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-[#D16B42] text-[#D16B42]" />
-                  ))}
-                </div>
-                <p className="text-sm font-semibold text-gray-900">Loved by 2,000+ users</p>
+                <p className="text-sm font-semibold text-gray-900">Founding Cohort — 10 spots</p>
+                <p className="text-xs text-gray-500">For UK sustainable brands</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed italic">
-              &ldquo;Hudey cut our campaign setup time from 3 weeks to 2 days. The ROI is incredible.&rdquo;
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Founding members get hands-on onboarding, a locked-in rate of £250 per campaign, and direct access to shape the product roadmap.
             </p>
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">— Sarah M., CMO at StyleCo</span>
-              <div className="inline-flex items-center gap-1 bg-[#2F4538] text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
-                <TrendingUp className="w-3 h-3" />
-                312% ROI
-              </div>
-            </div>
           </div>
         </div>
 
@@ -224,13 +204,13 @@ export default function SignupPage() {
               <HudeyLogo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-bold text-lg sm:text-xl text-gray-900">Hudey</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">Create your account</h1>
-            <p className="text-sm sm:text-base text-gray-600">Start your 14-day free trial</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">Apply for Early Access</h1>
+            <p className="text-sm sm:text-base text-gray-600">Join our founding cohort of sustainable brands</p>
           </div>
 
           <div className="hidden lg:block text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h2>
-            <p className="text-gray-600">Start your 14-day free trial</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Apply for Early Access</h2>
+            <p className="text-gray-600">Join our founding cohort of sustainable brands</p>
           </div>
 
           {/* Main Card */}
@@ -392,13 +372,13 @@ export default function SignupPage() {
               </button>
             </form>
 
-            {/* Trial Info */}
+            {/* Cohort Info */}
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#E8DCC8]/30 border border-[#E8DCC8] rounded-xl">
               <div className="flex items-center sm:items-start gap-2.5 sm:gap-3">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#D16B42] flex-shrink-0" />
                 <div>
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900">14-day free trial included</p>
-                  <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">No credit card required. Cancel anytime.</p>
+                  <p className="text-xs sm:text-sm font-semibold text-gray-900">Founding cohort rate: £250 per campaign</p>
+                  <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">Limited spots. Locked-in pricing for founding members.</p>
                 </div>
               </div>
             </div>
