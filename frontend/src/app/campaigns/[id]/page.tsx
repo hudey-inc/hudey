@@ -290,17 +290,23 @@ export default function CampaignDetail() {
       }
     });
 
-    const checkoutConfig = {
+    const checkoutConfig: Parameters<typeof paddle.Checkout.open>[0] = {
       items: [{ priceId, quantity: 1 }],
       settings: {
-        displayMode: "overlay" as const,
-        theme: "light" as const,
+        displayMode: "overlay",
+        theme: "light",
         locale: "en",
       },
-      customData: { campaign_id: id },
-      ...(userEmail ? { customer: { email: userEmail } } : {}),
     };
+
+    // Only add customData and customer if present
+    checkoutConfig.customData = { campaign_id: id };
+    if (userEmail) {
+      checkoutConfig.customer = { email: userEmail };
+    }
+
     console.log("[Paddle] Opening checkout:", JSON.stringify(checkoutConfig, null, 2));
+    console.log("[Paddle] SDK initialized:", !!paddle, "Paddle.Initialized:", paddle.Initialized);
     paddle.Checkout.open(checkoutConfig);
   }
 
