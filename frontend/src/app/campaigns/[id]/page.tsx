@@ -290,16 +290,18 @@ export default function CampaignDetail() {
       }
     });
 
-    paddle.Checkout.open({
+    const checkoutConfig = {
       items: [{ priceId, quantity: 1 }],
       settings: {
-        displayMode: "overlay",
-        theme: "light",
+        displayMode: "overlay" as const,
+        theme: "light" as const,
         locale: "en",
       },
       customData: { campaign_id: id },
       ...(userEmail ? { customer: { email: userEmail } } : {}),
-    });
+    };
+    console.log("[Paddle] Opening checkout:", JSON.stringify(checkoutConfig, null, 2));
+    paddle.Checkout.open(checkoutConfig);
   }
 
   async function handleDecide(approvalId: string, status: "approved" | "rejected", feedback?: string) {

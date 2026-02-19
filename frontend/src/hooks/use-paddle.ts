@@ -31,6 +31,7 @@ export function usePaddle() {
         "sandbox",
       token,
       eventCallback: (event) => {
+        console.log("[Paddle] event:", event.name, event.data);
         if (handlerRef.current && event.name) {
           handlerRef.current(
             event.name,
@@ -39,7 +40,14 @@ export function usePaddle() {
         }
       },
     }).then((instance) => {
-      if (instance) setPaddle(instance);
+      if (instance) {
+        console.log("[Paddle] initialized successfully");
+        setPaddle(instance);
+      } else {
+        console.error("[Paddle] initialization returned no instance");
+      }
+    }).catch((err) => {
+      console.error("[Paddle] initialization failed:", err);
     });
   }, []);
 
