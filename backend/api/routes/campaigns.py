@@ -46,6 +46,15 @@ def create_campaign(body: dict, brand: dict = Depends(get_current_brand)):
     return {"id": cid}
 
 
+@router.post("/{campaign_id}/verify-payment")
+def verify_payment(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Check if a campaign's payment has been confirmed via Paddle webhook."""
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return {"paid": campaign.get("payment_status") == "paid"}
+
+
 @router.post("/{campaign_id}/run")
 def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     """Trigger background campaign execution with web-based approvals.
@@ -57,6 +66,11 @@ def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     campaign = repo_get(campaign_id, brand_id=brand["id"])
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Payment gate: require payment before running
+    payment_status = campaign.get("payment_status", "unpaid")
+    if payment_status != "paid":
+        raise HTTPException(status_code=402, detail="Payment required before running campaign")
 
     if campaign.get("status") == "running":
         raise HTTPException(status_code=409, detail="Campaign already running")

@@ -76,6 +76,10 @@ export type Campaign = CampaignSummary & {
   result_json?: Record<string, unknown>;
   agent_state?: string;
   completed_at?: string;
+  payment_status?: string;
+  paddle_transaction_id?: string;
+  amount_paid?: number;
+  paid_at?: string;
 };
 
 export async function listCampaigns(): Promise<CampaignSummary[]> {
@@ -271,6 +275,19 @@ export async function runCampaign(
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "Failed to start campaign");
   }
+  return res.json();
+}
+
+// ── Payment Verification ─────────────────────────────────────
+
+export async function verifyPayment(
+  campaignId: string
+): Promise<{ paid: boolean }> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/verify-payment`,
+    { method: "POST" }
+  );
+  if (!res.ok) return { paid: false };
   return res.json();
 }
 

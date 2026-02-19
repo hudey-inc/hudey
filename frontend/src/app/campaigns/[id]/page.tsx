@@ -14,7 +14,10 @@ import {
   createTemplate,
   getEngagements,
   getEmailEvents,
+  verifyPayment,
 } from "@/lib/api";
+import { usePaddle } from "@/hooks/use-paddle";
+import { createClient } from "@/lib/supabase/client";
 import {
   ArrowLeft,
   Users,
@@ -33,6 +36,7 @@ import {
   Loader2,
   Mail,
   FileDown,
+  CreditCard,
 } from "lucide-react";
 import { generateCampaignPdf } from "@/lib/pdf/pdf-campaign";
 import {
@@ -161,10 +165,12 @@ export default function CampaignDetail() {
   const [selectedTab, setSelectedTab] = useState<DetailTab>("overview");
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [paying, setPaying] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [engagements, setEngagements] = useState<any[]>([]);
   const [emailSummary, setEmailSummary] = useState<EmailDeliverySummary>(DEFAULT_EMAIL_SUMMARY);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { paddle, onEvent, offEvent } = usePaddle();
 
   const fetchAll = useCallback(() => {
     Promise.all([
@@ -210,10 +216,90 @@ export default function CampaignDetail() {
   }, [campaign?.status, fetchAll]);
 
   async function handleRun() {
-    setStarting(true); setRunError(null);
-    try { await runCampaign(id); fetchAll(); }
-    catch (err) { setRunError(err instanceof Error ? err.message : "Failed to start"); }
-    finally { setStarting(false); }
+    const isPaid = campaign?.payment_status === "paid";
+
+    // If already paid, just run
+    if (isPaid) {
+      setStarting(true);
+      setRunError(null);
+      try {
+        await runCampaign(id);
+        fetchAll();
+      } catch (err) {
+        setRunError(err instanceof Error ? err.message : "Failed to start");
+      } finally {
+        setStarting(false);
+      }
+      return;
+    }
+
+    // Not paid — open Paddle checkout
+    const priceId = process.env.NEXT_PUBLIC_PADDLE_PRICE_ID;
+    if (!paddle || !priceId) {
+      setRunError("Payment system not configured. Please contact support.");
+      return;
+    }
+
+    // Get user email for checkout prefill
+    let userEmail: string | undefined;
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      userEmail = session?.user?.email ?? undefined;
+    } catch {
+      // proceed without prefill
+    }
+
+    setPaying(true);
+    setRunError(null);
+
+    // Register event handler before opening checkout
+    onEvent(async (eventName) => {
+      if (eventName === "checkout.completed") {
+        offEvent();
+        // Poll for webhook confirmation
+        for (let i = 0; i < 5; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          try {
+            const { paid } = await verifyPayment(id);
+            if (paid) {
+              // Payment confirmed — run campaign
+              setStarting(true);
+              setPaying(false);
+              try {
+                await runCampaign(id);
+                fetchAll();
+              } catch (err) {
+                setRunError(err instanceof Error ? err.message : "Failed to start");
+              } finally {
+                setStarting(false);
+              }
+              return;
+            }
+          } catch {
+            // retry
+          }
+        }
+        // Webhook hasn't arrived yet — still show success
+        setPaying(false);
+        setRunError(null);
+        fetchAll();
+      } else if (eventName === "checkout.closed") {
+        offEvent();
+        setPaying(false);
+      }
+    });
+
+    paddle.Checkout.open({
+      items: [{ priceId, quantity: 1 }],
+      settings: {
+        displayMode: "overlay",
+        theme: "light",
+        locale: "en",
+      },
+      customData: { campaign_id: id },
+      ...(userEmail ? { customer: { email: userEmail } } : {}),
+    });
   }
 
   async function handleDecide(approvalId: string, status: "approved" | "rejected", feedback?: string) {
@@ -457,11 +543,23 @@ export default function CampaignDetail() {
               {(isDraft || isFailed) && (
                 <button
                   onClick={handleRun}
-                  disabled={starting}
+                  disabled={starting || paying}
                   className="px-3 sm:px-4 py-2 bg-[#2F4538] hover:bg-[#1f2f26] text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  <Play className="w-4 h-4" />
-                  <span className="hidden sm:inline">{starting ? "Starting\u2026" : isFailed ? "Retry" : "Run Campaign"}</span>
+                  {campaign.payment_status === "paid" ? (
+                    <Play className="w-4 h-4" />
+                  ) : (
+                    <CreditCard className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {paying
+                      ? "Processing\u2026"
+                      : starting
+                        ? "Starting\u2026"
+                        : campaign.payment_status === "paid"
+                          ? (isFailed ? "Retry" : "Run Campaign")
+                          : "Pay & Run Campaign"}
+                  </span>
                 </button>
               )}
               {(isRunning || isCompleted) && (
@@ -545,6 +643,12 @@ export default function CampaignDetail() {
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyles(campaign.status)}`}>
                   {campaign.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                 </span>
+                {campaign.payment_status === "paid" && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Paid
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
@@ -581,7 +685,7 @@ export default function CampaignDetail() {
               {budgetGBP > 0 ? (
                 <>
                   <div className="text-sm opacity-90 mb-1">Campaign Budget</div>
-                  <div className="text-2xl sm:text-3xl font-bold mb-3">{"\u00a3"}{budgetGBP.toLocaleString()}</div>
+                  <div className="text-2xl sm:text-3xl font-bold mb-3">£{budgetGBP.toLocaleString()}</div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="opacity-90">Creators</span>
@@ -798,7 +902,7 @@ export default function CampaignDetail() {
                     {brief.budget_gbp != null && (
                       <div>
                         <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Budget</span>
-                        <p className="text-gray-900 font-semibold mt-0.5">\u00a3{Number(brief.budget_gbp).toLocaleString()}</p>
+                        <p className="text-gray-900 font-semibold mt-0.5">£{Number(brief.budget_gbp).toLocaleString()}</p>
                       </div>
                     )}
                   </div>
@@ -825,7 +929,7 @@ export default function CampaignDetail() {
                       )}
                       {strategy.budget_per_creator && (
                         <div className="rounded-lg bg-gray-50 p-3 text-center">
-                          <p className="text-xl font-semibold text-gray-900">\u00a3{Number(strategy.budget_per_creator).toLocaleString()}</p>
+                          <p className="text-xl font-semibold text-gray-900">£{Number(strategy.budget_per_creator).toLocaleString()}</p>
                           <p className="text-[11px] text-gray-400 mt-0.5">Per Creator</p>
                         </div>
                       )}
@@ -935,7 +1039,7 @@ export default function CampaignDetail() {
                             {creator.proposed_fee != null && (
                               <div>
                                 <div className="text-xs text-gray-500 mb-0.5">Proposed Fee</div>
-                                <div className="font-medium text-gray-900 text-sm">\u00a3{Number(creator.proposed_fee).toLocaleString()}</div>
+                                <div className="font-medium text-gray-900 text-sm">£{Number(creator.proposed_fee).toLocaleString()}</div>
                               </div>
                             )}
                             <div>

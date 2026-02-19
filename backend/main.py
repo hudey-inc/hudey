@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routes import analytics, approvals, brands, campaigns, creators, notifications, templates, webhooks
+from backend.api.routes import analytics, approvals, brands, campaigns, creators, notifications, paddle_webhooks, templates, webhooks
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +47,7 @@ app.include_router(brands.router)
 app.include_router(campaigns.router)
 app.include_router(creators.router)
 app.include_router(notifications.router)
+app.include_router(paddle_webhooks.router)
 app.include_router(templates.router)
 app.include_router(webhooks.router)
 
