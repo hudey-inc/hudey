@@ -404,7 +404,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto relative">
           <div className="reveal-item text-center mb-10 sm:mb-16 md:mb-20">
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 sm:mb-6 px-4">
-              One platform, <span className="text-[#2F4538]">end to end</span>
+              One agent, <span className="text-[#2F4538]">end to end</span>
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               Discovery, outreach, negotiation, and reporting — all in one
@@ -583,7 +583,7 @@ export default function LandingPage() {
               questions you have.
             </p>
             <a
-              href={`${APP_URL}/signup`}
+              href="mailto:hello@hudey.co"
               className="inline-block bg-gradient-to-r from-[#2F4538] to-[#3a5745] hover:from-[#1f2f26] hover:to-[#2F4538] text-white px-8 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg shadow-[#2F4538]/30 hover:shadow-xl hover:scale-105"
             >
               Contact Us
