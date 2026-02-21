@@ -40,6 +40,7 @@ import {
   AlertTriangle,
   DollarSign,
   PieChart,
+  Plus,
 } from "lucide-react";
 import { generateAnalyticsPdf } from "@/lib/pdf/pdf-analytics";
 
@@ -570,7 +571,7 @@ function AnalyticsPageInner() {
           <div className="bg-white rounded-xl border border-red-200 p-10 text-center">
             <XCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
             <p className="text-gray-900 font-medium text-sm">Failed to load analytics</p>
-            <p className="text-xs text-gray-500 mt-1 mb-4">{error}</p>
+            <p className="text-xs text-gray-500 mt-1 mb-4">Please check your connection and try again.</p>
             <button
               onClick={fetchData}
               className="px-4 py-2 bg-[#2F4538] text-white text-sm font-medium rounded-lg hover:bg-[#2F4538]/90 transition-colors"
@@ -579,10 +580,21 @@ function AnalyticsPageInner() {
             </button>
           </div>
         ) : !filteredData ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-            <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm">No analytics data available yet.</p>
-            <p className="text-xs text-gray-400 mt-1">Run a campaign to start seeing metrics here.</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-[#2F4538]/10 flex items-center justify-center mx-auto mb-5">
+              <BarChart3 className="w-8 h-8 text-[#2F4538]" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">No analytics yet</h3>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
+              Analytics will populate once you run your first campaign. You&apos;ll see performance metrics, creator engagement rates, and email delivery stats here.
+            </p>
+            <Link
+              href="/campaigns/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2F4538] text-white text-sm font-medium rounded-lg hover:bg-[#2F4538]/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create Your First Campaign
+            </Link>
           </div>
         ) : (
           <>
@@ -866,7 +878,8 @@ function AnalyticsPageInner() {
                 {filteredData.perCampaign.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
                     <Target className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">No campaigns yet.</p>
+                    <p className="text-gray-900 font-medium text-sm">No campaign data yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Campaign performance metrics will appear here after you run a campaign.</p>
                   </div>
                 ) : (
                   <div className="grid gap-6">

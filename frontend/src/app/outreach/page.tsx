@@ -692,12 +692,24 @@ export default function OutreachPage() {
         <OutreachSkeleton />
       ) : !data ? (
         <div>
-          <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-            <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm font-medium">No outreach data yet</p>
-            <p className="text-[13px] text-gray-400 mt-1">
-              Outreach data will appear after you send campaign emails.
+          <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-[#2F4538]/10 flex items-center justify-center mx-auto mb-5">
+              <Inbox className="w-8 h-8 text-[#2F4538]" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">No outreach yet</h3>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-2">
+              Your outreach inbox will fill up once a campaign starts contacting creators. You&apos;ll see every message thread, response, and negotiation here.
             </p>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
+              To get started, create a campaign and hit <span className="font-medium text-gray-700">Run</span>.
+            </p>
+            <Link
+              href="/campaigns/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2F4538] text-white text-sm font-medium rounded-lg hover:bg-[#2F4538]/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create a Campaign
+            </Link>
           </div>
         </div>
       ) : (
