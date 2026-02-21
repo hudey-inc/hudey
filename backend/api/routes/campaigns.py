@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from backend.auth.current_brand import get_current_brand
 from backend.db.repositories.campaign_repo import (
@@ -40,7 +40,8 @@ def create_campaign(body: dict, brand: dict = Depends(get_current_brand)):
     strategy = body.get("strategy", {})
     name = body.get("name") or (brief.get("name") if isinstance(brief, dict) else None)
     short_id = body.get("short_id")
-    cid = repo_create(brief, strategy, short_id=short_id, name=name, brand_id=brand["id"])
+    contract_template_id = body.get("contract_template_id")
+    cid = repo_create(brief, strategy, short_id=short_id, name=name, brand_id=brand["id"], contract_template_id=contract_template_id)
     if not cid:
         raise HTTPException(status_code=503, detail="Database not configured")
     return {"id": cid}
@@ -425,8 +426,34 @@ def send_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(get_c
     }
 
 
+@router.get("/{campaign_id}/contract-status")
+def campaign_contract_status(campaign_id: str, brand: dict = Depends(get_current_brand)):
+    """Get contract template and acceptance status for a campaign."""
+    campaign = repo_get(campaign_id, brand_id=brand["id"])
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    contract_template_id = campaign.get("contract_template_id")
+    if not contract_template_id:
+        return {"has_contract": False, "template": None, "acceptances": []}
+
+    from backend.db.repositories.contract_repo import (
+        get_contract_template,
+        list_acceptances_for_campaign,
+    )
+
+    template = get_contract_template(contract_template_id, brand_id=brand["id"])
+    acceptances = list_acceptances_for_campaign(campaign["id"])
+
+    return {
+        "has_contract": True,
+        "template": template,
+        "acceptances": acceptances,
+    }
+
+
 @router.post("/{campaign_id}/accept-terms")
-def accept_terms(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = Depends(get_current_brand)):
     """Accept negotiation terms for a creator engagement.
 
     Body: {
@@ -463,6 +490,35 @@ def accept_terms(campaign_id: str, body: dict, brand: dict = Depends(get_current
 
     # Use provided terms, or fall back to latest_proposal
     final_terms = terms if terms else (engagement.get("latest_proposal") or {})
+
+    # Handle contract acceptance if campaign has a contract template
+    contract_acceptance_id = None
+    if campaign.get("contract_template_id"):
+        if not body.get("contract_accepted"):
+            raise HTTPException(
+                status_code=400,
+                detail="Contract acceptance is required for this campaign",
+            )
+        from backend.db.repositories.contract_repo import (
+            create_acceptance,
+            get_contract_template,
+        )
+
+        contract_tmpl = get_contract_template(campaign["contract_template_id"])
+        if contract_tmpl:
+            ip_address = None
+            if request.client:
+                ip_address = request.client.host
+            contract_acceptance_id = create_acceptance(
+                contract_template_id=contract_tmpl["id"],
+                campaign_id=db_campaign_id,
+                engagement_id=engagement["id"],
+                creator_id=creator_id,
+                brand_id=brand["id"],
+                clauses_snapshot=contract_tmpl["clauses"],
+                ip_address=ip_address,
+                user_agent=body.get("user_agent"),
+            )
 
     # Update status to agreed with final terms
     update_status(db_campaign_id, creator_id, "agreed", {"terms": final_terms})
@@ -508,12 +564,15 @@ def accept_terms(campaign_id: str, body: dict, brand: dict = Depends(get_current
         except Exception as e:
             logger.warning("Failed to send confirmation to %s: %s", creator_email, e)
 
-    return {
+    result = {
         "ok": True,
         "email_id": email_id,
         "status": "agreed",
         "terms": final_terms,
     }
+    if contract_acceptance_id:
+        result["contract_acceptance_id"] = contract_acceptance_id
+    return result
 
 
 @router.patch("/{campaign_id}/engagements/{creator_id}/status")

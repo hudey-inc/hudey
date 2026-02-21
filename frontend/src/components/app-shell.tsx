@@ -26,6 +26,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   CheckCheck,
+  FileText,
 } from "lucide-react";
 
 import { HudeyLogo } from "@/components/hudey-logo";
@@ -302,6 +303,7 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const isCampaignSection = isCampaigns || isCampaignDetail || isNewCampaign;
   const isOutreach = pathname === "/outreach";
   const isCreators = pathname === "/creators";
+  const isContracts = pathname.startsWith("/contracts");
   const isAnalytics = pathname === "/analytics";
   const isNegotiator = pathname === "/negotiator";
   const isSettings = pathname === "/settings";
@@ -458,6 +460,18 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         >
           <Search className="w-4 h-4" />
           <span>Creators</span>
+        </Link>
+
+        <Link
+          href="/contracts"
+          className={`flex items-center gap-3 w-full px-3 py-2 text-sm rounded-lg mb-1 transition-colors ${
+            isContracts
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-gray-50"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Contracts</span>
         </Link>
 
         <Link
@@ -787,6 +801,19 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         >
           <Search className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span>Creators</span>}
+        </Link>
+
+        <Link
+          href="/contracts"
+          className={`flex items-center w-full rounded-lg mb-1 transition-colors ${
+            isContracts
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-gray-50"
+          } ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2 text-sm"}`}
+          title={collapsed ? "Contracts" : undefined}
+        >
+          <FileText className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && <span>Contracts</span>}
         </Link>
 
         <Link

@@ -7,7 +7,7 @@ from backend.db.client import get_supabase
 logger = logging.getLogger(__name__)
 
 
-def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: str = None, brand_id: str = None):
+def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: str = None, brand_id: str = None, contract_template_id: str = None):
     """Insert campaign; return campaign id (UUID string)."""
     sb = get_supabase()
     if not sb:
@@ -21,6 +21,8 @@ def create_campaign(brief: dict, strategy: dict, *, short_id: str = None, name: 
         row["short_id"] = short_id
     if brand_id:
         row["brand_id"] = brand_id
+    if contract_template_id:
+        row["contract_template_id"] = contract_template_id
     if strategy:
         row["target_audience"] = strategy.get("target_audience")
         row["deliverables"] = strategy.get("deliverables")

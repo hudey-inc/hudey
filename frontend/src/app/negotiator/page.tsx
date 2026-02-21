@@ -446,7 +446,7 @@ function ActiveNegotiationCard({
     setAccepting(true);
     try {
       const terms = engagement.latest_proposal || engagement.terms || {};
-      await acceptTerms(campaignId, engagement.creator_id, terms);
+      await acceptTerms(campaignId, engagement.creator_id, terms, true);
       onDataChange();
     } catch {
       // retry

@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate } from "@/lib/api";
-import type { CampaignTemplate } from "@/lib/api";
+import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate, listContracts } from "@/lib/api";
+import type { CampaignTemplate, ContractTemplate } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
-import { ArrowLeft, Bookmark, Sparkles, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, Bookmark, Sparkles, ArrowRight, X, FileText } from "lucide-react";
 
 const PLATFORM_OPTIONS = ["Instagram", "TikTok", "YouTube", "Twitter/X"];
 
@@ -27,6 +27,10 @@ function NewCampaignInner() {
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [appliedTemplate, setAppliedTemplate] = useState<CampaignTemplate | null>(null);
 
+  // Contract state
+  const [contractTemplates, setContractTemplates] = useState<ContractTemplate[]>([]);
+  const [selectedContractId, setSelectedContractId] = useState("");
+
   // Form state
   const [brandName, setBrandName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -42,12 +46,13 @@ function NewCampaignInner() {
   const [deliverables, setDeliverables] = useState("");
   const [timeline, setTimeline] = useState("");
 
-  // Load templates on mount
+  // Load templates and contracts on mount
   useEffect(() => {
     listTemplates()
       .then(setTemplates)
       .catch(() => {})
       .finally(() => setLoadingTemplates(false));
+    listContracts().then(setContractTemplates).catch(() => {});
   }, []);
 
   // If ?template=id is in URL, auto-apply that template
@@ -160,7 +165,11 @@ function NewCampaignInner() {
         ...(brandVoice.trim() && { brand_voice: brandVoice.trim() }),
       };
 
-      const { id } = await createCampaign({ name: brandName.trim(), brief });
+      const { id } = await createCampaign({
+        name: brandName.trim(),
+        brief,
+        ...(selectedContractId && { contract_template_id: selectedContractId }),
+      });
       router.push(`/campaigns/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign");
@@ -472,6 +481,48 @@ function NewCampaignInner() {
               {fieldErrors.timeline && <p className={errorClass}>{fieldErrors.timeline}</p>}
             </div>
           </div>
+        </div>
+
+        {/* Contract */}
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-4 h-4 text-[#2F4538]" />
+            <h2 className="text-base font-semibold text-gray-900">Contract</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Attach a clickwrap contract that creators must accept when terms are agreed
+          </p>
+          {contractTemplates.length > 0 ? (
+            <div className="space-y-2">
+              <select
+                value={selectedContractId}
+                onChange={(e) => setSelectedContractId(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">No contract required</option>
+                {contractTemplates.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} (v{c.version}, {c.clauses.length} clauses)
+                  </option>
+                ))}
+              </select>
+              {selectedContractId && (
+                <Link
+                  href={`/contracts/${selectedContractId}`}
+                  className="text-xs text-[#2F4538] hover:underline"
+                >
+                  View contract
+                </Link>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/contracts/new"
+              className="text-sm text-[#2F4538] hover:underline"
+            >
+              Create your first contract template
+            </Link>
+          )}
         </div>
 
         {/* Actions */}

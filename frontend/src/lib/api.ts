@@ -80,6 +80,7 @@ export type Campaign = CampaignSummary & {
   paddle_transaction_id?: string;
   amount_paid?: number;
   paid_at?: string;
+  contract_template_id?: string;
 };
 
 export async function listCampaigns(): Promise<CampaignSummary[]> {
@@ -191,6 +192,118 @@ export async function createCampaignFromTemplate(
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Failed to create campaign from template (${res.status})`);
   }
+  return res.json();
+}
+
+// ── Contracts ─────────────────────────────────────────────────
+
+export type ContractClause = {
+  type: string;
+  title: string;
+  body: string;
+  required: boolean;
+  order: number;
+};
+
+export type ContractTemplate = {
+  id: string;
+  brand_id: string;
+  name: string;
+  description: string;
+  clauses: ContractClause[];
+  version: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ContractAcceptance = {
+  id: string;
+  contract_template_id: string;
+  campaign_id: string;
+  engagement_id: string;
+  creator_id: string;
+  clauses_snapshot: ContractClause[];
+  content_hash: string;
+  accepted_at: string;
+  accepted_by_ip: string | null;
+  accepted_by_ua: string | null;
+  brand_id: string;
+};
+
+export type ContractStatus = {
+  has_contract: boolean;
+  template: ContractTemplate | null;
+  acceptances: ContractAcceptance[];
+};
+
+export async function listContracts(): Promise<ContractTemplate[]> {
+  const res = await authFetch(`${API_URL}/api/contracts`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getContract(id: string): Promise<ContractTemplate | null> {
+  const res = await authFetch(`${API_URL}/api/contracts/${id}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function getDefaultClauses(): Promise<ContractClause[]> {
+  const res = await authFetch(`${API_URL}/api/contracts/default-clauses`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function createContract(body: {
+  name: string;
+  description?: string;
+  clauses?: ContractClause[];
+}): Promise<{ id: string }> {
+  const res = await authFetch(`${API_URL}/api/contracts`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to create contract (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateContract(
+  id: string,
+  body: { name?: string; description?: string; clauses?: ContractClause[] }
+): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/contracts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to update contract (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteContract(id: string): Promise<{ ok: boolean }> {
+  const res = await authFetch(`${API_URL}/api/contracts/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to delete contract (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function getCampaignContractStatus(
+  campaignId: string
+): Promise<ContractStatus> {
+  const res = await authFetch(
+    `${API_URL}/api/campaigns/${campaignId}/contract-status`
+  );
+  if (!res.ok) return { has_contract: false, template: null, acceptances: [] };
   return res.json();
 }
 
@@ -445,12 +558,18 @@ export async function sendCounterOffer(
 export async function acceptTerms(
   campaignId: string,
   creatorId: string,
-  terms?: Record<string, unknown>
-): Promise<{ ok: boolean; status: string; terms: Record<string, unknown> }> {
+  terms?: Record<string, unknown>,
+  contractAccepted?: boolean
+): Promise<{ ok: boolean; status: string; terms: Record<string, unknown>; contract_acceptance_id?: string }> {
   const res = await authFetch(`${API_URL}/api/campaigns/${campaignId}/accept-terms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ creator_id: creatorId, terms }),
+    body: JSON.stringify({
+      creator_id: creatorId,
+      terms,
+      contract_accepted: contractAccepted,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -466,6 +585,7 @@ export async function createCampaign(body: {
   strategy?: Record<string, unknown>;
   name?: string;
   short_id?: string;
+  contract_template_id?: string;
 }): Promise<{ id: string }> {
   const res = await authFetch(`${API_URL}/api/campaigns`, {
     method: "POST",

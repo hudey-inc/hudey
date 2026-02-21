@@ -15,7 +15,9 @@ import {
   getEngagements,
   getEmailEvents,
   verifyPayment,
+  getCampaignContractStatus,
 } from "@/lib/api";
+import type { ContractStatus } from "@/lib/api";
 import { usePaddle } from "@/hooks/use-paddle";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -37,6 +39,7 @@ import {
   Mail,
   FileDown,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import { generateCampaignPdf } from "@/lib/pdf/pdf-campaign";
 import {
@@ -169,6 +172,7 @@ export default function CampaignDetail() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [engagements, setEngagements] = useState<any[]>([]);
   const [emailSummary, setEmailSummary] = useState<EmailDeliverySummary>(DEFAULT_EMAIL_SUMMARY);
+  const [contractStatus, setContractStatus] = useState<ContractStatus | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { paddle, onEvent, offEvent } = usePaddle();
 
@@ -178,11 +182,13 @@ export default function CampaignDetail() {
       listApprovals(id).catch(() => [] as Approval[]),
       getEngagements(id).catch(() => []),
       getEmailEvents(id).catch(() => DEFAULT_EMAIL_SUMMARY),
-    ]).then(([c, a, eng, ev]) => {
+      getCampaignContractStatus(id).catch(() => null),
+    ]).then(([c, a, eng, ev, cs]) => {
       if (c) setCampaign(c);
       setApprovals(a);
       setEngagements(eng);
       setEmailSummary(ev);
+      if (cs) setContractStatus(cs);
     }).catch(() => {});
   }, [id]);
 
@@ -193,12 +199,14 @@ export default function CampaignDetail() {
       listApprovals(id).catch(() => [] as Approval[]),
       getEngagements(id).catch(() => []),
       getEmailEvents(id).catch(() => DEFAULT_EMAIL_SUMMARY),
+      getCampaignContractStatus(id).catch(() => null),
     ])
-      .then(([c, a, eng, ev]) => {
+      .then(([c, a, eng, ev, cs]) => {
         setCampaign(c);
         setApprovals(a);
         setEngagements(eng);
         setEmailSummary(ev);
+        if (cs) setContractStatus(cs);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
@@ -861,6 +869,47 @@ export default function CampaignDetail() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Contract Status */}
+            {contractStatus?.has_contract && contractStatus.template && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 bg-[#2F4538]/10 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4.5 h-4.5 text-[#2F4538]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Contract</h2>
+                    <p className="text-xs text-gray-500">{contractStatus.template.name} &middot; v{contractStatus.template.version}</p>
+                  </div>
+                  <Link
+                    href={`/contracts/${contractStatus.template.id}`}
+                    className="ml-auto text-sm text-[#2F4538] hover:underline font-medium"
+                  >
+                    View Template
+                  </Link>
+                </div>
+                {contractStatus.acceptances && contractStatus.acceptances.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      {contractStatus.acceptances.length} acceptance{contractStatus.acceptances.length !== 1 ? "s" : ""}
+                    </div>
+                    {contractStatus.acceptances.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between rounded-lg bg-green-50 border border-green-100 px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-sm text-gray-900">Creator {a.creator_id.slice(0, 8)}…</span>
+                        </div>
+                        <span className="text-xs text-gray-500">{new Date(a.accepted_at).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-700">
+                    No acceptances yet. Creators will accept the contract when agreeing to terms.
+                  </div>
+                )}
               </div>
             )}
 
