@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { getBrand, updateBrand } from "@/lib/api";
-import type { Brand } from "@/lib/api";
+import { getBrand, updateBrand, getBilling } from "@/lib/api";
+import type { Brand, BillingData } from "@/lib/api";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import {
   Settings,
@@ -20,11 +20,15 @@ import {
   AlertTriangle,
   Check,
   Loader2,
+  CreditCard,
+  Receipt,
+  ExternalLink,
+  PoundSterling,
 } from "lucide-react";
 
 // ── Constants ────────────────────────────────────────────────
 
-type TabKey = "profile" | "notifications" | "security";
+type TabKey = "profile" | "notifications" | "security" | "billing";
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string; tips: string[] } {
   if (!pw) return { score: 0, label: "", color: "", tips: [] };
@@ -78,6 +82,11 @@ export default function SettingsPage() {
   const [pwSuccess, setPwSuccess] = useState(false);
   const [pwError, setPwError] = useState("");
 
+  // Billing
+  const [billing, setBilling] = useState<BillingData | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingLoaded, setBillingLoaded] = useState(false);
+
   // Delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -109,6 +118,28 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) loadBrand();
   }, [user, loadBrand]);
+
+  // ── Load billing (lazy, on tab click) ─────────────────────
+
+  useEffect(() => {
+    if (activeTab !== "billing" || billingLoaded) return;
+    let cancelled = false;
+    (async () => {
+      setBillingLoading(true);
+      try {
+        const data = await getBilling();
+        if (!cancelled) {
+          setBilling(data);
+          setBillingLoaded(true);
+        }
+      } catch {
+        // billing not available
+      } finally {
+        if (!cancelled) setBillingLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab, billingLoaded]);
 
   // ── Dirty tracking ─────────────────────────────────────────
 
@@ -221,7 +252,7 @@ export default function SettingsPage() {
             <div className="h-7 bg-gray-100 rounded w-40 mb-2" />
             <div className="h-4 bg-gray-100 rounded w-56 mb-6" />
             <div className="flex gap-6 border-b border-gray-200 -mb-px">
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="h-4 bg-gray-100 rounded w-24 mb-3" />
               ))}
             </div>
@@ -254,6 +285,7 @@ export default function SettingsPage() {
 
   const tabs: { key: TabKey; label: string; icon: typeof User }[] = [
     { key: "profile", label: "Profile", icon: User },
+    { key: "billing", label: "Billing", icon: CreditCard },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "security", label: "Security", icon: Shield },
   ];
@@ -436,6 +468,154 @@ export default function SettingsPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Billing Tab ─────────────────────────────── */}
+          {activeTab === "billing" && (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <PoundSterling className="w-4 h-4 text-gray-400" />
+                    <span className="text-[12px] font-medium text-gray-500 uppercase tracking-wider">Total Spent</span>
+                  </div>
+                  {billingLoading ? (
+                    <div className="h-7 bg-gray-100 rounded w-20 animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">
+                      {"\u00A3"}{(billing?.summary.total_spent ?? 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Receipt className="w-4 h-4 text-gray-400" />
+                    <span className="text-[12px] font-medium text-gray-500 uppercase tracking-wider">Campaigns Paid</span>
+                  </div>
+                  {billingLoading ? (
+                    <div className="h-7 bg-gray-100 rounded w-10 animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{billing?.summary.campaigns_paid ?? 0}</p>
+                  )}
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="text-[12px] font-medium text-gray-500 uppercase tracking-wider">Last Payment</span>
+                  </div>
+                  {billingLoading ? (
+                    <div className="h-7 bg-gray-100 rounded w-28 animate-pulse mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">
+                      {billing?.summary.last_payment_at
+                        ? new Date(billing.summary.last_payment_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                        : "\u2014"}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment History */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Payment History</h2>
+                </div>
+
+                {billingLoading ? (
+                  <div className="p-5 space-y-4 animate-pulse">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-100 rounded w-40" />
+                          <div className="h-3 bg-gray-100 rounded w-24" />
+                        </div>
+                        <div className="h-5 bg-gray-100 rounded w-16" />
+                      </div>
+                    ))}
+                  </div>
+                ) : billing && billing.transactions.length > 0 ? (
+                  <div className="divide-y divide-gray-100">
+                    {billing.transactions.map((txn) => (
+                      <div
+                        key={txn.campaign_id}
+                        className="px-5 py-4 flex items-center justify-between"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">{txn.campaign_name}</p>
+                          <div className="flex items-center gap-3 mt-0.5">
+                            {txn.paid_at && (
+                              <span className="text-[13px] text-gray-500">
+                                {new Date(txn.paid_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                            )}
+                            {txn.transaction_id && (
+                              <span className="text-[11px] text-gray-400 font-mono">
+                                {txn.transaction_id.length > 20 ? `${txn.transaction_id.slice(0, 20)}...` : txn.transaction_id}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 border border-green-200">
+                            Paid
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                            {"\u00A3"}{txn.amount.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <CreditCard className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 font-medium">No payments yet</p>
+                    <p className="text-[13px] text-gray-400 mt-1">Your payment history will appear here once you run your first campaign.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment method / Paddle portal */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Payment Method</h2>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-500 mb-4">
+                    Payments are processed securely through Paddle. You can manage your payment
+                    methods, view invoices, and update billing details from the Paddle customer portal.
+                  </p>
+                  <a
+                    href="https://customer-portal.paddle.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Manage Billing
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Refund info */}
+              <div className="bg-[#faf9f6] rounded-xl border border-[#E8DCC8]/60 p-5">
+                <p className="text-[13px] text-gray-600">
+                  <span className="font-medium text-gray-700">30-day money-back guarantee.</span>{" "}
+                  If you&apos;re not satisfied with a campaign, contact{" "}
+                  <a href="mailto:support@hudey.co" className="text-[#2F4538] underline hover:no-underline">
+                    support@hudey.co
+                  </a>{" "}
+                  within 30 days for a full refund. See our{" "}
+                  <a href="/refund" className="text-[#2F4538] underline hover:no-underline">
+                    refund policy
+                  </a>{" "}
+                  for details.
+                </p>
               </div>
             </div>
           )}

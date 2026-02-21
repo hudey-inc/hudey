@@ -331,6 +331,36 @@ export async function updateBrand(updates: BrandUpdate): Promise<Brand> {
   return res.json();
 }
 
+// ── Billing ──────────────────────────────────────────────────
+
+export type BillingTransaction = {
+  campaign_id: string;
+  campaign_name: string;
+  transaction_id: string | null;
+  amount: number;
+  paid_at: string | null;
+};
+
+export type BillingSummary = {
+  total_spent: number;
+  campaigns_paid: number;
+  last_payment_at: string | null;
+};
+
+export type BillingData = {
+  transactions: BillingTransaction[];
+  summary: BillingSummary;
+};
+
+export async function getBilling(): Promise<BillingData> {
+  const res = await authFetch(`${API_URL}/api/brands/billing`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch billing (${res.status})`);
+  }
+  return res.json();
+}
+
 // ── Approvals ─────────────────────────────────────────────────
 
 export type Approval = {

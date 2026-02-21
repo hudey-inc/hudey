@@ -1,4 +1,4 @@
-"""Brand API routes — profile read/update."""
+"""Brand API routes — profile read/update, billing."""
 
 import logging
 
@@ -30,3 +30,56 @@ def update_my_brand(request: Request, body: UpdateBrandRequest, brand: dict = De
     if not updated:
         raise HTTPException(status_code=500, detail="Failed to update brand")
     return updated
+
+
+@router.get("/billing")
+def get_billing(brand: dict = Depends(get_current_brand)):
+    """Return payment history and billing summary for the brand.
+
+    Aggregates paid campaigns from the campaigns table and returns:
+    - transactions: list of individual payments (newest first)
+    - summary: total_spent, campaigns_paid, last_payment_at
+    """
+    from backend.db.client import get_supabase
+
+    sb = get_supabase()
+    if not sb:
+        return {"transactions": [], "summary": {"total_spent": 0, "campaigns_paid": 0, "last_payment_at": None}}
+
+    try:
+        rows = (
+            sb.table("campaigns")
+            .select("id, name, short_id, payment_status, paddle_transaction_id, amount_paid, paid_at")
+            .eq("brand_id", brand["id"])
+            .eq("payment_status", "paid")
+            .order("paid_at", desc=True)
+            .execute()
+        )
+    except Exception as e:
+        logger.warning("Failed to fetch billing data: %s", e)
+        return {"transactions": [], "summary": {"total_spent": 0, "campaigns_paid": 0, "last_payment_at": None}}
+
+    payments = rows.data or []
+
+    transactions = [
+        {
+            "campaign_id": p["id"],
+            "campaign_name": p.get("name") or p.get("short_id") or "Campaign",
+            "transaction_id": p.get("paddle_transaction_id"),
+            "amount": float(p["amount_paid"]) if p.get("amount_paid") else 0,
+            "paid_at": p.get("paid_at"),
+        }
+        for p in payments
+    ]
+
+    total_spent = sum(t["amount"] for t in transactions)
+    last_payment_at = transactions[0]["paid_at"] if transactions else None
+
+    return {
+        "transactions": transactions,
+        "summary": {
+            "total_spent": round(total_spent, 2),
+            "campaigns_paid": len(transactions),
+            "last_payment_at": last_payment_at,
+        },
+    }
