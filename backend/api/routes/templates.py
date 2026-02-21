@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.api.rate_limit import default_limit
+from backend.api.schemas import CreateCampaignFromTemplateRequest, CreateTemplateRequest
 from backend.auth.current_brand import get_current_brand
 
 logger = logging.getLogger(__name__)
@@ -31,22 +33,18 @@ def get_template(template_id: str, brand: dict = Depends(get_current_brand)):
 
 
 @router.post("")
-def create_template(body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def create_template(request: Request, body: CreateTemplateRequest, brand: dict = Depends(get_current_brand)):
     """Create a new campaign template.
 
     Body: { name: str, description?: str, brief: dict, strategy?: dict }
     Alternatively: { name: str, description?: str, campaign_id: str }
       — copies brief/strategy from an existing campaign.
     """
-    name = (body.get("name") or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Template name is required")
-
     # If campaign_id provided, copy brief from that campaign
-    campaign_id = body.get("campaign_id")
-    if campaign_id:
+    if body.campaign_id:
         from backend.db.repositories.campaign_repo import get_campaign
-        campaign = get_campaign(campaign_id, brand_id=brand["id"])
+        campaign = get_campaign(body.campaign_id, brand_id=brand["id"])
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
         brief = campaign.get("brief") or {}
@@ -56,17 +54,17 @@ def create_template(body: dict, brand: dict = Depends(get_current_brand)):
             "timeline": campaign.get("timeline"),
         }
     else:
-        brief = body.get("brief")
+        brief = body.brief
         if not brief or not isinstance(brief, dict):
             raise HTTPException(status_code=400, detail="brief is required")
-        strategy = body.get("strategy")
+        strategy = body.strategy
 
     from backend.db.repositories.template_repo import create_template as repo_create
     tid = repo_create(
         brand_id=brand["id"],
-        name=name,
+        name=body.name.strip(),
         brief=brief,
-        description=body.get("description", ""),
+        description=body.description or "",
         strategy=strategy,
     )
     if not tid:
@@ -85,9 +83,11 @@ def delete_template(template_id: str, brand: dict = Depends(get_current_brand)):
 
 
 @router.post("/{template_id}/create-campaign")
+@default_limit
 def create_campaign_from_template(
+    request: Request,
     template_id: str,
-    body: dict,
+    body: CreateCampaignFromTemplateRequest,
     brand: dict = Depends(get_current_brand),
 ):
     """Create a new draft campaign from a template.
@@ -102,12 +102,11 @@ def create_campaign_from_template(
         raise HTTPException(status_code=404, detail="Template not found")
 
     brief = dict(tmpl.get("brief") or {})
-    overrides = body.get("brief_overrides")
-    if overrides and isinstance(overrides, dict):
-        brief.update(overrides)
+    if body.brief_overrides:
+        brief.update(body.brief_overrides)
 
     strategy = tmpl.get("strategy") or {}
-    name = body.get("name") or tmpl.get("name") or "Campaign"
+    name = body.name or tmpl.get("name") or "Campaign"
 
     cid = create_campaign(brief, strategy, name=name, brand_id=brand["id"])
     if not cid:

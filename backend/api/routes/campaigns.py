@@ -4,6 +4,17 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.api.rate_limit import default_limit
+from backend.api.schemas import (
+    AcceptTermsRequest,
+    CreateCampaignRequest,
+    DuplicateCampaignRequest,
+    GenerateCounterOfferRequest,
+    ReplyToCreatorRequest,
+    SendCounterOfferRequest,
+    UpdateCampaignRequest,
+    UpdateEngagementStatusRequest,
+)
 from backend.auth.current_brand import get_current_brand
 from backend.db.repositories.campaign_repo import (
     create_campaign as repo_create,
@@ -34,13 +45,15 @@ def get_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
 
 
 @router.post("")
-def create_campaign(body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def create_campaign(request: Request, body: CreateCampaignRequest, brand: dict = Depends(get_current_brand)):
     """Create campaign from brief and optional strategy. Returns { id }."""
-    brief = body.get("brief", body)
-    strategy = body.get("strategy", {})
-    name = body.get("name") or (brief.get("name") if isinstance(brief, dict) else None)
-    short_id = body.get("short_id")
-    contract_template_id = body.get("contract_template_id")
+    data = body.model_dump(exclude_none=True)
+    brief = data.get("brief", data)
+    strategy = data.get("strategy", {})
+    name = data.get("name") or (brief.get("name") if isinstance(brief, dict) else None)
+    short_id = data.get("short_id")
+    contract_template_id = data.get("contract_template_id")
     cid = repo_create(brief, strategy, short_id=short_id, name=name, brand_id=brand["id"], contract_template_id=contract_template_id)
     if not cid:
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -203,7 +216,8 @@ def campaign_engagements(campaign_id: str, brand: dict = Depends(get_current_bra
 
 
 @router.post("/{campaign_id}/reply")
-def reply_to_creator(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def reply_to_creator(request: Request, campaign_id: str, body: ReplyToCreatorRequest, brand: dict = Depends(get_current_brand)):
     """Send a reply to a creator within a campaign thread.
 
     Body: { creator_id: str, message: str }
@@ -222,11 +236,8 @@ def reply_to_creator(campaign_id: str, body: dict, brand: dict = Depends(get_cur
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    creator_id = body.get("creator_id", "").strip()
-    message_text = body.get("message", "").strip()
-
-    if not creator_id or not message_text:
-        raise HTTPException(status_code=400, detail="creator_id and message are required")
+    creator_id = body.creator_id.strip()
+    message_text = body.message.strip()
 
     db_campaign_id = campaign["id"]
     engagement = get_engagement(db_campaign_id, creator_id)
@@ -280,7 +291,8 @@ def reply_to_creator(campaign_id: str, body: dict, brand: dict = Depends(get_cur
 
 
 @router.post("/{campaign_id}/negotiate")
-def generate_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def generate_counter_offer(request: Request, campaign_id: str, body: GenerateCounterOfferRequest, brand: dict = Depends(get_current_brand)):
     """Generate an AI counter-offer for a creator negotiation.
 
     Body: { creator_id: str }
@@ -295,9 +307,7 @@ def generate_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(g
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    creator_id = body.get("creator_id", "").strip()
-    if not creator_id:
-        raise HTTPException(status_code=400, detail="creator_id is required")
+    creator_id = body.creator_id.strip()
 
     db_campaign_id = campaign["id"]
     engagement = get_engagement(db_campaign_id, creator_id)
@@ -345,7 +355,8 @@ def generate_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(g
 
 
 @router.post("/{campaign_id}/send-counter-offer")
-def send_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def send_counter_offer(request: Request, campaign_id: str, body: SendCounterOfferRequest, brand: dict = Depends(get_current_brand)):
     """Send an approved counter-offer to a creator.
 
     Body: {
@@ -369,13 +380,10 @@ def send_counter_offer(campaign_id: str, body: dict, brand: dict = Depends(get_c
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    creator_id = body.get("creator_id", "").strip()
-    message_text = body.get("message", "").strip()
-    subject = body.get("subject", "").strip()
-    proposed_terms = body.get("proposed_terms", {})
-
-    if not creator_id or not message_text:
-        raise HTTPException(status_code=400, detail="creator_id and message are required")
+    creator_id = body.creator_id.strip()
+    message_text = body.message.strip()
+    subject = (body.subject or "").strip()
+    proposed_terms = body.proposed_terms or {}
 
     db_campaign_id = campaign["id"]
     engagement = get_engagement(db_campaign_id, creator_id)
@@ -453,7 +461,8 @@ def campaign_contract_status(campaign_id: str, brand: dict = Depends(get_current
 
 
 @router.post("/{campaign_id}/accept-terms")
-def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = Depends(get_current_brand)):
+@default_limit
+def accept_terms(request: Request, campaign_id: str, body: AcceptTermsRequest, brand: dict = Depends(get_current_brand)):
     """Accept negotiation terms for a creator engagement.
 
     Body: {
@@ -475,11 +484,8 @@ def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = D
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    creator_id = body.get("creator_id", "").strip()
-    terms = body.get("terms", {})
-
-    if not creator_id:
-        raise HTTPException(status_code=400, detail="creator_id is required")
+    creator_id = body.creator_id.strip()
+    terms = body.terms or {}
 
     db_campaign_id = campaign["id"]
     engagement = get_engagement(db_campaign_id, creator_id)
@@ -494,7 +500,7 @@ def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = D
     # Handle contract acceptance if campaign has a contract template
     contract_acceptance_id = None
     if campaign.get("contract_template_id"):
-        if not body.get("contract_accepted"):
+        if not body.contract_accepted:
             raise HTTPException(
                 status_code=400,
                 detail="Contract acceptance is required for this campaign",
@@ -517,7 +523,7 @@ def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = D
                 brand_id=brand["id"],
                 clauses_snapshot=contract_tmpl["clauses"],
                 ip_address=ip_address,
-                user_agent=body.get("user_agent"),
+                user_agent=body.user_agent,
             )
 
     # Update status to agreed with final terms
@@ -535,7 +541,7 @@ def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = D
     # Optionally send confirmation email
     email_id = None
     creator_email = engagement.get("creator_email", "")
-    if creator_email and body.get("send_confirmation", True):
+    if creator_email and body.send_confirmation:
         try:
             import os
             resend_key = os.getenv("RESEND_API_KEY", "")
@@ -576,10 +582,12 @@ def accept_terms(campaign_id: str, body: dict, request: Request, brand: dict = D
 
 
 @router.patch("/{campaign_id}/engagements/{creator_id}/status")
+@default_limit
 def update_engagement_status(
+    request: Request,
     campaign_id: str,
     creator_id: str,
-    body: dict,
+    body: UpdateEngagementStatusRequest,
     brand: dict = Depends(get_current_brand),
 ):
     """Update engagement status manually.
@@ -592,10 +600,7 @@ def update_engagement_status(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    new_status = body.get("status", "").strip()
-    valid_statuses = {"contacted", "responded", "negotiating", "agreed", "declined"}
-    if new_status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    new_status = body.status
 
     db_campaign_id = campaign["id"]
     engagement = get_engagement(db_campaign_id, creator_id)
@@ -603,10 +608,10 @@ def update_engagement_status(
         raise HTTPException(status_code=404, detail="Engagement not found")
 
     extras = {}
-    if body.get("terms"):
-        extras["terms"] = body["terms"]
-    if body.get("latest_proposal"):
-        extras["latest_proposal"] = body["latest_proposal"]
+    if body.terms:
+        extras["terms"] = body.terms
+    if body.latest_proposal:
+        extras["latest_proposal"] = body.latest_proposal
 
     ok = update_status(db_campaign_id, creator_id, new_status, extras if extras else None)
     if not ok:
@@ -616,13 +621,15 @@ def update_engagement_status(
 
 
 @router.post("/{campaign_id}/duplicate")
-def duplicate_campaign(campaign_id: str, body: dict = None, brand: dict = Depends(get_current_brand)):
+@default_limit
+def duplicate_campaign(request: Request, campaign_id: str, body: DuplicateCampaignRequest = None, brand: dict = Depends(get_current_brand)):
     """Duplicate a campaign — copies brief/strategy into a new draft.
 
     Optionally accepts { name: str, include_creators: bool } in body.
     Returns { id: new_campaign_id }.
     """
-    body = body or {}
+    if body is None:
+        body = DuplicateCampaignRequest()
     campaign = repo_get(campaign_id, brand_id=brand["id"])
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -637,14 +644,14 @@ def duplicate_campaign(campaign_id: str, body: dict = None, brand: dict = Depend
         strategy["timeline"] = campaign["timeline"]
 
     original_name = campaign.get("name") or "Campaign"
-    name = body.get("name") or f"{original_name} (copy)"
+    name = body.name or f"{original_name} (copy)"
 
     new_id = repo_create(brief, strategy, name=name, brand_id=brand["id"])
     if not new_id:
         raise HTTPException(status_code=503, detail="Failed to duplicate campaign")
 
     # Optionally carry over agreed creators
-    if body.get("include_creators"):
+    if body.include_creators:
         try:
             from backend.db.repositories.engagement_repo import get_engagements, upsert_engagement
             engagements = get_engagements(campaign["id"])
@@ -679,12 +686,16 @@ def delete_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
 
 
 @router.put("/{campaign_id}")
-def update_campaign(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def update_campaign(request: Request, campaign_id: str, body: UpdateCampaignRequest, brand: dict = Depends(get_current_brand)):
     """Update campaign status/fields. Verifies brand ownership."""
     campaign = repo_get(campaign_id, brand_id=brand["id"])
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    ok = repo_update(campaign_id, body)
+    data = body.model_dump(exclude_none=True, exclude_unset=True)
+    if not data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    ok = repo_update(campaign_id, data)
     if not ok:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return {"ok": True}

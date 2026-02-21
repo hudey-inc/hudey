@@ -1,7 +1,9 @@
 """Approval and creator-response webhook routes."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.api.rate_limit import default_limit, webhook_limit
+from backend.api.schemas import CreateApprovalRequest, CreatorResponseRequest, DecideApprovalRequest
 from backend.auth.current_brand import get_current_brand
 from backend.db.repositories.approval_repo import (
     create_approval as repo_create,
@@ -38,7 +40,8 @@ def campaign_approvals(campaign_id: str, brand: dict = Depends(get_current_brand
 
 
 @router.post("/api/campaigns/{campaign_id}/approvals")
-def create_approval(campaign_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def create_approval(request: Request, campaign_id: str, body: CreateApprovalRequest, brand: dict = Depends(get_current_brand)):
     """
     Create a new approval request (used by the agent).
     Body: { approval_type, payload, subject?, reasoning? }
@@ -46,16 +49,12 @@ def create_approval(campaign_id: str, body: dict, brand: dict = Depends(get_curr
     campaign = repo_get_campaign(campaign_id, brand_id=brand["id"])
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    approval_type = body.get("approval_type")
-    payload = body.get("payload")
-    if not approval_type or payload is None:
-        raise HTTPException(status_code=400, detail="approval_type and payload required")
     aid = repo_create(
         campaign_id=campaign_id,
-        approval_type=approval_type,
-        payload=payload,
-        subject=body.get("subject"),
-        reasoning=body.get("reasoning"),
+        approval_type=body.approval_type,
+        payload=body.payload,
+        subject=body.subject,
+        reasoning=body.reasoning,
     )
     if not aid:
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -63,15 +62,13 @@ def create_approval(campaign_id: str, body: dict, brand: dict = Depends(get_curr
 
 
 @router.put("/api/approvals/{approval_id}")
-def decide_approval(approval_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def decide_approval(request: Request, approval_id: str, body: DecideApprovalRequest, brand: dict = Depends(get_current_brand)):
     """
     Submit an approval decision.
     Body: { status: 'approved' | 'rejected', feedback?: string }
     """
-    status = body.get("status")
-    if status not in ("approved", "rejected"):
-        raise HTTPException(status_code=400, detail="status must be 'approved' or 'rejected'")
-    ok = repo_decide(approval_id, status, body.get("feedback"))
+    ok = repo_decide(approval_id, body.status, body.feedback)
     if not ok:
         raise HTTPException(status_code=404, detail="Approval not found")
     return {"ok": True}
@@ -100,20 +97,17 @@ def _creator_response(body: str, message_id: str = None, from_email: str = None,
 
 
 @router.post("/webhooks/creator-response")
-def creator_response_webhook(body: dict):
+@webhook_limit
+def creator_response_webhook(request: Request, body: CreatorResponseRequest):
     """
     Ingest creator reply (e.g. from Resend inbound or manual forwarding).
     JSON body: body (required), message_id, from_email, timestamp.
     """
-    data = body or {}
-    text = data.get("body", "")
-    if not text:
-        raise HTTPException(status_code=400, detail="body required")
     result = _creator_response(
-        body=text,
-        message_id=data.get("message_id"),
-        from_email=data.get("from_email"),
-        timestamp=data.get("timestamp"),
+        body=body.body,
+        message_id=body.message_id,
+        from_email=body.from_email,
+        timestamp=body.timestamp,
     )
     if result.get("success"):
         return result
@@ -121,9 +115,10 @@ def creator_response_webhook(body: dict):
 
 
 @router.post("/api/approvals/creator-response")
-def creator_response_api(body: dict):
+@webhook_limit
+def creator_response_api(request: Request, body: CreatorResponseRequest):
     """Alias for creator-response webhook."""
-    return creator_response_webhook(body)
+    return creator_response_webhook(request, body)
 
 
 @router.get("/api/approvals/status")

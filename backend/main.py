@@ -6,13 +6,19 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
+from backend.api.rate_limit import limiter, rate_limit_exceeded_handler
 from backend.api.routes import analytics, approvals, brands, campaigns, contracts, creators, notifications, paddle_webhooks, templates, webhooks
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Hudey API")
+
+# ── Rate limiting ────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 @app.exception_handler(Exception)

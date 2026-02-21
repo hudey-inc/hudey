@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.api.rate_limit import default_limit
+from backend.api.schemas import CreateContractRequest, UpdateContractRequest
 from backend.auth.current_brand import get_current_brand
 
 logger = logging.getLogger(__name__)
@@ -41,7 +43,8 @@ def get_contract(contract_id: str, brand: dict = Depends(get_current_brand)):
 
 
 @router.post("")
-def create_contract(body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def create_contract(request: Request, body: CreateContractRequest, brand: dict = Depends(get_current_brand)):
     """Create a new contract template.
 
     Body: { name: str, description?: str, clauses?: list }
@@ -52,19 +55,13 @@ def create_contract(body: dict, brand: dict = Depends(get_current_brand)):
         create_contract_template,
     )
 
-    name = (body.get("name") or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Contract name is required")
-
-    clauses = body.get("clauses")
-    if not clauses or not isinstance(clauses, list):
-        clauses = DEFAULT_CLAUSES
+    clauses = [c.model_dump() for c in body.clauses] if body.clauses else DEFAULT_CLAUSES
 
     cid = create_contract_template(
         brand_id=brand["id"],
-        name=name,
+        name=body.name.strip(),
         clauses=clauses,
-        description=body.get("description", ""),
+        description=body.description or "",
     )
     if not cid:
         raise HTTPException(status_code=503, detail="Failed to create contract template")
@@ -72,7 +69,8 @@ def create_contract(body: dict, brand: dict = Depends(get_current_brand)):
 
 
 @router.put("/{contract_id}")
-def update_contract(contract_id: str, body: dict, brand: dict = Depends(get_current_brand)):
+@default_limit
+def update_contract(request: Request, contract_id: str, body: UpdateContractRequest, brand: dict = Depends(get_current_brand)):
     """Update a contract template.
 
     Body: { name?: str, description?: str, clauses?: list }
@@ -80,14 +78,12 @@ def update_contract(contract_id: str, body: dict, brand: dict = Depends(get_curr
     from backend.db.repositories.contract_repo import update_contract_template
 
     updates = {}
-    if "name" in body:
-        updates["name"] = body["name"]
-    if "description" in body:
-        updates["description"] = body["description"]
-    if "clauses" in body:
-        if not isinstance(body["clauses"], list):
-            raise HTTPException(status_code=400, detail="clauses must be an array")
-        updates["clauses"] = body["clauses"]
+    if body.name is not None:
+        updates["name"] = body.name
+    if body.description is not None:
+        updates["description"] = body.description
+    if body.clauses is not None:
+        updates["clauses"] = [c.model_dump() for c in body.clauses]
 
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")

@@ -5,8 +5,10 @@ from __future__ import annotations
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.api.rate_limit import default_limit, search_limit
+from backend.api.schemas import BrandFitRequest, SearchCreatorsRequest
 from backend.auth.current_brand import get_current_brand
 from backend.db.client import get_supabase
 from backend.db.repositories.creator_repo import upsert_creators
@@ -113,7 +115,8 @@ def _creator_to_dict(c) -> dict:
 
 
 @router.post("/search")
-def search_creators(body: dict, brand: dict = Depends(get_current_brand)):
+@search_limit
+def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict = Depends(get_current_brand)):
     """Search creators via InsightIQ (Phyllo).
 
     Body: {
@@ -125,17 +128,12 @@ def search_creators(body: dict, brand: dict = Depends(get_current_brand)):
         limit: 20                  // optional, default 20, max 50
     }
     """
-    platforms = body.get("platforms", [])
-    follower_min = int(body.get("follower_min", 1000))
-    follower_max = int(body.get("follower_max", 1_000_000))
-    categories = body.get("categories") or []
-    locations = body.get("locations") or []
-    limit = min(int(body.get("limit", 20)), 50)
-
-    if not platforms:
-        raise HTTPException(status_code=400, detail="At least one platform is required")
-    if follower_min >= follower_max:
-        raise HTTPException(status_code=400, detail="follower_min must be less than follower_max")
+    platforms = body.platforms
+    follower_min = body.follower_min
+    follower_max = body.follower_max
+    categories = body.categories or []
+    locations = body.locations or []
+    limit = body.limit
 
     # Lazy import to keep startup light
     from services.phyllo_client import PhylloClient
@@ -208,7 +206,8 @@ def search_creators(body: dict, brand: dict = Depends(get_current_brand)):
 
 
 @router.post("/brand-fit")
-def enrich_brand_fit(body: dict, brand: dict = Depends(get_current_brand)):
+@search_limit
+def enrich_brand_fit(request: Request, body: BrandFitRequest, brand: dict = Depends(get_current_brand)):
     """Run brand fit analysis on a batch of creators.
 
     Body: {
@@ -223,15 +222,10 @@ def enrich_brand_fit(body: dict, brand: dict = Depends(get_current_brand)):
     Analysis is slow (~5-15s per creator) so we cap at 10 and run
     in parallel threads.
     """
-    creator_ids = body.get("creator_ids") or []
-    if not creator_ids:
-        return {"scores": {}}
+    creator_ids = list(body.creator_ids)
 
-    # Cap at 10 to keep response time reasonable
-    creator_ids = creator_ids[:10]
-
-    brand_name = body.get("brand_name") or brand.get("name") or "Brand"
-    brand_description = body.get("brand_description") or " ".join(
+    brand_name = body.brand_name or brand.get("name") or "Brand"
+    brand_description = body.brand_description or " ".join(
         filter(None, [brand.get("name"), brand.get("industry")])
     )
 
