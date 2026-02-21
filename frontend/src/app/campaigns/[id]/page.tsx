@@ -313,8 +313,6 @@ export default function CampaignDetail() {
       checkoutConfig.customer = { email: userEmail };
     }
 
-    console.log("[Paddle] Opening checkout:", JSON.stringify(checkoutConfig, null, 2));
-    console.log("[Paddle] SDK initialized:", !!paddle, "Paddle.Initialized:", paddle.Initialized);
     paddle.Checkout.open(checkoutConfig);
   }
 
@@ -377,8 +375,8 @@ export default function CampaignDetail() {
         deliveryRate,
         responseRate,
       });
-    } catch (err) {
-      console.error("PDF export failed:", err);
+    } catch {
+      // PDF export failed silently
     } finally {
       setExporting(false);
     }

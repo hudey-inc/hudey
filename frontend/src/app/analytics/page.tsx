@@ -394,8 +394,8 @@ function AnalyticsPageInner() {
     setExportingPdf(true);
     try {
       await generateAnalyticsPdf(data, campaignFilter);
-    } catch (err) {
-      console.error("PDF export failed:", err);
+    } catch {
+      // PDF export failed silently
     } finally {
       setExportingPdf(false);
     }
@@ -408,7 +408,6 @@ function AnalyticsPageInner() {
     getFullAnalytics()
       .then(setData)
       .catch((err) => {
-        console.error("Analytics fetch failed:", err);
         setError(err?.message || "Failed to load analytics data");
       })
       .finally(() => {

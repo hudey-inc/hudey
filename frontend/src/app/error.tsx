@@ -12,7 +12,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Application error:", error);
+    // Error logged server-side only via digest
   }, [error]);
 
   return (
@@ -29,13 +29,6 @@ export default function Error({
         <p className="text-gray-500 text-sm sm:text-base mb-4">
           An unexpected error occurred. You can try again or return to the dashboard.
         </p>
-
-        {/* Error detail */}
-        {error.message && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-8 text-left">
-            <p className="text-xs font-mono text-gray-500 truncate">{error.message}</p>
-          </div>
-        )}
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

@@ -11,7 +11,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Global application error:", error);
+    // Error logged server-side only via digest
   }, [error]);
 
   return (
