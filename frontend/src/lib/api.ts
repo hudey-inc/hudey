@@ -1136,6 +1136,38 @@ export async function unsaveCreator(
   return res.json();
 }
 
+// ── Creator Content ──────────────────────────────────────────
+
+export type CreatorPost = {
+  id: string;
+  url: string;
+  title: string;
+  thumbnail: string;
+  type: string;
+  published_at: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  views: number;
+};
+
+export type CreatorContentResponse = {
+  posts: CreatorPost[];
+  total: number;
+  configured: boolean;
+};
+
+export async function getCreatorContent(
+  creatorId: string,
+  limit: number = 20
+): Promise<CreatorContentResponse> {
+  const res = await authFetch(
+    `${API_URL}/api/creators/${creatorId}/content?limit=${limit}`
+  );
+  if (!res.ok) return { posts: [], total: 0, configured: true };
+  return res.json();
+}
+
 // ── Campaign Insights ──────────────────────────────────────────
 
 export type CampaignInsightsSummary = {

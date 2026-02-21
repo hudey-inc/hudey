@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import type { Campaign, Approval, EmailDeliverySummary } from "@/lib/api";
+import type { Campaign, Approval, EmailDeliverySummary, CreatorPost } from "@/lib/api";
 import {
   getCampaign,
   listApprovals,
@@ -16,6 +16,7 @@ import {
   getEmailEvents,
   verifyPayment,
   getCampaignContractStatus,
+  getCreatorContent,
 } from "@/lib/api";
 import type { ContractStatus } from "@/lib/api";
 import { usePaddle } from "@/hooks/use-paddle";
@@ -40,6 +41,11 @@ import {
   FileDown,
   CreditCard,
   FileText,
+  ExternalLink,
+  Eye,
+  Share2,
+  Image as ImageIcon,
+  Video,
 } from "lucide-react";
 import { generateCampaignPdf } from "@/lib/pdf/pdf-campaign";
 import {
@@ -173,6 +179,8 @@ export default function CampaignDetail() {
   const [engagements, setEngagements] = useState<any[]>([]);
   const [emailSummary, setEmailSummary] = useState<EmailDeliverySummary>(DEFAULT_EMAIL_SUMMARY);
   const [contractStatus, setContractStatus] = useState<ContractStatus | null>(null);
+  const [creatorContent, setCreatorContent] = useState<Record<string, { posts: CreatorPost[]; loading: boolean }>>({});
+  const contentLoadedRef = useRef(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { paddle, onEvent, offEvent } = usePaddle();
 
@@ -222,6 +230,40 @@ export default function CampaignDetail() {
     }
     return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
   }, [campaign?.status, fetchAll]);
+
+  // Load creator content when Content tab is first opened
+  useEffect(() => {
+    if (selectedTab !== "content" || contentLoadedRef.current || engagements.length === 0) return;
+    contentLoadedRef.current = true;
+
+    // Get unique creator IDs from engagements
+    const creatorIds = Array.from(new Set(engagements.map((e) => e.creator_id).filter(Boolean)));
+    if (creatorIds.length === 0) return;
+
+    // Init loading state for each creator
+    setCreatorContent((prev) => {
+      const next = { ...prev };
+      for (const cid of creatorIds) {
+        if (!next[cid]) next[cid] = { posts: [], loading: true };
+      }
+      return next;
+    });
+
+    // Fetch content for each creator in parallel
+    for (const cid of creatorIds) {
+      getCreatorContent(cid, 10).then((res) => {
+        setCreatorContent((prev) => ({
+          ...prev,
+          [cid]: { posts: res.posts, loading: false },
+        }));
+      }).catch(() => {
+        setCreatorContent((prev) => ({
+          ...prev,
+          [cid]: { posts: [], loading: false },
+        }));
+      });
+    }
+  }, [selectedTab, engagements]);
 
   async function handleRun() {
     const isPaid = campaign?.payment_status === "paid";
@@ -535,6 +577,7 @@ export default function CampaignDetail() {
   ];
   if (totalCreators > 0) {
     tabs.push({ key: "influencers", label: "Influencers" });
+    tabs.push({ key: "content", label: "Content" });
   }
   if (result) {
     tabs.push({ key: "insights", label: "Insights" });
@@ -1128,6 +1171,156 @@ export default function CampaignDetail() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">Creator Responses</h2>
               <CreatorEngagements campaignId={id} />
             </div>
+          </div>
+        )}
+
+        {/* ── Content Tab ── */}
+        {selectedTab === "content" && (
+          <div className="space-y-6">
+            {engagements.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+                <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">No creators engaged yet</p>
+              </div>
+            ) : (
+              engagements.map((eng) => {
+                const content = creatorContent[eng.creator_id];
+                const posts = content?.posts || [];
+                const isLoading = content?.loading ?? true;
+
+                return (
+                  <div key={eng.creator_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Creator Header */}
+                    <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-gray-400" aria-hidden="true" />
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {eng.creator_name || eng.creator_email || "Creator"}
+                        </h3>
+                        {eng.platform && (
+                          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                            {eng.platform}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        eng.status === "agreed" ? "bg-emerald-50 text-emerald-700" :
+                        eng.status === "declined" ? "bg-red-50 text-red-700" :
+                        "bg-gray-100 text-gray-600"
+                      }`}>
+                        {eng.status}
+                      </span>
+                    </div>
+
+                    {/* Posts Grid */}
+                    <div className="p-5 sm:p-6">
+                      {isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+                          {[0, 1, 2].map((i) => (
+                            <div key={i} className="bg-gray-100 rounded-lg h-48" />
+                          ))}
+                        </div>
+                      ) : posts.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-6">
+                          No content available for this creator
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {posts.map((post) => (
+                            <div
+                              key={post.id}
+                              className="border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all group"
+                            >
+                              {/* Thumbnail / Type */}
+                              {post.thumbnail ? (
+                                <div className="relative h-36 bg-gray-100">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={post.thumbnail}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {post.type && post.type !== "post" && (
+                                    <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1">
+                                      {post.type.includes("video") || post.type === "reel" ? (
+                                        <Video className="w-3 h-3" />
+                                      ) : (
+                                        <ImageIcon className="w-3 h-3" />
+                                      )}
+                                      {post.type}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="h-20 bg-gray-50 flex items-center justify-center">
+                                  {post.type?.includes("video") || post.type === "reel" ? (
+                                    <Video className="w-6 h-6 text-gray-300" />
+                                  ) : (
+                                    <ImageIcon className="w-6 h-6 text-gray-300" />
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Post Info */}
+                              <div className="p-3">
+                                {post.title && (
+                                  <p className="text-xs text-gray-700 line-clamp-2 mb-2">{post.title}</p>
+                                )}
+
+                                {/* Engagement Metrics */}
+                                <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="w-3 h-3" />
+                                    {post.likes.toLocaleString()}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <MessageCircle className="w-3 h-3" />
+                                    {post.comments.toLocaleString()}
+                                  </span>
+                                  {post.shares > 0 && (
+                                    <span className="flex items-center gap-1">
+                                      <Share2 className="w-3 h-3" />
+                                      {post.shares.toLocaleString()}
+                                    </span>
+                                  )}
+                                  {post.views > 0 && (
+                                    <span className="flex items-center gap-1">
+                                      <Eye className="w-3 h-3" />
+                                      {post.views.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Date + Link */}
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                                  {post.published_at && (
+                                    <span className="text-[10px] text-gray-400">
+                                      {new Date(post.published_at).toLocaleDateString("en-GB", {
+                                        day: "numeric", month: "short",
+                                      })}
+                                    </span>
+                                  )}
+                                  {post.url && (
+                                    <a
+                                      href={post.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-[#2F4538] hover:underline flex items-center gap-0.5"
+                                    >
+                                      View <ExternalLink className="w-2.5 h-2.5" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 

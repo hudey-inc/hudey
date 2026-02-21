@@ -266,6 +266,68 @@ def save_creator(creator_id: str, brand: dict = Depends(get_current_brand)):
     return {"ok": True}
 
 
+@router.get("/{creator_id}/content")
+def creator_content(
+    creator_id: str,
+    brand: dict = Depends(get_current_brand),  # noqa: ARG001 – auth guard
+    limit: int = 20,
+):
+    """Fetch recent content/posts for a creator via InsightIQ.
+
+    Returns a list of post objects with engagement metrics (likes, comments,
+    shares, url, etc.).  The creator must exist in the local DB so we can
+    resolve its ``external_id`` for the upstream API call.
+    """
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    # Look up the creator row to get external_id + platform
+    row = (
+        sb.table("creators")
+        .select("external_id, platform")
+        .eq("id", creator_id)
+        .limit(1)
+        .execute()
+    )
+    if not row.data:
+        raise HTTPException(status_code=404, detail="Creator not found")
+
+    creator = row.data[0]
+    external_id = creator.get("external_id")
+    platform = (creator.get("platform") or "").lower()
+
+    if not external_id:
+        return {"posts": [], "total": 0, "configured": True}
+
+    from services.phyllo_client import PhylloClient
+
+    client = PhylloClient()
+    if not client.is_configured:
+        return {"posts": [], "total": 0, "configured": False}
+
+    capped_limit = min(int(limit), 50)
+    posts = client.get_creator_content(external_id, platform, limit=capped_limit)
+
+    # Normalise each post to a consistent shape
+    normalised = []
+    for p in posts:
+        normalised.append({
+            "id": p.get("id") or p.get("content_id") or p.get("external_id") or "",
+            "url": p.get("url") or p.get("link") or p.get("permalink") or "",
+            "title": p.get("title") or p.get("caption") or p.get("description") or "",
+            "thumbnail": p.get("thumbnail_url") or p.get("image_url") or p.get("thumbnail") or "",
+            "type": p.get("type") or p.get("content_type") or "post",
+            "published_at": p.get("published_at") or p.get("created_at") or p.get("timestamp") or "",
+            "likes": p.get("likes") or p.get("like_count") or 0,
+            "comments": p.get("comments") or p.get("comment_count") or 0,
+            "shares": p.get("shares") or p.get("share_count") or 0,
+            "views": p.get("views") or p.get("view_count") or 0,
+        })
+
+    return {"posts": normalised, "total": len(normalised), "configured": True}
+
+
 @router.delete("/{creator_id}/save")
 def unsave_creator(creator_id: str, brand: dict = Depends(get_current_brand)):
     """Remove a creator from the authenticated brand's saved list."""
