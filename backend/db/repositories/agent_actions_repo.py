@@ -8,7 +8,10 @@ def log_action(campaign_id: str, action_type: str, action_input: dict, action_ou
     sb = get_supabase()
     if not sb:
         return False
-    campaign = sb.table("campaigns").select("id").or_(f"id.eq.{campaign_id},short_id.eq.{campaign_id}").execute()
+    # Try UUID first, then short_id — avoids f-string injection in .or_()
+    campaign = sb.table("campaigns").select("id").eq("id", campaign_id).execute()
+    if not campaign.data:
+        campaign = sb.table("campaigns").select("id").eq("short_id", campaign_id).execute()
     if not campaign.data or len(campaign.data) == 0:
         return False
     uuid_id = campaign.data[0]["id"]

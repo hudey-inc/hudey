@@ -104,10 +104,10 @@ class BrandFitRequest(BaseModel):
 
 
 class CreateApprovalRequest(BaseModel):
-    approval_type: str = Field(..., min_length=1)
-    payload: Any = ...
-    subject: Optional[str] = None
-    reasoning: Optional[str] = None
+    approval_type: str = Field(..., min_length=1, max_length=50)
+    payload: Dict[str, Any] = Field(...)
+    subject: Optional[str] = Field(None, max_length=255)
+    reasoning: Optional[str] = Field(None, max_length=2000)
 
 
 class DecideApprovalRequest(BaseModel):

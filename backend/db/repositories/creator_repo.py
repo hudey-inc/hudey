@@ -45,7 +45,10 @@ def get_creators_by_campaign(campaign_id: str):
     sb = get_supabase()
     if not sb:
         return []
-    campaign = sb.table("campaigns").select("id").or_(f"id.eq.{campaign_id},short_id.eq.{campaign_id}").execute()
+    # Try UUID first, then short_id — avoids f-string injection in .or_()
+    campaign = sb.table("campaigns").select("id").eq("id", campaign_id).execute()
+    if not campaign.data:
+        campaign = sb.table("campaigns").select("id").eq("short_id", campaign_id).execute()
     if not campaign.data or len(campaign.data) == 0:
         return []
     uuid_id = campaign.data[0]["id"]

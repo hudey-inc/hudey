@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from backend.api.rate_limit import limiter, rate_limit_exceeded_handler
+from backend.api.security import SecurityMiddleware
 from backend.api.routes import analytics, approvals, brands, campaigns, contracts, creators, notifications, paddle_webhooks, templates, webhooks
 
 logger = logging.getLogger(__name__)
@@ -23,12 +24,15 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Catch-all: log and return JSON instead of bare 500."""
+    """Catch-all: log full trace server-side, return generic message to client."""
     logger.exception("Unhandled exception on %s %s: %s", request.method, request.url.path, exc)
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal error: {type(exc).__name__}: {exc}"},
+        content={"detail": "An internal error occurred. Please try again."},
     )
+
+# ── Security middleware (runs first — blocks injection probes) ──
+app.add_middleware(SecurityMiddleware)
 
 # CORS: allow frontend origin (restrict in production)
 _origins = [
