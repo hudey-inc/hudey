@@ -27,6 +27,8 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const router = useRouter();
   const supabase = createClient();
@@ -57,14 +59,72 @@ export default function SignupPage() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = e.target;
+    const newVal = type === "checkbox" ? checked : value;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: newVal,
     }));
+    // Clear field error when user types
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+  }
+
+  function validateField(name: string, value: string): string {
+    switch (name) {
+      case "fullName":
+        if (!value.trim()) return "Full name is required";
+        if (value.trim().length < 2) return "Name must be at least 2 characters";
+        return "";
+      case "email":
+        if (!value.trim()) return "Email is required";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address";
+        return "";
+      case "company":
+        if (!value.trim()) return "Company name is required";
+        return "";
+      case "password":
+        if (!value) return "Password is required";
+        if (value.length < 6) return "Must be at least 6 characters";
+        if (value.length < 8) return "We recommend at least 8 characters";
+        return "";
+      default:
+        return "";
+    }
+  }
+
+  function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const err = validateField(name, value);
+    setFieldErrors((prev) => {
+      if (err) return { ...prev, [name]: err };
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  }
+
+  function validateAll(): boolean {
+    const errors: Record<string, string> = {};
+    const fields = ["fullName", "email", "company", "password"] as const;
+    for (const name of fields) {
+      const err = validateField(name, formData[name]);
+      if (err && err !== "We recommend at least 8 characters") errors[name] = err;
+    }
+    if (!formData.acceptTerms) errors.acceptTerms = "You must accept the terms";
+    setFieldErrors(errors);
+    setTouched({ fullName: true, email: true, company: true, password: true, acceptTerms: true });
+    return Object.keys(errors).length === 0;
   }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateAll()) return;
     setError("");
     setLoading(true);
 
@@ -256,11 +316,17 @@ export default function SignupPage() {
                     type="text"
                     value={formData.fullName}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="John Doe"
                     required
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
+                    className={`w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400 ${
+                      touched.fullName && fieldErrors.fullName ? "border-red-300" : "border-gray-300"
+                    }`}
                   />
                 </div>
+                {touched.fullName && fieldErrors.fullName && (
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.fullName}</p>
+                )}
               </div>
 
               {/* Email */}
@@ -276,11 +342,17 @@ export default function SignupPage() {
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="you@company.com"
                     required
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
+                    className={`w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400 ${
+                      touched.email && fieldErrors.email ? "border-red-300" : "border-gray-300"
+                    }`}
                   />
                 </div>
+                {touched.email && fieldErrors.email && (
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+                )}
               </div>
 
               {/* Company */}
@@ -296,11 +368,17 @@ export default function SignupPage() {
                     type="text"
                     value={formData.company}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="Acme Inc."
                     required
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
+                    className={`w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400 ${
+                      touched.company && fieldErrors.company ? "border-red-300" : "border-gray-300"
+                    }`}
                   />
                 </div>
+                {touched.company && fieldErrors.company && (
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.company}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -316,36 +394,50 @@ export default function SignupPage() {
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="Create a strong password"
                     required
                     minLength={6}
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
+                    className={`w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400 ${
+                      touched.password && fieldErrors.password ? "border-red-300" : "border-gray-300"
+                    }`}
                   />
                 </div>
-                <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters</p>
+                {touched.password && fieldErrors.password ? (
+                  <p className={`mt-1 text-xs ${fieldErrors.password === "We recommend at least 8 characters" ? "text-amber-600" : "text-red-600"}`}>
+                    {fieldErrors.password}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-400">Must be at least 6 characters</p>
+                )}
               </div>
 
               {/* Terms Checkbox */}
-              <div className="flex items-start mb-4 sm:mb-6">
-                <input
-                  id="acceptTerms"
-                  name="acceptTerms"
-                  type="checkbox"
-                  checked={formData.acceptTerms}
-                  onChange={handleChange}
-                  required
-                  className="w-4 h-4 text-[#2F4538] border-gray-300 rounded focus:ring-[#2F4538] mt-0.5"
-                />
-                <label htmlFor="acceptTerms" className="ml-2 text-sm text-gray-700">
-                  I agree to the{" "}
-                  <Link href="/terms" className="font-medium text-[#2F4538] hover:text-[#1f2f26] underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="font-medium text-[#2F4538] hover:text-[#1f2f26] underline">
-                    Privacy Policy
-                  </Link>
-                </label>
+              <div className="mb-4 sm:mb-6">
+                <div className="flex items-start">
+                  <input
+                    id="acceptTerms"
+                    name="acceptTerms"
+                    type="checkbox"
+                    checked={formData.acceptTerms}
+                    onChange={handleChange}
+                    required
+                    className="w-4 h-4 text-[#2F4538] border-gray-300 rounded focus:ring-[#2F4538] mt-0.5"
+                  />
+                  <label htmlFor="acceptTerms" className="ml-2 text-sm text-gray-700">
+                    I agree to the{" "}
+                    <Link href="/terms" className="font-medium text-[#2F4538] hover:text-[#1f2f26] underline">
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" className="font-medium text-[#2F4538] hover:text-[#1f2f26] underline">
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+                {touched.acceptTerms && fieldErrors.acceptTerms && (
+                  <p className="mt-1 ml-6 text-xs text-red-600">{fieldErrors.acceptTerms}</p>
+                )}
               </div>
 
               {/* Error */}

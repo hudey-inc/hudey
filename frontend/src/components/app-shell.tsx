@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import { HudeyLogo } from "@/components/hudey-logo";
+import { NavigationProgress } from "@/components/navigation-progress";
 
 const AUTH_ROUTES = ["/login", "/signup", "/auth/callback", "/terms", "/privacy", "/refund", "/onboarding", "/verify-email"];
 
@@ -52,12 +53,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (AUTH_ROUTES.some((r) => pathname.startsWith(r))) {
     return (
-      <div className="min-h-screen bg-gray-50 text-gray-900">{children}</div>
+      <div className="min-h-screen bg-gray-50 text-gray-900">
+        <NavigationProgress />
+        {children}
+      </div>
     );
   }
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900">
+      <NavigationProgress />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-[#2F4538] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium"
