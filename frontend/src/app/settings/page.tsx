@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { getBrand, updateBrand, getBilling } from "@/lib/api";
+import { getBrand, updateBrand, getBilling, createPortalSession } from "@/lib/api";
 import type { Brand, BillingData } from "@/lib/api";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import {
@@ -86,6 +86,8 @@ export default function SettingsPage() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingLoaded, setBillingLoaded] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState("");
 
   // Delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -590,15 +592,44 @@ export default function SettingsPage() {
                     Payments are processed securely through Paddle. You can manage your payment
                     methods, view invoices, and update billing details from the Paddle customer portal.
                   </p>
-                  <a
-                    href="https://customer-portal.paddle.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  {portalError && (
+                    <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 text-sm mb-4" role="status">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      {portalError}
+                    </div>
+                  )}
+                  <button
+                    onClick={async () => {
+                      setPortalLoading(true);
+                      setPortalError("");
+                      try {
+                        const { url } = await createPortalSession();
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      } catch (e) {
+                        setPortalError(
+                          e instanceof Error && e.message.includes("No payment history")
+                            ? "A billing portal link will be available after your first campaign payment."
+                            : "Unable to open billing portal. Please try again or contact support@hudey.co."
+                        );
+                      } finally {
+                        setPortalLoading(false);
+                      }
+                    }}
+                    disabled={portalLoading}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
-                    Manage Billing
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                    {portalLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Opening...
+                      </>
+                    ) : (
+                      <>
+                        Manage Billing
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 

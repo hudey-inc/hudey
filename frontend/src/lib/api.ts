@@ -361,6 +361,17 @@ export async function getBilling(): Promise<BillingData> {
   return res.json();
 }
 
+export async function createPortalSession(): Promise<{ url: string }> {
+  const res = await authFetch(`${API_URL}/api/brands/billing/portal`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to create portal session (${res.status})`);
+  }
+  return res.json();
+}
+
 // ── Approvals ─────────────────────────────────────────────────
 
 export type Approval = {

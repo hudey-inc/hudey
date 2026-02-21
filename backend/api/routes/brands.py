@@ -1,7 +1,9 @@
-"""Brand API routes — profile read/update, billing."""
+"""Brand API routes — profile read/update, billing, Paddle portal."""
 
 import logging
+import os
 
+import requests as http_requests
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from backend.api.rate_limit import default_limit
@@ -83,3 +85,57 @@ def get_billing(brand: dict = Depends(get_current_brand)):
             "last_payment_at": last_payment_at,
         },
     }
+
+
+@router.post("/billing/portal")
+@default_limit
+def create_portal_session(request: Request, brand: dict = Depends(get_current_brand)):
+    """Create a Paddle customer portal session.
+
+    Returns { url } — a one-time authenticated link to the Paddle customer
+    portal where users can view invoices, update payment methods, etc.
+
+    Requires the brand to have a paddle_customer_id (set automatically
+    on first payment via the Paddle webhook).
+    """
+    paddle_customer_id = brand.get("paddle_customer_id")
+    if not paddle_customer_id:
+        raise HTTPException(
+            status_code=404,
+            detail="No payment history found. A portal link will be available after your first payment.",
+        )
+
+    api_key = (os.getenv("PADDLE_API_KEY") or "").strip()
+    if not api_key:
+        raise HTTPException(status_code=503, detail="Payment system not configured")
+
+    paddle_env = (os.getenv("NEXT_PUBLIC_PADDLE_ENV") or "sandbox").strip()
+    base_url = (
+        "https://api.paddle.com"
+        if paddle_env == "production"
+        else "https://sandbox-api.paddle.com"
+    )
+
+    try:
+        resp = http_requests.post(
+            f"{base_url}/customers/{paddle_customer_id}/portal-sessions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", {})
+        portal_url = (data.get("urls") or {}).get("general", {}).get("overview")
+        if not portal_url:
+            raise HTTPException(status_code=502, detail="Paddle did not return a portal URL")
+        return {"url": portal_url}
+    except http_requests.HTTPError as e:
+        status = e.response.status_code if e.response is not None else 502
+        logger.warning("Paddle portal session failed (%s): %s", status, e)
+        raise HTTPException(status_code=502, detail="Failed to create billing portal session")
+    except Exception as e:
+        logger.warning("Paddle portal session error: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to create billing portal session")

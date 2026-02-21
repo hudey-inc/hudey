@@ -148,6 +148,18 @@ async def paddle_webhook(request: Request):
             "paid_at": now,
         })
 
+        # Persist Paddle customer_id to the brand for portal access
+        paddle_customer_id = data.get("customer_id")
+        if paddle_customer_id and campaign.get("brand_id"):
+            try:
+                from backend.db.repositories.brand_repo import update_brand_internal
+                update_brand_internal(campaign["brand_id"], {
+                    "paddle_customer_id": paddle_customer_id,
+                })
+                logger.info("Saved paddle_customer_id %s for brand %s", paddle_customer_id, campaign["brand_id"])
+            except Exception as e:
+                logger.warning("Failed to save paddle_customer_id: %s", e)
+
         logger.info(
             "Campaign %s marked as paid (txn=%s, amount=%.2f)",
             campaign_id, transaction_id, amount_paid,
