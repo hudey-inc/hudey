@@ -58,8 +58,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-[#2F4538] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} />
-      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+      <main id="main-content" className="flex-1 overflow-y-auto pt-14 md:pt-0">
         <div className="max-w-[1400px] mx-auto">{children}</div>
       </main>
     </div>
@@ -102,10 +108,10 @@ function SearchModal({
   }
 
   return (
-    <div className="absolute inset-x-0 top-0 z-50 px-3 pt-3">
+    <div className="absolute inset-x-0 top-0 z-50 px-3 pt-3" role="dialog" aria-modal="true" aria-label="Search campaigns">
       <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100">
-          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -405,8 +411,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         <button
           onClick={() => setSearchOpen(true)}
           className="w-full flex items-center gap-2 bg-gray-100 hover:bg-gray-200/70 rounded-lg px-3 py-1.5 text-sm text-gray-400 transition-colors"
+          aria-label="Search campaigns"
         >
-          <Search className="w-3.5 h-3.5" />
+          <Search className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="flex-1 text-left">Search...</span>
           <kbd className="text-[10px] bg-white rounded px-1.5 py-0.5 font-mono text-gray-400 border border-gray-200">
             ⌘K
@@ -444,11 +451,14 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             <button
               onClick={() => setShowCampaignsSub(!showCampaignsSub)}
               className="px-2 py-2 hover:bg-gray-200/60 rounded-lg transition-colors"
+              aria-label={showCampaignsSub ? "Collapse campaigns" : "Expand campaigns"}
+              aria-expanded={showCampaignsSub}
             >
               <ChevronDown
                 className={`w-3 h-3 transition-transform ${
                   showCampaignsSub ? "rotate-0" : "-rotate-90"
                 }`}
+                aria-hidden="true"
               />
             </button>
           </div>
@@ -553,9 +563,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             className={`p-2 rounded-lg transition-colors ${
               isHome ? "bg-gray-100" : "hover:bg-gray-100"
             }`}
-            title="Dashboard"
+            aria-label="Dashboard"
           >
-            <LayoutGrid className={`w-4 h-4 ${isHome ? "text-gray-700" : "text-gray-400"}`} />
+            <LayoutGrid className={`w-4 h-4 ${isHome ? "text-gray-700" : "text-gray-400"}`} aria-hidden="true" />
           </Link>
           <div className="relative" ref={notifRef}>
             <button
@@ -563,15 +573,16 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               className={`p-2 rounded-lg transition-colors relative ${
                 notificationsOpen ? "bg-gray-100" : "hover:bg-gray-100"
               }`}
-              title="Notifications"
+              aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
+              aria-expanded={notificationsOpen}
             >
-              <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} />
+              <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} aria-hidden="true" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
               )}
             </button>
             {notificationsOpen && (
-              <div className="fixed bottom-14 left-3 w-[280px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60]">
+              <div className="fixed bottom-14 left-3 w-[280px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60]" role="region" aria-label="Notifications">
                 <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-900">Notifications</p>
                   <div className="flex items-center gap-2">
@@ -584,9 +595,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                       <button
                         onClick={handleMarkAllRead}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
-                        title="Mark all as read"
+                        aria-label="Mark all as read"
                       >
-                        <CheckCheck className="w-3.5 h-3.5" />
+                        <CheckCheck className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -629,16 +640,16 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             className={`p-2 rounded-lg transition-colors ${
               isSettings ? "bg-gray-100" : "hover:bg-gray-100"
             }`}
-            title="Settings"
+            aria-label="Settings"
           >
-            <Settings className={`w-4 h-4 ${isSettings ? "text-gray-700" : "text-gray-400"}`} />
+            <Settings className={`w-4 h-4 ${isSettings ? "text-gray-700" : "text-gray-400"}`} aria-hidden="true" />
           </Link>
           <button
             onClick={() => setSearchOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            title="Command (⌘K)"
+            aria-label="Open search (⌘K)"
           >
-            <Command className="w-4 h-4 text-gray-400" />
+            <Command className="w-4 h-4 text-gray-400" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -656,9 +667,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             <button
               onClick={handleSignOut}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Sign out"
+              aria-label="Sign out"
             >
-              <LogOut className="w-3.5 h-3.5 text-gray-500" />
+              <LogOut className="w-3.5 h-3.5 text-gray-500" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -779,11 +790,14 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                 <button
                   onClick={() => setShowCampaignsSub(!showCampaignsSub)}
                   className="px-2 py-2 hover:bg-gray-200/60 rounded-lg transition-colors"
+                  aria-label={showCampaignsSub ? "Collapse campaigns" : "Expand campaigns"}
+                  aria-expanded={showCampaignsSub}
                 >
                   <ChevronDown
                     className={`w-3 h-3 transition-transform ${
                       showCampaignsSub ? "rotate-0" : "-rotate-90"
                     }`}
+                    aria-hidden="true"
                   />
                 </button>
               </div>
@@ -904,9 +918,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             className={`p-2 rounded-lg transition-colors ${
               isHome ? "bg-gray-100" : "hover:bg-gray-100"
             }`}
-            title="Dashboard"
+            aria-label="Dashboard"
           >
-            <LayoutGrid className={`w-4 h-4 ${isHome ? "text-gray-700" : "text-gray-400"}`} />
+            <LayoutGrid className={`w-4 h-4 ${isHome ? "text-gray-700" : "text-gray-400"}`} aria-hidden="true" />
           </Link>
           <div className="relative" ref={notifRef}>
             <button
@@ -914,17 +928,18 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
               className={`p-2 rounded-lg transition-colors relative ${
                 notificationsOpen ? "bg-gray-100" : "hover:bg-gray-100"
               }`}
-              title="Notifications"
+              aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
+              aria-expanded={notificationsOpen}
             >
-              <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} />
+              <Bell className={`w-4 h-4 ${notificationsOpen ? "text-gray-700" : "text-gray-400"}`} aria-hidden="true" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
               )}
             </button>
             {notificationsOpen && (
               <div className={`fixed bottom-14 w-[280px] bg-white rounded-xl border border-gray-200 shadow-xl z-[60] ${
                 collapsed ? "left-[68px]" : "left-3"
-              }`}>
+              }`} role="region" aria-label="Notifications">
                 <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-900">Notifications</p>
                   <div className="flex items-center gap-2">
@@ -937,9 +952,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                       <button
                         onClick={handleMarkAllRead}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
-                        title="Mark all as read"
+                        aria-label="Mark all as read"
                       >
-                        <CheckCheck className="w-3.5 h-3.5" />
+                        <CheckCheck className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -982,17 +997,17 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
             className={`p-2 rounded-lg transition-colors ${
               isSettings ? "bg-gray-100" : "hover:bg-gray-100"
             }`}
-            title="Settings"
+            aria-label="Settings"
           >
-            <Settings className={`w-4 h-4 ${isSettings ? "text-gray-700" : "text-gray-400"}`} />
+            <Settings className={`w-4 h-4 ${isSettings ? "text-gray-700" : "text-gray-400"}`} aria-hidden="true" />
           </Link>
           {!collapsed && (
             <button
               onClick={() => setSearchOpen(true)}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              title="Command (⌘K)"
+              aria-label="Open search (⌘K)"
             >
-              <Command className="w-4 h-4 text-gray-400" />
+              <Command className="w-4 h-4 text-gray-400" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -1005,13 +1020,13 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           className={`flex items-center w-full rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 ${
             collapsed ? "justify-center p-2" : "gap-2 px-3 py-2 text-xs"
           }`}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
-            <ChevronsRight className="w-4 h-4" />
+            <ChevronsRight className="w-4 h-4" aria-hidden="true" />
           ) : (
             <>
-              <ChevronsLeft className="w-4 h-4" />
+              <ChevronsLeft className="w-4 h-4" aria-hidden="true" />
               <span>Collapse</span>
             </>
           )}
@@ -1024,8 +1039,11 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           <div className={`flex items-center ${collapsed ? "justify-center" : "gap-2"}`}>
             <div
               className="w-7 h-7 rounded-full bg-[#E8DCC8] flex items-center justify-center text-xs font-medium text-[#2F4538] flex-shrink-0 cursor-pointer"
-              title={collapsed ? `${user.email}\nClick to sign out` : undefined}
+              role={collapsed ? "button" : undefined}
+              tabIndex={collapsed ? 0 : undefined}
+              aria-label={collapsed ? `Sign out (${user.email})` : undefined}
               onClick={collapsed ? handleSignOut : undefined}
+              onKeyDown={collapsed ? (e) => { if (e.key === "Enter" || e.key === " ") handleSignOut(); } : undefined}
             >
               {(user.email || "U").charAt(0).toUpperCase()}
             </div>
@@ -1037,9 +1055,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                 <button
                   onClick={handleSignOut}
                   className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Sign out"
+                  aria-label="Sign out"
                 >
-                  <LogOut className="w-3.5 h-3.5 text-gray-500" />
+                  <LogOut className="w-3.5 h-3.5 text-gray-500" aria-hidden="true" />
                 </button>
               </>
             )}
@@ -1063,8 +1081,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         <button
           onClick={() => setMobileOpen(true)}
           className="p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Open navigation menu"
         >
-          <Menu className="w-5 h-5 text-gray-700" />
+          <Menu className="w-5 h-5 text-gray-700" aria-hidden="true" />
         </button>
         <Link href="/" className="flex items-center gap-2">
           <HudeyLogo />
@@ -1073,18 +1092,19 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         <button
           onClick={() => setSearchOpen(true)}
           className="p-1.5 -mr-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Search campaigns"
         >
-          <Search className="w-5 h-5 text-gray-700" />
+          <Search className="w-5 h-5 text-gray-700" aria-hidden="true" />
         </button>
       </div>
 
       {/* Mobile search overlay */}
       {searchOpen && (
         <div className="md:hidden fixed inset-0 z-[70] bg-black/40" onClick={handleCloseSearch}>
-          <div className="px-4 pt-4" onClick={(e) => e.stopPropagation()}>
+          <div className="px-4 pt-4" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Search campaigns">
             <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100">
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
                 <input
                   type="text"
                   placeholder="Search campaigns..."
@@ -1098,8 +1118,8 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                   }}
                   className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400"
                 />
-                <button onClick={handleCloseSearch} className="p-1">
-                  <X className="w-4 h-4 text-gray-400" />
+                <button onClick={handleCloseSearch} className="p-1" aria-label="Close search">
+                  <X className="w-4 h-4 text-gray-400" aria-hidden="true" />
                 </button>
               </div>
               <div className="max-h-[50vh] overflow-y-auto">
@@ -1146,12 +1166,14 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
           <aside
             className="w-[280px] h-full bg-[#fbfbfb] border-r border-[#ebebeb] flex flex-col relative shadow-xl"
             onClick={(e) => e.stopPropagation()}
+            aria-label="Main navigation"
           >
             <button
               onClick={() => setMobileOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 transition-colors z-10"
+              aria-label="Close navigation"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
             </button>
             {mobileSidebarContent}
           </aside>
@@ -1163,13 +1185,14 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
         className={`hidden md:flex bg-[#fbfbfb] border-r border-[#ebebeb] flex-col flex-shrink-0 relative transition-all duration-200 ease-in-out ${
           collapsed ? "w-[64px]" : "w-[220px]"
         }`}
+        aria-label="Main navigation"
       >
         {desktopSidebarContent}
       </aside>
 
       {/* Notification toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[80] max-w-sm w-full animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-[80] max-w-sm w-full animate-in slide-in-from-bottom-4 fade-in duration-300" role="status" aria-live="polite">
           <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
             <div className="flex items-start gap-3">
               <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${notifDotColor(toast.type)}`} />
@@ -1195,8 +1218,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
                 <button
                   onClick={() => setToast(null)}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Dismiss notification"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>

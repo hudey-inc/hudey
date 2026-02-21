@@ -361,13 +361,13 @@ export default function SettingsPage() {
 
                   {/* Success / Error */}
                   {profileSuccess && (
-                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm" role="status">
                       <Check className="w-4 h-4" />
                       Brand profile saved
                     </div>
                   )}
                   {profileError && (
-                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm" role="alert">
                       <AlertTriangle className="w-4 h-4" />
                       {profileError}
                     </div>
@@ -524,13 +524,13 @@ export default function SettingsPage() {
 
                   {/* Success / Error */}
                   {notifSuccess && (
-                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm" role="status">
                       <Check className="w-4 h-4" />
                       Notification preferences saved
                     </div>
                   )}
                   {notifError && (
-                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm" role="alert">
                       <AlertTriangle className="w-4 h-4" />
                       {notifError}
                     </div>
@@ -628,13 +628,13 @@ export default function SettingsPage() {
 
                   {/* Success / Error */}
                   {pwSuccess && (
-                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm" role="status">
                       <Check className="w-4 h-4" />
                       Password updated successfully
                     </div>
                   )}
                   {pwError && (
-                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm">
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm" role="alert">
                       <AlertTriangle className="w-4 h-4" />
                       {pwError}
                     </div>

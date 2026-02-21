@@ -246,14 +246,14 @@ export default function ContractEditorPage() {
 
         {/* Feedback */}
         {error && (
-          <div className="mb-6 flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="mb-6 flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg" role="alert">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="mb-6 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg" role="status">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             Contract saved successfully
           </div>
         )}

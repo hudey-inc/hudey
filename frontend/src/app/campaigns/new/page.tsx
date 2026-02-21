@@ -395,12 +395,13 @@ function NewCampaignInner() {
           <div className="space-y-4">
             <div>
               <label className={labelClass}>Platforms *</label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Select platforms">
                 {PLATFORM_OPTIONS.map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => togglePlatform(p)}
+                    aria-pressed={platforms.includes(p)}
                     className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
                       platforms.includes(p)
                         ? "border-[#2F4538] bg-[#2F4538] text-white"

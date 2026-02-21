@@ -222,8 +222,8 @@ export default function OnboardingPage() {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm mb-4">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm mb-4" role="alert">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                 {error}
               </div>
             )}
