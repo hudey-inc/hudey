@@ -26,6 +26,22 @@ import {
 
 type TabKey = "profile" | "notifications" | "security";
 
+function getPasswordStrength(pw: string): { score: number; label: string; color: string; tips: string[] } {
+  if (!pw) return { score: 0, label: "", color: "", tips: [] };
+  let score = 0;
+  const tips: string[] = [];
+  if (pw.length >= 8) score++; else tips.push("At least 8 characters");
+  if (pw.length >= 12) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++; else tips.push("Mix upper & lowercase");
+  if (/\d/.test(pw)) score++; else tips.push("Add a number");
+  if (/[^a-zA-Z0-9]/.test(pw)) score++; else tips.push("Add a special character");
+  if (score <= 1) return { score: 1, label: "Weak", color: "bg-red-500", tips };
+  if (score <= 2) return { score: 2, label: "Fair", color: "bg-orange-500", tips };
+  if (score <= 3) return { score: 3, label: "Good", color: "bg-yellow-500", tips };
+  if (score <= 4) return { score: 4, label: "Strong", color: "bg-emerald-500", tips };
+  return { score: 5, label: "Very strong", color: "bg-emerald-600", tips };
+}
+
 // ── Component ────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -563,6 +579,39 @@ export default function SettingsPage() {
                       placeholder="Enter new password"
                       className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#2F4538] focus:border-[#2F4538] outline-none transition-colors"
                     />
+                    {/* Password strength meter */}
+                    {newPassword && (() => {
+                      const strength = getPasswordStrength(newPassword);
+                      return (
+                        <div className="mt-2.5 space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <div
+                                  key={i}
+                                  className={`flex-1 rounded-full transition-colors ${
+                                    i <= strength.score ? strength.color : "bg-gray-100"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className={`text-xs font-medium whitespace-nowrap ${
+                              strength.score <= 1 ? "text-red-600" :
+                              strength.score <= 2 ? "text-orange-600" :
+                              strength.score <= 3 ? "text-yellow-600" :
+                              "text-emerald-600"
+                            }`}>
+                              {strength.label}
+                            </span>
+                          </div>
+                          {strength.tips.length > 0 && (
+                            <p className="text-[11px] text-gray-400">
+                              {strength.tips.join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
