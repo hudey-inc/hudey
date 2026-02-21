@@ -34,11 +34,11 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.paddle.com https://*.profitwell.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.paddle.com https://*.profitwell.com https://*.googletagmanager.com https://*.google-analytics.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.paddle.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://*.profitwell.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live wss://vercel.live https://*.hudey.co https://*.up.railway.app",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://*.profitwell.com https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live wss://vercel.live https://*.hudey.co https://*.up.railway.app",
               "frame-src 'self' https://*.paddle.com https://vercel.live",
               "frame-ancestors 'self'",
               "object-src 'none'",
