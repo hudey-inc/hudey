@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { DiscoveredCreator, CreatorSearchParams } from "@/lib/api";
-import { searchCreators, getSavedCreators, saveCreator, unsaveCreator } from "@/lib/api";
+import { searchCreators, getSavedCreators, saveCreator, unsaveCreator, enrichBrandFit } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { CREATOR_CATEGORIES } from "@/lib/constants";
 
@@ -88,10 +88,12 @@ function CreatorCard({
   creator,
   onToggleSave,
   saving,
+  enriching,
 }: {
   creator: DiscoveredCreator;
   onToggleSave: (id: string, saved: boolean) => void;
   saving: string | null;
+  enriching?: boolean;
 }) {
   const isSaving = saving === creator.id;
 
@@ -147,7 +149,7 @@ function CreatorCard({
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Engagement</p>
           </div>
         )}
-        {creator.brand_fit_score != null && (
+        {creator.brand_fit_score != null ? (
           <div className="text-center">
             <p className={`text-sm font-bold ${
               creator.brand_fit_score >= 70 ? "text-emerald-600" :
@@ -157,7 +159,12 @@ function CreatorCard({
             </p>
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Brand Fit</p>
           </div>
-        )}
+        ) : enriching ? (
+          <div className="text-center animate-pulse">
+            <div className="h-4 bg-gray-100 rounded w-8 mx-auto mb-1" />
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Brand Fit</p>
+          </div>
+        ) : null}
       </div>
 
       {/* Location */}
@@ -234,6 +241,7 @@ export default function CreatorsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
+  const [enriching, setEnriching] = useState(false);
 
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) =>
@@ -252,6 +260,7 @@ export default function CreatorsPage() {
     setSearching(true);
     setError(null);
     setNotConfigured(false);
+    setEnriching(false);
     try {
       const params: CreatorSearchParams = {
         platforms: selectedPlatforms,
@@ -269,6 +278,29 @@ export default function CreatorsPage() {
       setResults(data.creators);
       setHasSearched(true);
       if (!data.configured) setNotConfigured(true);
+
+      // Auto-enrich top 10 with brand fit scores (non-blocking)
+      if (data.configured && data.creators.length > 0) {
+        const needsEnrichment = data.creators
+          .filter((c) => c.brand_fit_score == null && c.external_id)
+          .slice(0, 10);
+        if (needsEnrichment.length > 0) {
+          setEnriching(true);
+          enrichBrandFit(needsEnrichment.map((c) => c.id))
+            .then((res) => {
+              if (res.scores) {
+                setResults((prev) =>
+                  prev.map((c) => {
+                    const score = res.scores[c.id];
+                    return score != null ? { ...c, brand_fit_score: score } : c;
+                  })
+                );
+              }
+            })
+            .catch(() => {})
+            .finally(() => setEnriching(false));
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed");
     } finally {
@@ -506,9 +538,17 @@ export default function CreatorsPage() {
           {/* Results */}
           {!searching && hasSearched && results.length > 0 && (
             <>
-              <p className="text-sm text-gray-500 mb-4">
-                {results.length} creator{results.length !== 1 ? "s" : ""} found
-              </p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-gray-500">
+                  {results.length} creator{results.length !== 1 ? "s" : ""} found
+                </p>
+                {enriching && (
+                  <div className="flex items-center gap-1.5 text-xs text-[#2F4538]">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Analysing brand fit&hellip;</span>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {results.map((creator) => (
                   <CreatorCard
@@ -516,6 +556,7 @@ export default function CreatorsPage() {
                     creator={creator}
                     onToggleSave={handleToggleSave}
                     saving={savingId}
+                    enriching={enriching && creator.brand_fit_score == null}
                   />
                 ))}
               </div>

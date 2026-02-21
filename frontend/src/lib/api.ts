@@ -1168,6 +1168,31 @@ export async function getCreatorContent(
   return res.json();
 }
 
+// ── Brand Fit Enrichment ─────────────────────────────────────
+
+export type BrandFitResponse = {
+  scores: Record<string, number | null>;
+  configured?: boolean;
+};
+
+export async function enrichBrandFit(
+  creatorIds: string[],
+  brandName?: string,
+  brandDescription?: string
+): Promise<BrandFitResponse> {
+  const res = await authFetch(`${API_URL}/api/creators/brand-fit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      creator_ids: creatorIds,
+      ...(brandName && { brand_name: brandName }),
+      ...(brandDescription && { brand_description: brandDescription }),
+    }),
+  });
+  if (!res.ok) return { scores: {} };
+  return res.json();
+}
+
 // ── Campaign Insights ──────────────────────────────────────────
 
 export type CampaignInsightsSummary = {

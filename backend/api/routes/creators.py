@@ -1,8 +1,9 @@
-"""Creator discovery API — search, save/unsave, list saved."""
+"""Creator discovery API — search, save/unsave, list saved, brand fit."""
 
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -201,6 +202,125 @@ def search_creators(body: dict, brand: dict = Depends(get_current_brand)):
             creators_out.append(_creator_to_dict(d))
 
     return {"creators": creators_out, "total": len(creators_out), "configured": True}
+
+
+# ── Brand Fit Enrichment ──────────────────────────────────
+
+
+@router.post("/brand-fit")
+def enrich_brand_fit(body: dict, brand: dict = Depends(get_current_brand)):
+    """Run brand fit analysis on a batch of creators.
+
+    Body: {
+        creator_ids: ["uuid1", "uuid2", ...],  // max 10
+        brand_name: "Acme Co",                  // optional, defaults to brand.name
+        brand_description: "..."                // optional, built from brand info
+    }
+
+    Returns: { scores: { "uuid1": 72.5, "uuid2": null, ... } }
+
+    Scores are persisted to the creators table for future lookups.
+    Analysis is slow (~5-15s per creator) so we cap at 10 and run
+    in parallel threads.
+    """
+    creator_ids = body.get("creator_ids") or []
+    if not creator_ids:
+        return {"scores": {}}
+
+    # Cap at 10 to keep response time reasonable
+    creator_ids = creator_ids[:10]
+
+    brand_name = body.get("brand_name") or brand.get("name") or "Brand"
+    brand_description = body.get("brand_description") or " ".join(
+        filter(None, [brand.get("name"), brand.get("industry")])
+    )
+
+    sb = get_supabase()
+    if not sb:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    # Look up external_ids for the requested creators
+    rows = (
+        sb.table("creators")
+        .select("id, external_id, platform, brand_fit_score")
+        .in_("id", creator_ids)
+        .execute()
+    )
+    if not rows.data:
+        return {"scores": {}}
+
+    from services.phyllo_client import PhylloClient
+
+    client = PhylloClient()
+    if not client.is_configured:
+        return {"scores": {cid: None for cid in creator_ids}, "configured": False}
+
+    if "sandbox" in client.base_url:
+        return {"scores": {cid: None for cid in creator_ids}, "configured": True}
+
+    # Build lookup: uuid → row
+    id_to_row = {r["id"]: r for r in rows.data}
+
+    # Skip creators that already have a score (cache hit)
+    to_analyze = []
+    scores: dict[str, float | None] = {}
+    for cid in creator_ids:
+        row = id_to_row.get(cid)
+        if not row:
+            scores[cid] = None
+            continue
+        if row.get("brand_fit_score") is not None:
+            scores[cid] = float(row["brand_fit_score"])
+            continue
+        if not row.get("external_id"):
+            scores[cid] = None
+            continue
+        to_analyze.append(row)
+
+    def _analyze_one(row: dict) -> tuple[str, float | None]:
+        """Run brand fit for a single creator. Thread-safe."""
+        ext_id = row["external_id"]
+        platform = (row.get("platform") or "").lower()
+        wp_id = client.PLATFORM_IDS.get(platform)
+        try:
+            result = client.analyze_brand_fit(
+                creator_id=ext_id,
+                brand_name=brand_name,
+                brand_description=brand_description,
+                work_platform_id=wp_id,
+                max_wait=45,
+            )
+            if result:
+                score = (
+                    result.get("brand_fit_score")
+                    or result.get("score")
+                    or result.get("overall_score")
+                    or result.get("compatibility_score")
+                )
+                if score is not None:
+                    score = float(score)
+                    # Persist to DB
+                    try:
+                        sb.table("creators").update({
+                            "brand_fit_score": score,
+                            "brand_fit_data": result,
+                        }).eq("id", row["id"]).execute()
+                    except Exception as e:
+                        logger.warning("Failed to persist brand fit for %s: %s", row["id"], e)
+                    return row["id"], score
+        except Exception as e:
+            logger.warning("Brand fit failed for %s: %s", row["id"], e)
+        return row["id"], None
+
+    # Run in parallel (3 workers to respect rate limits)
+    if to_analyze:
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = {pool.submit(_analyze_one, r): r["id"] for r in to_analyze}
+            for future in as_completed(futures):
+                cid, score = future.result()
+                scores[cid] = score
+
+    return {"scores": scores, "configured": True}
 
 
 # ── Saved Creators ────────────────────────────────────────
