@@ -231,7 +231,7 @@ class PhylloClient:
         """
         if not self.is_configured or not creator_id:
             return None
-        if "sandbox" in self.base_url:
+        if "sandbox" in self.base_url or "staging" in self.base_url:
             return None
 
         body: dict[str, Any] = {
@@ -291,7 +291,7 @@ class PhylloClient:
         """
         if not self.is_configured or not content_id:
             return None
-        if "sandbox" in self.base_url:
+        if "sandbox" in self.base_url or "staging" in self.base_url:
             return None
 
         body: dict[str, Any] = {
@@ -345,7 +345,7 @@ class PhylloClient:
         """
         if not self.is_configured or not content_id:
             return None
-        if "sandbox" in self.base_url:
+        if "sandbox" in self.base_url or "staging" in self.base_url:
             return None
 
         body: dict[str, Any] = {

@@ -80,8 +80,8 @@ class CreatorInsightsTool(BaseTool):
             logger.info("InsightIQ not configured — skipping brand fit enrichment")
             return creators
 
-        if "sandbox" in phyllo.base_url:
-            logger.info("InsightIQ sandbox — skipping brand fit (not supported)")
+        if "sandbox" in phyllo.base_url or "staging" in phyllo.base_url:
+            logger.info("InsightIQ non-production env — skipping brand fit (not supported)")
             return creators
 
         limit = max_creators or self.max_creators
