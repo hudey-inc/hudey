@@ -207,7 +207,9 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
   const [brand, setBrand] = useState<Brand | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [toast, setToast] = useState<AppNotification | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const prevUnreadRef = useRef(0);
   const supabase = createClient();
 
   useEffect(() => {
@@ -240,21 +242,62 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
     }
   }, [user, router]);
 
-  // Poll unread notification count every 30 seconds
+  // Poll unread count — pauses when tab is hidden
   useEffect(() => {
     if (!user) return;
-    const interval = setInterval(() => {
-      getUnreadCount().then(setUnreadCount).catch(() => {});
-    }, 30000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    function poll() {
+      getUnreadCount()
+        .then((count) => {
+          setUnreadCount((prev) => {
+            // Show toast when count increases (new notification arrived)
+            if (count > prev && prev > 0) {
+              listNotifications()
+                .then((all) => {
+                  const newest = all.find((n) => !n.is_read);
+                  if (newest) setToast(newest);
+                })
+                .catch(() => {});
+            }
+            prevUnreadRef.current = count;
+            return count;
+          });
+        })
+        .catch(() => {});
+    }
+
+    function start() {
+      if (!interval) interval = setInterval(poll, 15000);
+    }
+    function stop() {
+      if (interval) { clearInterval(interval); interval = null; }
+    }
+    function onVisibility() {
+      if (document.hidden) stop(); else { poll(); start(); }
+    }
+
+    start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { stop(); document.removeEventListener("visibilitychange", onVisibility); };
   }, [user]);
 
-  // Fetch full notification list when panel opens
+  // Fetch + poll notification list while panel is open
   useEffect(() => {
-    if (notificationsOpen && user) {
+    if (!notificationsOpen || !user) return;
+    listNotifications().then(setNotifications).catch(() => {});
+    const interval = setInterval(() => {
       listNotifications().then(setNotifications).catch(() => {});
-    }
+    }, 10000);
+    return () => clearInterval(interval);
   }, [notificationsOpen, user]);
+
+  // Auto-dismiss toast after 5 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // Global Cmd+K shortcut
   useEffect(() => {
@@ -1123,6 +1166,43 @@ function Sidebar({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggle
       >
         {desktopSidebarContent}
       </aside>
+
+      {/* Notification toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[80] max-w-sm w-full animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${notifDotColor(toast.type)}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{toast.title}</p>
+                {toast.body && (
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">{toast.body}</p>
+                )}
+                <p className="text-[10px] text-gray-400 mt-1">{timeAgo(toast.created_at)}</p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {toast.link && (
+                  <button
+                    onClick={() => {
+                      handleNotifClick(toast);
+                      setToast(null);
+                    }}
+                    className="text-xs text-[#2F4538] hover:underline font-medium"
+                  >
+                    View
+                  </button>
+                )}
+                <button
+                  onClick={() => setToast(null)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
