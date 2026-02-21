@@ -26,6 +26,38 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Inline validation
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  function validateOnboardingField(name: string, value: string): string {
+    switch (name) {
+      case "brandName":
+        if (!value.trim()) return "Brand name is required";
+        if (value.trim().length < 2) return "Must be at least 2 characters";
+        return "";
+      case "industry":
+        if (!value) return "Please select your industry";
+        return "";
+      case "contactEmail":
+        if (value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          return "Enter a valid email address";
+        return "";
+      default:
+        return "";
+    }
+  }
+
+  function handleOnboardingBlur(name: string, value: string) {
+    setTouched((p) => ({ ...p, [name]: true }));
+    const err = validateOnboardingField(name, value);
+    setFieldErrors((p) => ({ ...p, [name]: err }));
+  }
+
+  function clearOnboardingFieldError(name: string) {
+    if (fieldErrors[name]) setFieldErrors((p) => ({ ...p, [name]: "" }));
+  }
+
   // ── Load brand & check if already onboarded ───────────────
 
   const loadBrand = useCallback(async () => {
@@ -67,14 +99,19 @@ export default function OnboardingPage() {
     e.preventDefault();
     setError("");
 
-    if (!brandName.trim()) {
-      setError("Please enter your brand name");
-      return;
+    // Validate all fields
+    const fields = { brandName, industry, contactEmail };
+    const errors: Record<string, string> = {};
+    const allTouched: Record<string, boolean> = {};
+    for (const [name, value] of Object.entries(fields)) {
+      allTouched[name] = true;
+      const err = validateOnboardingField(name, value);
+      if (err) errors[name] = err;
     }
-    if (!industry) {
-      setError("Please select your industry");
-      return;
-    }
+    setTouched(allTouched);
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) return;
 
     setSaving(true);
     try {
@@ -150,12 +187,16 @@ export default function OnboardingPage() {
                   id="brandName"
                   type="text"
                   value={brandName}
-                  onChange={(e) => setBrandName(e.target.value)}
+                  onChange={(e) => { setBrandName(e.target.value); clearOnboardingFieldError("brandName"); }}
+                  onBlur={() => handleOnboardingBlur("brandName", brandName)}
                   placeholder="Your brand name"
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                  className={`w-full pl-12 pr-4 py-3 border ${touched.brandName && fieldErrors.brandName ? "border-red-300" : "border-gray-300"} rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400`}
                 />
               </div>
+              {touched.brandName && fieldErrors.brandName && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.brandName}</p>
+              )}
             </div>
 
             {/* Industry */}
@@ -171,9 +212,10 @@ export default function OnboardingPage() {
                 <select
                   id="industry"
                   value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
+                  onChange={(e) => { setIndustry(e.target.value); clearOnboardingFieldError("industry"); }}
+                  onBlur={() => handleOnboardingBlur("industry", industry)}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 bg-white appearance-none"
+                  className={`w-full pl-12 pr-4 py-3 border ${touched.industry && fieldErrors.industry ? "border-red-300" : "border-gray-300"} rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 bg-white appearance-none`}
                 >
                   <option value="">Select your industry</option>
                   {INDUSTRY_OPTIONS.map((opt) => (
@@ -197,6 +239,9 @@ export default function OnboardingPage() {
                   />
                 </svg>
               </div>
+              {touched.industry && fieldErrors.industry && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.industry}</p>
+              )}
             </div>
 
             {/* Contact Email */}
@@ -213,11 +258,15 @@ export default function OnboardingPage() {
                   id="contactEmail"
                   type="email"
                   value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
+                  onChange={(e) => { setContactEmail(e.target.value); clearOnboardingFieldError("contactEmail"); }}
+                  onBlur={() => handleOnboardingBlur("contactEmail", contactEmail)}
                   placeholder="contact@yourbrand.com"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                  className={`w-full pl-12 pr-4 py-3 border ${touched.contactEmail && fieldErrors.contactEmail ? "border-red-300" : "border-gray-300"} rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400`}
                 />
               </div>
+              {touched.contactEmail && fieldErrors.contactEmail && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.contactEmail}</p>
+              )}
             </div>
 
             {/* Error */}

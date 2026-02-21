@@ -18,6 +18,8 @@ export default function LoginPage() {
   const [view, setView] = useState<View>("login");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const router = useRouter();
   const supabase = createClient();
@@ -29,8 +31,49 @@ export default function LoginPage() {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function validateLoginField(name: string, value: string): string {
+    if (name === "email") {
+      if (!value.trim()) return "Email is required";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address";
+    }
+    if (name === "password" && !value) return "Password is required";
+    return "";
+  }
+
+  function handleLoginBlur(name: string, value: string) {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const err = validateLoginField(name, value);
+    setFieldErrors((prev) => {
+      if (err) return { ...prev, [name]: err };
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  }
+
+  function clearFieldError(name: string) {
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+  }
+
   async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault();
+    // Validate before submit
+    const errors: Record<string, string> = {};
+    const emailErr = validateLoginField("email", email);
+    const pwErr = validateLoginField("password", password);
+    if (emailErr) errors.email = emailErr;
+    if (pwErr) errors.password = pwErr;
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setTouched({ email: true, password: true });
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -51,6 +94,12 @@ export default function LoginPage() {
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
+    const emailErr = validateLoginField("email", email);
+    if (emailErr) {
+      setFieldErrors({ email: emailErr });
+      setTouched({ email: true });
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -307,12 +356,18 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
+                  onBlur={(e) => handleLoginBlur("email", e.target.value)}
                   placeholder="you@company.com"
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400 ${
+                    touched.email && fieldErrors.email ? "border-red-300" : "border-gray-300"
+                  }`}
                 />
               </div>
+              {touched.email && fieldErrors.email && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -339,12 +394,16 @@ export default function LoginPage() {
                     id="password"
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
+                    onBlur={() => handleLoginBlur("password", password)}
                     placeholder="Enter your password"
                     required
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                    className={`w-full pl-12 pr-4 py-3 border ${touched.password && fieldErrors.password ? "border-red-300" : "border-gray-300"} rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400`}
                   />
                 </div>
+                {touched.password && fieldErrors.password && (
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+                )}
               </div>
             )}
 

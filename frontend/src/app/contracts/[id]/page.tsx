@@ -100,6 +100,31 @@ export default function ContractEditorPage() {
   const [success, setSuccess] = useState(false);
   const [version, setVersion] = useState(1);
 
+  // Inline validation
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  function validateContractField(field: string, value: string): string {
+    switch (field) {
+      case "name":
+        if (!value.trim()) return "Contract name is required";
+        if (value.trim().length < 2) return "Must be at least 2 characters";
+        return "";
+      default:
+        return "";
+    }
+  }
+
+  function handleContractBlur(field: string, value: string) {
+    setTouched((p) => ({ ...p, [field]: true }));
+    const err = validateContractField(field, value);
+    setFieldErrors((p) => ({ ...p, [field]: err }));
+  }
+
+  function clearContractFieldError(field: string) {
+    if (fieldErrors[field]) setFieldErrors((p) => ({ ...p, [field]: "" }));
+  }
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -129,10 +154,12 @@ export default function ContractEditorPage() {
   }, [loadData]);
 
   async function handleSave() {
-    if (!name.trim()) {
-      setError("Contract name is required");
-      return;
-    }
+    // Validate name inline
+    const nameErr = validateContractField("name", name);
+    setTouched((p) => ({ ...p, name: true }));
+    setFieldErrors((p) => ({ ...p, name: nameErr }));
+
+    if (nameErr) return;
     if (clauses.length === 0) {
       setError("At least one clause is required");
       return;
@@ -268,10 +295,14 @@ export default function ContractEditorPage() {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => { setName(e.target.value); clearContractFieldError("name"); }}
+                onBlur={() => handleContractBlur("name", name)}
                 placeholder="e.g. Standard Influencer Agreement"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538]/20 focus:border-[#2F4538] transition-colors"
+                className={`w-full px-3 py-2.5 border ${touched.name && fieldErrors.name ? "border-red-300" : "border-gray-200"} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2F4538]/20 focus:border-[#2F4538] transition-colors`}
               />
+              {touched.name && fieldErrors.name && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
