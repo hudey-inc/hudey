@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -21,9 +21,71 @@ import {
   Users,
   ClipboardList,
   AlertCircle,
+  Clock,
+  Check,
 } from "lucide-react";
 
 const PLATFORM_OPTIONS = ["Instagram", "TikTok", "YouTube", "Twitter/X"];
+
+// ── Draft autosave helpers ────────────────────────────────────
+
+const DRAFT_KEY = "hudey-campaign-draft";
+const DRAFT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+interface DraftData {
+  brandName: string;
+  industry: string;
+  brandValues: string;
+  objective: string;
+  targetAudience: string;
+  keyMessage: string;
+  brandVoice: string;
+  platforms: string[];
+  minFollowers: string;
+  maxFollowers: string;
+  budgetGbp: string;
+  deliverables: string;
+  timeline: string;
+  selectedContractId: string;
+  _ts: number;
+}
+
+function saveDraft(data: Omit<DraftData, "_ts">) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...data, _ts: Date.now() }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function loadDraft(): DraftData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as DraftData;
+    if (data._ts && Date.now() - data._ts > DRAFT_EXPIRY_MS) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+}
+
+function timeAgo(ts: number): string {
+  const seconds = Math.floor((Date.now() - ts) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 // ── Skeleton ──────────────────────────────────────────────────
 
@@ -98,6 +160,70 @@ function NewCampaignInner() {
   const [deliverables, setDeliverables] = useState("");
   const [timeline, setTimeline] = useState("");
 
+  // Draft autosave state
+  const [draftData, setDraftData] = useState<DraftData | null>(null);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const draftReady = useRef(false); // prevents autosave before user decides on draft
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    if (templateIdParam) {
+      // Template param takes priority — skip draft restore
+      draftReady.current = true;
+      return;
+    }
+    const saved = loadDraft();
+    if (saved && (saved.brandName || saved.objective || saved.targetAudience || saved.keyMessage)) {
+      setDraftData(saved);
+    } else {
+      draftReady.current = true;
+    }
+  }, [templateIdParam]);
+
+  const restoreDraft = useCallback((d: DraftData) => {
+    setBrandName(d.brandName || "");
+    setIndustry(d.industry || "");
+    setBrandValues(d.brandValues || "");
+    setObjective(d.objective || "");
+    setTargetAudience(d.targetAudience || "");
+    setKeyMessage(d.keyMessage || "");
+    setBrandVoice(d.brandVoice || "");
+    setPlatforms(d.platforms || []);
+    setMinFollowers(d.minFollowers || "");
+    setMaxFollowers(d.maxFollowers || "");
+    setBudgetGbp(d.budgetGbp || "");
+    setDeliverables(d.deliverables || "");
+    setTimeline(d.timeline || "");
+    setSelectedContractId(d.selectedContractId || "");
+    setDraftData(null);
+    draftReady.current = true;
+  }, []);
+
+  function discardDraft() {
+    clearDraft();
+    setDraftData(null);
+    draftReady.current = true;
+  }
+
+  // Debounced autosave — 1s after any field change
+  useEffect(() => {
+    if (!draftReady.current) return;
+    const hasContent = brandName || objective || targetAudience || keyMessage || deliverables;
+    if (!hasContent) return;
+
+    const timer = setTimeout(() => {
+      saveDraft({
+        brandName, industry, brandValues, objective, targetAudience,
+        keyMessage, brandVoice, platforms, minFollowers, maxFollowers,
+        budgetGbp, deliverables, timeline, selectedContractId,
+      });
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 2000);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [brandName, industry, brandValues, objective, targetAudience, keyMessage, brandVoice, platforms, minFollowers, maxFollowers, budgetGbp, deliverables, timeline, selectedContractId]);
+
   // Load templates and contracts on mount
   useEffect(() => {
     listTemplates()
@@ -119,6 +245,9 @@ function NewCampaignInner() {
 
   function applyTemplate(t: CampaignTemplate) {
     setAppliedTemplate(t);
+    clearDraft();
+    setDraftData(null);
+    draftReady.current = true;
     const b = t.brief || {};
     setBrandName((b.brand_name as string) || "");
     setIndustry((b.industry as string) || "");
@@ -222,6 +351,7 @@ function NewCampaignInner() {
         brief,
         ...(selectedContractId && { contract_template_id: selectedContractId }),
       });
+      clearDraft();
       router.push(`/campaigns/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create campaign");
@@ -237,6 +367,7 @@ function NewCampaignInner() {
       const { id } = await createCampaignFromTemplate(template.id, {
         name: template.name,
       });
+      clearDraft();
       router.push(`/campaigns/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create from template");
@@ -281,6 +412,13 @@ function NewCampaignInner() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Autosave indicator */}
+            <span
+              className={`hidden sm:flex items-center gap-1 text-xs text-gray-400 transition-opacity duration-500 ${draftSaved ? "opacity-100" : "opacity-0"}`}
+            >
+              <Check className="w-3 h-3" aria-hidden="true" />
+              Draft saved
+            </span>
             <Link
               href="/campaigns"
               className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -303,6 +441,28 @@ function NewCampaignInner() {
           <div className="mb-6 flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg" role="alert">
             <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             {error}
+          </div>
+        )}
+
+        {/* ── Draft Restore Banner ── */}
+        {draftData && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
+            <span className="text-sm text-amber-800 flex-1">
+              You have an unsaved draft from <span className="font-medium">{timeAgo(draftData._ts)}</span>
+            </span>
+            <button
+              onClick={discardDraft}
+              className="text-xs text-amber-700 hover:text-amber-900 font-medium transition-colors"
+            >
+              Discard
+            </button>
+            <button
+              onClick={() => restoreDraft(draftData)}
+              className="text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Restore draft
+            </button>
           </div>
         )}
 
