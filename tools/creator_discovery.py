@@ -130,23 +130,27 @@ class CreatorDiscoveryTool(BaseTool):
     def find_creators(self, criteria: CreatorCriteria) -> list[Creator]:
         """Find creators matching criteria. Uses Phyllo if API key set, else mock.
 
-        Flow: Search → Brand Fit enrichment (top 10) → Claude ranking
+        Flow: Search → Brand Fit enrichment (top 10, 120s cap) → Claude ranking
+        Total phase is capped at ~180s to prevent worker death on slow APIs.
         """
         raw: list[Creator] = []
 
         phyllo = self._get_phyllo()
         if phyllo.is_configured:
             follower_min, follower_max = criteria.follower_range
-            phyllo_results = phyllo.search_creators(
-                platforms=criteria.platforms,
-                follower_min=follower_min,
-                follower_max=follower_max,
-                categories=criteria.categories or None,
-                locations=criteria.locations or None,
-                limit=criteria.max_results,
-            )
-            if phyllo_results:
-                raw = [_map_phyllo_to_creator(r) for r in phyllo_results]
+            try:
+                phyllo_results = phyllo.search_creators(
+                    platforms=criteria.platforms,
+                    follower_min=follower_min,
+                    follower_max=follower_max,
+                    categories=criteria.categories or None,
+                    locations=criteria.locations or None,
+                    limit=criteria.max_results,
+                )
+                if phyllo_results:
+                    raw = [_map_phyllo_to_creator(r) for r in phyllo_results]
+            except Exception as e:
+                logger.warning("Phyllo search failed: %s — falling back to mock", e)
 
         if not raw and self.mock_path.exists():
             data = json.loads(self.mock_path.read_text())
@@ -156,7 +160,7 @@ class CreatorDiscoveryTool(BaseTool):
                     c.setdefault("external_id", None)  # Mock has no Phyllo ID
                 raw.append(Creator(**c) if isinstance(c, dict) else c)
 
-        # Enrich top creators with Brand Fit before ranking
+        # Enrich top creators with Brand Fit before ranking (120s total cap)
         if raw and criteria.brand_name:
             raw = self._enrich_brand_fit(raw, criteria)
 

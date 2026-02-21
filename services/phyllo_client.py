@@ -193,9 +193,9 @@ class PhylloClient:
         InsightIQ analysis endpoints (brand fit, purchase intent, comments relevance)
         are async: POST creates a job, GET retrieves results when ready.
         """
-        elapsed = 0
-        interval = 3
-        while elapsed < max_wait:
+        deadline = time.monotonic() + max_wait
+        interval = 2
+        while time.monotonic() < deadline:
             resp = self._get(f"{path_prefix}/{job_id}")
             if resp:
                 status = resp.get("status", "").upper()
@@ -204,9 +204,11 @@ class PhylloClient:
                 if status in ("FAILED", "ERROR"):
                     logger.warning("InsightIQ job %s failed: %s", job_id, resp)
                     return None
-            time.sleep(interval)
-            elapsed += interval
-            interval = min(interval * 1.5, 10)  # Back off
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(interval, remaining))
+            interval = min(interval * 1.5, 8)  # Back off, capped at 8s
         logger.warning("InsightIQ job %s timed out after %ds", job_id, max_wait)
         return None
 

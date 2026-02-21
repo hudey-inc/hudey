@@ -55,6 +55,7 @@ class CreatorInsightsTool(BaseTool):
         brand_name: str,
         brand_description: str,
         max_creators: Optional[int] = None,
+        total_timeout: int = 120,
     ) -> list[Creator]:
         """Run brand fit analysis on top creators and attach scores.
 
@@ -66,11 +67,14 @@ class CreatorInsightsTool(BaseTool):
             brand_name: Brand/company name
             brand_description: Brand description, industry, target audience
             max_creators: Override for how many top creators to enrich
+            total_timeout: Max seconds for the entire enrichment phase (default 120)
 
         Returns:
             Same list with brand_fit_score and brand_fit_data populated
             for successfully analyzed creators.
         """
+        import time
+
         phyllo = self._get_phyllo()
         if not phyllo.is_configured:
             logger.info("InsightIQ not configured — skipping brand fit enrichment")
@@ -82,8 +86,18 @@ class CreatorInsightsTool(BaseTool):
 
         limit = max_creators or self.max_creators
         enriched = 0
+        start_time = time.monotonic()
 
         for creator in creators[:limit]:
+            # Bail if total timeout exceeded — don't block the worker
+            elapsed = time.monotonic() - start_time
+            if elapsed >= total_timeout:
+                logger.warning(
+                    "Brand fit enrichment hit %ds total timeout after %d/%d creators",
+                    total_timeout, enriched, limit,
+                )
+                break
+
             ext_id = creator.external_id
             if not ext_id:
                 continue
@@ -91,13 +105,17 @@ class CreatorInsightsTool(BaseTool):
             # Resolve platform to work_platform_id for better results
             wp_id = phyllo.PLATFORM_IDS.get(creator.platform)
 
+            # Per-creator timeout: remaining time capped at 20s
+            remaining = max(int(total_timeout - (time.monotonic() - start_time)), 5)
+            per_creator_wait = min(20, remaining)
+
             try:
                 result = phyllo.analyze_brand_fit(
                     creator_id=ext_id,
                     brand_name=brand_name,
                     brand_description=brand_description,
                     work_platform_id=wp_id,
-                    max_wait=45,
+                    max_wait=per_creator_wait,
                 )
                 if result:
                     # Extract score — InsightIQ returns various formats
@@ -119,7 +137,10 @@ class CreatorInsightsTool(BaseTool):
             except Exception as e:
                 logger.warning("Brand fit failed for %s: %s", creator.username, e)
 
-        logger.info("Brand fit enrichment complete: %d/%d creators", enriched, min(limit, len(creators)))
+        logger.info(
+            "Brand fit enrichment complete: %d/%d creators in %.1fs",
+            enriched, min(limit, len(creators)), time.monotonic() - start_time,
+        )
         return creators
 
     def execute(
