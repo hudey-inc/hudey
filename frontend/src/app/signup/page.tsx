@@ -258,7 +258,7 @@ export default function SignupPage() {
                     onChange={handleChange}
                     placeholder="John Doe"
                     required
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function SignupPage() {
                     onChange={handleChange}
                     placeholder="you@company.com"
                     required
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -298,7 +298,7 @@ export default function SignupPage() {
                     onChange={handleChange}
                     placeholder="Acme Inc."
                     required
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function SignupPage() {
                     placeholder="Create a strong password"
                     required
                     minLength={6}
-                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
                 <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters</p>
