@@ -12,6 +12,7 @@ import {
   updateEngagementStatus,
 } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { SkeletonStatCardCompact, SkeletonEmptyCard } from "@/components/skeleton";
 import {
   Bot,
   MessageCircle,
@@ -792,21 +793,12 @@ function NegotiatorSkeleton() {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse"
-          >
-            <div className="h-4 bg-gray-100 rounded w-20 mb-3" />
-            <div className="h-8 bg-gray-100 rounded w-16" />
-          </div>
+          <SkeletonStatCardCompact key={i} />
         ))}
       </div>
       <div className="space-y-4">
         {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="h-48 bg-white rounded-xl border border-gray-200 animate-pulse"
-          />
+          <SkeletonEmptyCard key={i} height="h-48" />
         ))}
       </div>
     </div>

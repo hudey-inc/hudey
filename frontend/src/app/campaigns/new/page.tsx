@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate, listContracts } from "@/lib/api";
 import type { CampaignTemplate, ContractTemplate } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { PageSkeleton, SkeletonFormCard, Skeleton } from "@/components/skeleton";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import {
   ArrowLeft,
@@ -91,36 +92,29 @@ function timeAgo(ts: number): string {
 
 function NewCampaignSkeleton() {
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto animate-pulse">
+    <PageSkeleton>
       <div className="max-w-3xl">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gray-100 rounded-lg" />
+            <Skeleton className="w-9 h-9 rounded-lg" />
             <div>
-              <div className="h-6 bg-gray-100 rounded w-44 mb-1" />
-              <div className="h-3 bg-gray-100 rounded w-56" />
+              <Skeleton className="h-6 rounded w-44 mb-1" />
+              <Skeleton className="h-3 rounded w-56" />
             </div>
           </div>
           <div className="flex gap-2">
-            <div className="h-9 bg-gray-100 rounded-lg w-20" />
-            <div className="h-9 bg-gray-100 rounded-lg w-32" />
+            <Skeleton className="h-9 rounded-lg w-20" />
+            <Skeleton className="h-9 rounded-lg w-32" />
           </div>
         </div>
-        {/* Template area */}
-        <div className="h-36 bg-gray-100 rounded-xl mb-6" />
-        {/* Card skeletons */}
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 mb-6">
-            <div className="h-4 bg-gray-100 rounded w-32 mb-4" />
-            <div className="space-y-3">
-              <div className="h-10 bg-gray-100 rounded-lg w-full" />
-              <div className="h-10 bg-gray-100 rounded-lg w-full" />
-            </div>
-          </div>
-        ))}
+        <Skeleton className="h-36 rounded-xl mb-6" />
+        <div className="space-y-6">
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonFormCard key={i} fields={2} />
+          ))}
+        </div>
       </div>
-    </div>
+    </PageSkeleton>
   );
 }
 

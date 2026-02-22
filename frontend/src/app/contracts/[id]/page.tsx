@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { PageSkeleton, SkeletonFormCard } from "@/components/skeleton";
 import {
   getContract,
   getDefaultClauses,
@@ -39,9 +40,8 @@ const CLAUSE_TYPES = [
 
 function EditorSkeleton() {
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto animate-pulse">
+    <PageSkeleton>
       <div className="max-w-3xl">
-        {/* Header skeleton */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gray-100 rounded-lg" />
@@ -55,30 +55,15 @@ function EditorSkeleton() {
             <div className="h-9 bg-gray-100 rounded-lg w-20" />
           </div>
         </div>
-        {/* Name/desc card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 mb-6">
-          <div className="space-y-4">
-            <div>
-              <div className="h-3 bg-gray-100 rounded w-24 mb-2" />
-              <div className="h-10 bg-gray-100 rounded-lg w-full" />
-            </div>
-            <div>
-              <div className="h-3 bg-gray-100 rounded w-20 mb-2" />
-              <div className="h-10 bg-gray-100 rounded-lg w-full" />
-            </div>
-          </div>
-        </div>
-        {/* Clause skeletons */}
+        <div className="mb-6"><SkeletonFormCard fields={2} /></div>
         <div className="h-4 bg-gray-100 rounded w-28 mb-4" />
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 mb-4">
-            <div className="h-10 bg-gray-100 rounded-lg w-full mb-3" />
-            <div className="h-10 bg-gray-100 rounded-lg w-full mb-3" />
-            <div className="h-24 bg-gray-100 rounded-lg w-full" />
-          </div>
-        ))}
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <SkeletonFormCard key={i} fields={3} />
+          ))}
+        </div>
       </div>
-    </div>
+    </PageSkeleton>
   );
 }
 

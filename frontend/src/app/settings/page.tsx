@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { PageSkeleton, SkeletonPageHeader, SkeletonFormCard } from "@/components/skeleton";
 import { getBrand, updateBrand, getBilling, createPortalSession } from "@/lib/api";
 import type { Brand, BillingData } from "@/lib/api";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
@@ -248,38 +249,13 @@ export default function SettingsPage() {
 
   if (checking || brandLoading) {
     return (
-      <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto animate-pulse">
-        {/* Header skeleton */}
-        <div className="mb-6">
-            <div className="h-7 bg-gray-100 rounded w-40 mb-2" />
-            <div className="h-4 bg-gray-100 rounded w-56 mb-6" />
-            <div className="flex gap-6 border-b border-gray-200 -mb-px">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-4 bg-gray-100 rounded w-24 mb-3" />
-              ))}
-            </div>
+      <PageSkeleton>
+        <SkeletonPageHeader tabs={4} />
+        <div className="max-w-2xl space-y-6">
+          <SkeletonFormCard fields={3} withSectionHeader />
+          <SkeletonFormCard fields={3} withSectionHeader />
         </div>
-        {/* Content skeleton */}
-        <div>
-          <div className="max-w-2xl space-y-6">
-            {[0, 1].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-gray-100">
-                  <div className="h-4 bg-gray-100 rounded w-36" />
-                </div>
-                <div className="p-5 space-y-5">
-                  {[0, 1, 2].map((j) => (
-                    <div key={j}>
-                      <div className="h-3 bg-gray-100 rounded w-24 mb-2" />
-                      <div className="h-10 bg-gray-100 rounded-lg w-full" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      </PageSkeleton>
     );
   }
 

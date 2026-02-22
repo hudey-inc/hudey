@@ -7,6 +7,7 @@ import type { CampaignSummary } from "@/lib/api";
 import { listCampaigns, getAggregateAnalytics } from "@/lib/api";
 import type { AggregateAnalytics } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { SkeletonStatGrid, SkeletonListCard } from "@/components/skeleton";
 import {
   Target,
   Search,
@@ -116,33 +117,8 @@ function getAIIcon(status: string) {
 function CampaignsSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg" />
-            </div>
-            <div className="h-4 bg-gray-100 rounded w-24 mb-2" />
-            <div className="h-8 bg-gray-100 rounded w-16 mb-1" />
-            <div className="h-3 bg-gray-100 rounded w-20" />
-          </div>
-        ))}
-      </div>
-      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 animate-pulse">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-0">
-            <div className="w-12 h-12 bg-gray-100 rounded-lg" />
-            <div className="flex-1">
-              <div className="h-4 bg-gray-100 rounded w-48 mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-32" />
-            </div>
-            <div className="w-24 h-6 bg-gray-100 rounded" />
-          </div>
-        ))}
-      </div>
+      <SkeletonStatGrid count={4} />
+      <SkeletonListCard rows={4} />
     </div>
   );
 }

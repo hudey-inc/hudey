@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import type { FullAnalytics } from "@/lib/api";
 import { getFullAnalytics } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { SkeletonStatGrid, SkeletonEmptyCard } from "@/components/skeleton";
 import {
   BarChart3,
   TrendingUp,
@@ -225,21 +226,12 @@ function exportTab(tab: TabKey, data: FullAnalytics, campaignFilter: string) {
 function AnalyticsSkeleton() {
   return (
     <div className="px-4 sm:px-8 py-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-6 animate-pulse">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg" />
-              <div className="w-12 h-4 bg-gray-100 rounded" />
-            </div>
-            <div className="h-4 bg-gray-100 rounded w-20 mb-2" />
-            <div className="h-8 bg-gray-100 rounded w-24" />
-          </div>
-        ))}
+      <div className="mb-8">
+        <SkeletonStatGrid count={4} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-64 bg-white rounded-xl border border-gray-200 animate-pulse" />
-        <div className="h-64 bg-white rounded-xl border border-gray-200 animate-pulse" />
+        <SkeletonEmptyCard />
+        <SkeletonEmptyCard />
       </div>
     </div>
   );

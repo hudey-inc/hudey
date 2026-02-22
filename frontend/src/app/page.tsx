@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type { CampaignSummary, AggregateMetrics, CreatorEngagement, EmailDeliverySummary } from "@/lib/api";
 import { listCampaigns, getAggregateMetrics, getCampaign, getEngagements, getEmailEvents } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { SkeletonStatGrid } from "@/components/skeleton";
 import {
   Target,
   BarChart3,
@@ -196,19 +197,7 @@ function MetricCard({
 
 function MetricsSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-xl border border-gray-200 bg-white p-6 animate-pulse">
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg" />
-            <div className="w-14 h-5 bg-gray-100 rounded-full" />
-          </div>
-          <div className="h-4 bg-gray-100 rounded w-24 mb-2" />
-          <div className="h-8 bg-gray-100 rounded w-16 mb-3" />
-          <div className="h-24 bg-gray-50 rounded" />
-        </div>
-      ))}
-    </div>
+    <SkeletonStatGrid count={3} cols="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" withChart withBadge />
   );
 }
 

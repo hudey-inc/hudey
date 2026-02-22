@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { AggregateOutreach, CreatorEngagement } from "@/lib/api";
 import { getAggregateOutreach, replyToCreator, updateEngagementStatus } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { SkeletonStatCardCompact, SkeletonEmptyCard } from "@/components/skeleton";
 import {
   Inbox,
   Mail,
@@ -495,15 +496,12 @@ function OutreachSkeleton() {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse">
-            <div className="h-4 bg-gray-100 rounded w-20 mb-3" />
-            <div className="h-8 bg-gray-100 rounded w-16" />
-          </div>
+          <SkeletonStatCardCompact key={i} />
         ))}
       </div>
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="h-96 bg-white rounded-xl border border-gray-200 animate-pulse" />
-        <div className="lg:col-span-2 h-96 bg-white rounded-xl border border-gray-200 animate-pulse" />
+        <SkeletonEmptyCard height="h-96" />
+        <SkeletonEmptyCard height="h-96" className="lg:col-span-2" />
       </div>
     </div>
   );

@@ -57,6 +57,7 @@ import {
   CreatorEngagements,
 } from "@/components/campaign";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { PageSkeleton, SkeletonPageHeader, SkeletonStatGrid, SkeletonContentBlock } from "@/components/skeleton";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -94,59 +95,16 @@ const DEFAULT_EMAIL_SUMMARY: EmailDeliverySummary = {
 
 function CampaignDetailSkeleton() {
   return (
-    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto animate-pulse">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="h-4 bg-gray-100 rounded w-32" />
-          <div className="flex gap-2">
-            <div className="w-24 h-9 bg-gray-100 rounded-lg" />
-          </div>
-        </div>
-        <div className="flex items-center gap-3 mb-2">
-          <div className="h-7 bg-gray-100 rounded w-56" />
-          <div className="w-20 h-6 bg-gray-100 rounded-full" />
-        </div>
-        <div className="h-4 bg-gray-100 rounded w-40 mb-4" />
-        <div className="flex gap-6 border-b border-gray-200">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-4 bg-gray-100 rounded w-20 mb-3" />
-          ))}
-        </div>
+    <PageSkeleton>
+      <SkeletonPageHeader tabs={3} actions={1} />
+      <div className="mb-8">
+        <SkeletonStatGrid count={4} cols="grid-cols-2 sm:grid-cols-3" />
       </div>
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 bg-gray-100 rounded-lg" />
-              <div className="h-3 bg-gray-100 rounded w-24" />
-            </div>
-            <div className="h-7 bg-gray-100 rounded w-16 mb-1" />
-            <div className="h-3 bg-gray-100 rounded w-20" />
-          </div>
-        ))}
-      </div>
-      {/* Content blocks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="h-5 bg-gray-100 rounded w-32 mb-4" />
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-4 bg-gray-100 rounded w-full" />
-            ))}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="h-5 bg-gray-100 rounded w-32 mb-4" />
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-4 bg-gray-100 rounded w-full" />
-            ))}
-          </div>
-        </div>
+        <SkeletonContentBlock />
+        <SkeletonContentBlock />
       </div>
-    </div>
+    </PageSkeleton>
   );
 }
 
