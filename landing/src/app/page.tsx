@@ -753,8 +753,8 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Right — Links: 2-col mobile, 2-row desktop */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 md:flex md:flex-wrap md:justify-end md:gap-x-6 md:gap-y-2 md:max-w-xl text-sm text-[#E8DCC8]/60">
+            {/* Right — Links: 2-col mobile centered, inline desktop right-aligned */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 justify-items-center max-w-[260px] mx-auto md:max-w-xl md:mx-0 md:flex md:flex-wrap md:justify-end md:gap-x-6 md:gap-y-2 text-sm text-[#E8DCC8]/60">
               <a
                 href="#how-it-works"
                 className="hover:text-white transition-colors"
