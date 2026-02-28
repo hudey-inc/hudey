@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { captureError } from "@/lib/errors";
 import { PageSkeleton, SkeletonFormCard } from "@/components/skeleton";
 import {
   getContract,
@@ -127,8 +128,8 @@ export default function ContractEditorPage() {
         setClauses(tmpl.clauses);
         setVersion(tmpl.version);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      captureError(err, { action: "fetchContract" });
     } finally {
       setLoading(false);
     }

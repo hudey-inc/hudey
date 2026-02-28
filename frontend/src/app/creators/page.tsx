@@ -16,6 +16,7 @@ import type { DiscoveredCreator, CreatorSearchParams } from "@/lib/api";
 import { searchCreators, getSavedCreators, saveCreator, unsaveCreator, enrichBrandFit } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { CREATOR_CATEGORIES } from "@/lib/constants";
+import { captureError } from "@/lib/errors";
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -313,8 +314,8 @@ export default function CreatorsPage() {
     try {
       const data = await getSavedCreators();
       setSavedCreators(data);
-    } catch {
-      // silent
+    } catch (err) {
+      captureError(err, { action: "fetchCreators" });
     } finally {
       setLoadingSaved(false);
     }
@@ -343,8 +344,8 @@ export default function CreatorsPage() {
             ? prev.filter((c) => c.id !== creatorId)
             : prev // will be refreshed on tab switch
         );
-      } catch {
-        // silent
+      } catch (err) {
+        captureError(err, { action: "refreshCreators" });
       } finally {
         setSavingId(null);
       }

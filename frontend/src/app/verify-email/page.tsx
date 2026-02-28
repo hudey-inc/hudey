@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { captureError } from "@/lib/errors";
 import { HudeyLogo } from "@/components/hudey-logo";
 import { Mail, ArrowRight, Loader2, Check, AlertTriangle } from "lucide-react";
 
@@ -74,7 +75,8 @@ export default function VerifyEmailPage() {
         setResent(true);
         setTimeout(() => setResent(false), 5000);
       }
-    } catch {
+    } catch (err) {
+      captureError(err, { action: "verifyEmail" });
       setError("Failed to resend email");
     } finally {
       setResending(false);

@@ -57,6 +57,7 @@ import {
   CreatorEngagements,
 } from "@/components/campaign";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { captureError } from "@/lib/errors";
 import { PageSkeleton, SkeletonPageHeader, SkeletonStatGrid, SkeletonContentBlock } from "@/components/skeleton";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -254,8 +255,8 @@ export default function CampaignDetail() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       userEmail = session?.user?.email ?? undefined;
-    } catch {
-      // proceed without prefill
+    } catch (err) {
+      captureError(err, { action: "executeStep" });
     }
 
     setPaying(true);
@@ -284,8 +285,8 @@ export default function CampaignDetail() {
               }
               return;
             }
-          } catch {
-            // retry
+          } catch (err) {
+            captureError(err, { action: "fetchBatchResults" });
           }
         }
         // Webhook hasn't arrived yet — still show success
@@ -317,7 +318,7 @@ export default function CampaignDetail() {
   }
 
   async function handleDecide(approvalId: string, status: "approved" | "rejected", feedback?: string) {
-    try { await decideApproval(approvalId, status, feedback); fetchAll(); } catch { /* noop */ }
+    try { await decideApproval(approvalId, status, feedback); fetchAll(); } catch (err) { captureError(err, { action: "approveStep" }); }
   }
 
   async function handleDelete() {
@@ -337,7 +338,8 @@ export default function CampaignDetail() {
     try {
       const { id: newId } = await duplicateCampaign(id, { include_creators: includeCreators });
       router.push(`/campaigns/${newId}`);
-    } catch {
+    } catch (err) {
+      captureError(err, { action: "pauseCampaign" });
       setDuplicating(false);
     }
   }
@@ -350,8 +352,8 @@ export default function CampaignDetail() {
       setShowTemplateModal(false);
       setTemplateName("");
       setTemplateDesc("");
-    } catch {
-      // silent
+    } catch (err) {
+      captureError(err, { action: "retryFailedStep" });
     } finally {
       setSavingTemplate(false);
     }
@@ -375,8 +377,8 @@ export default function CampaignDetail() {
         deliveryRate,
         responseRate,
       });
-    } catch {
-      // PDF export failed silently
+    } catch (err) {
+      captureError(err, { action: "retryFailed" });
     } finally {
       setExporting(false);
     }

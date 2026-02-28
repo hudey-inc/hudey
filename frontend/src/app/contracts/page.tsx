@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { PageSkeleton, SkeletonPageHeader, SkeletonCardGrid } from "@/components/skeleton";
 import { listContracts, deleteContract } from "@/lib/api";
+import { captureError } from "@/lib/errors";
 import type { ContractTemplate } from "@/lib/api";
 import {
   FileText,
@@ -67,8 +68,8 @@ export default function ContractsPage() {
     try {
       await deleteContract(deleteId);
       setContracts((prev) => prev.filter((c) => c.id !== deleteId));
-    } catch {
-      // ignore
+    } catch (err) {
+      captureError(err, { action: "fetchContracts" });
     } finally {
       setDeleting(false);
       setDeleteId(null);

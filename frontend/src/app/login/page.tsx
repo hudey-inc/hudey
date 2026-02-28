@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { trackLogin } from "@/lib/analytics";
 import { Mail, Lock, ArrowRight, Check, Sparkles, Loader2 } from "lucide-react";
 import { HudeyLogo } from "@/components/hudey-logo";
 
@@ -88,6 +89,7 @@ export default function LoginPage() {
       return;
     }
 
+    trackLogin("password");
     router.push("/");
     router.refresh();
   }
@@ -116,6 +118,7 @@ export default function LoginPage() {
       return;
     }
 
+    trackLogin("magic_link");
     setView("magic-sent");
     setLoading(false);
   }
@@ -153,6 +156,8 @@ export default function LoginPage() {
     if (error) {
       setError(error.message);
       setLoading(false);
+    } else {
+      trackLogin("google");
     }
   }
 

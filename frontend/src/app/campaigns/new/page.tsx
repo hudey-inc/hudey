@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { createCampaign, listTemplates, getTemplate, createCampaignFromTemplate, listContracts } from "@/lib/api";
 import type { CampaignTemplate, ContractTemplate } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { trackCampaignCreated } from "@/lib/analytics";
 import { PageSkeleton, SkeletonFormCard, Skeleton } from "@/components/skeleton";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
 import {
@@ -345,6 +346,7 @@ function NewCampaignInner() {
         brief,
         ...(selectedContractId && { contract_template_id: selectedContractId }),
       });
+      trackCampaignCreated("form");
       clearDraft();
       router.push(`/campaigns/${id}`);
     } catch (err) {
@@ -361,6 +363,7 @@ function NewCampaignInner() {
       const { id } = await createCampaignFromTemplate(template.id, {
         name: template.name,
       });
+      trackCampaignCreated("template");
       clearDraft();
       router.push(`/campaigns/${id}`);
     } catch (err) {

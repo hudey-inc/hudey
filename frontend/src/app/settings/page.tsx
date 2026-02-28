@@ -7,6 +7,7 @@ import { PageSkeleton, SkeletonPageHeader, SkeletonFormCard } from "@/components
 import { getBrand, updateBrand, getBilling, createPortalSession } from "@/lib/api";
 import type { Brand, BillingData } from "@/lib/api";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
+import { captureError } from "@/lib/errors";
 import {
   Settings,
   User,
@@ -111,8 +112,8 @@ export default function SettingsPage() {
         setNotifResponses(prefs.creator_responses !== false);
         setNotifCompletion(prefs.campaign_completion !== false);
       }
-    } catch {
-      // Brand not available yet
+    } catch (err) {
+      captureError(err, { action: "fetchSettings" });
     } finally {
       setBrandLoading(false);
     }
@@ -135,8 +136,8 @@ export default function SettingsPage() {
           setBilling(data);
           setBillingLoaded(true);
         }
-      } catch {
-        // billing not available
+      } catch (err) {
+        captureError(err, { action: "updateSettings" });
       } finally {
         if (!cancelled) setBillingLoading(false);
       }

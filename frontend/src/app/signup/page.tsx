@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { trackSignup } from "@/lib/analytics";
 import {
   Mail,
   Lock,
@@ -54,6 +55,8 @@ export default function SignupPage() {
     if (error) {
       setError(error.message);
       setLoading(false);
+    } else {
+      trackSignup("google");
     }
   }
 
@@ -146,6 +149,7 @@ export default function SignupPage() {
       return;
     }
 
+    trackSignup("email");
     setSuccess(true);
     setLoading(false);
   }

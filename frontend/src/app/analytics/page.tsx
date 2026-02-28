@@ -44,6 +44,7 @@ import {
   Plus,
 } from "lucide-react";
 import { generateAnalyticsPdf } from "@/lib/pdf/pdf-analytics";
+import { captureError } from "@/lib/errors";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -387,8 +388,8 @@ function AnalyticsPageInner() {
     setExportingPdf(true);
     try {
       await generateAnalyticsPdf(data, campaignFilter);
-    } catch {
-      // PDF export failed silently
+    } catch (err) {
+      captureError(err, { action: "exportAnalyticsPdf" });
     } finally {
       setExportingPdf(false);
     }

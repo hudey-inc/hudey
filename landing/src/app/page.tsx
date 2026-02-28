@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Check,
@@ -14,9 +15,11 @@ import {
   Zap,
   Target,
   ChevronDown,
+  Quote,
 } from "lucide-react";
 import { HudeyLogo } from "@/components/hudey-logo";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import { trackCTAClick } from "@/lib/analytics";
 
 const APP_URL = "https://app.hudey.co";
 
@@ -106,6 +109,33 @@ const features = [
   },
 ];
 
+const testimonials = [
+  {
+    name: "Sarah Chen",
+    role: "Marketing Director",
+    company: "Earthkind Co.",
+    image: "/testimonials/sarah.jpg",
+    quote:
+      "We used to spend weeks finding creators who actually aligned with our values. Hudey matched us with the right partners in under 48 hours.",
+  },
+  {
+    name: "Marcus Williams",
+    role: "Brand Manager",
+    company: "GreenThread",
+    image: "/testimonials/marcus.jpg",
+    quote:
+      "The AI negotiation tool alone saved us 15 hours a week. We ran three campaigns simultaneously without hiring extra headcount.",
+  },
+  {
+    name: "Emma Clarke",
+    role: "Head of Partnerships",
+    company: "Bloom & Wild",
+    image: "/testimonials/emma.jpg",
+    quote:
+      "Finally a platform that understands sustainable brands aren\u2019t just a niche. The creator vetting is exactly what we needed.",
+  },
+];
+
 const faqs = [
   {
     question: "How does Hudey find the right creators?",
@@ -177,6 +207,12 @@ export default function LandingPage() {
               >
                 Pricing
               </Link>
+              <Link
+                href="/blog"
+                className="text-sm font-medium text-gray-700 hover:text-[#2F4538] transition-colors"
+              >
+                Blog
+              </Link>
             </div>
 
             <div className="flex items-center gap-3 sm:gap-4">
@@ -188,6 +224,7 @@ export default function LandingPage() {
               </a>
               <a
                 href={`${APP_URL}/signup`}
+                onClick={() => trackCTAClick("nav")}
                 className="bg-[#2F4538] hover:bg-[#1f2f26] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all shadow-lg shadow-[#2F4538]/20"
               >
                 Get Started
@@ -245,6 +282,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 sm:mb-12 px-4">
               <a
                 href={`${APP_URL}/signup`}
+                onClick={() => trackCTAClick("hero")}
                 className="bg-gradient-to-r from-[#2F4538] to-[#3a5745] hover:from-[#1f2f26] hover:to-[#2F4538] text-white px-8 sm:px-10 py-4 sm:py-5 rounded-full font-semibold text-base sm:text-lg flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#2F4538]/30 hover:shadow-2xl hover:shadow-[#2F4538]/40 hover:scale-105 group"
               >
                 Apply for Early Access
@@ -448,6 +486,53 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Testimonials ─── */}
+      <section className="reveal-section py-16 sm:py-20 lg:py-28 px-5 sm:px-8 bg-gradient-to-b from-white via-[#E8DCC8]/10 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="reveal-item text-center mb-10 sm:mb-16 md:mb-20">
+            <div className="inline-flex items-center gap-2 bg-[#E8DCC8] px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-[#2F4538] mb-4 sm:mb-6">
+              <Quote className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              Trusted by Brands
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 sm:mb-6 px-4">
+              What our brands say
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
+              Hear from the sustainable brands using Hudey to run smarter influencer campaigns.
+            </p>
+          </div>
+
+          <div className="reveal-item grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {testimonials.map((t, index) => (
+              <div
+                key={index}
+                className="bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl p-6 sm:p-8 hover:border-gray-300 hover:shadow-2xl transition-all duration-300 relative"
+              >
+                <Quote className="w-8 h-8 text-[#E8DCC8] mb-4" />
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed mb-6">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={t.image}
+                    alt={t.name}
+                    width={44}
+                    height={44}
+                    className="rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900 text-sm">{t.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {t.role}, {t.company}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── Founding Cohort ─── */}
       <section
         id="founding-cohort"
@@ -514,6 +599,7 @@ export default function LandingPage() {
           <div className="reveal-item">
             <a
               href={`${APP_URL}/signup`}
+              onClick={() => trackCTAClick("founding_cohort")}
               className="inline-flex items-center gap-3 bg-gradient-to-r from-[#2F4538] to-[#3a5745] hover:from-[#1f2f26] hover:to-[#2F4538] text-white px-8 py-4 sm:px-10 sm:py-5 rounded-full font-semibold text-base sm:text-lg transition-all shadow-xl shadow-[#2F4538]/30 hover:shadow-2xl hover:shadow-[#2F4538]/40 hover:scale-105 group"
             >
               Apply for Early Access
@@ -628,6 +714,7 @@ export default function LandingPage() {
               />
               <a
                 href={`${APP_URL}/signup${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+                onClick={() => trackCTAClick("footer")}
                 className="bg-gradient-to-r from-[#D16B42] to-[#b85a36] hover:from-[#b85a36] hover:to-[#D16B42] text-white px-8 sm:px-10 py-4 sm:py-5 rounded-full font-bold text-base sm:text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105 whitespace-nowrap text-center"
               >
                 Apply Now
@@ -679,6 +766,30 @@ export default function LandingPage() {
                   className="hover:text-white transition-colors"
                 >
                   Pricing
+                </Link>
+                <Link
+                  href="/blog"
+                  className="hover:text-white transition-colors"
+                >
+                  Blog
+                </Link>
+                <Link
+                  href="/about"
+                  className="hover:text-white transition-colors"
+                >
+                  About
+                </Link>
+                <Link
+                  href="/contact"
+                  className="hover:text-white transition-colors"
+                >
+                  Contact
+                </Link>
+                <Link
+                  href="/help"
+                  className="hover:text-white transition-colors"
+                >
+                  Help
                 </Link>
                 <Link
                   href="/terms"

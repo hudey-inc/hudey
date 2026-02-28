@@ -1,0 +1,373 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Search,
+  Rocket,
+  Users,
+  BarChart3,
+  FileText,
+  Settings,
+  CreditCard,
+  ChevronDown,
+  Mail,
+} from "lucide-react";
+import { HudeyLogo } from "@/components/hudey-logo";
+
+interface HelpArticle {
+  question: string;
+  answer: string;
+}
+
+interface HelpCategory {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  color: string;
+  articles: HelpArticle[];
+}
+
+const categories: HelpCategory[] = [
+  {
+    icon: Rocket,
+    title: "Getting Started",
+    description: "Set up your account and launch your first campaign.",
+    color: "#2F4538",
+    articles: [
+      {
+        question: "How do I create my first campaign?",
+        answer:
+          'After signing in, click "New Campaign" from your dashboard. Fill in your brand brief \u2014 your goals, target audience, budget, and deliverables \u2014 and Hudey will start matching you with creators. You can also use one of our pre-built templates to get started faster.',
+      },
+      {
+        question: "What do I need to set up before launching?",
+        answer:
+          "Complete your brand profile in Settings (brand name, industry, values) and optionally upload a contract template. This lets Hudey personalise outreach and auto-generate agreements for creator partnerships.",
+      },
+      {
+        question: "How does the onboarding process work?",
+        answer:
+          "After signing up, you\u2019ll go through a quick onboarding flow where you set your brand details, industry, and preferences. This takes about 2 minutes and helps Hudey tailor recommendations to your brand.",
+      },
+    ],
+  },
+  {
+    icon: Users,
+    title: "Creator Discovery",
+    description: "How Hudey finds and recommends creators for your brand.",
+    color: "#D16B42",
+    articles: [
+      {
+        question: "How does Hudey find creators?",
+        answer:
+          "Hudey analyses engagement rates, audience demographics, content authenticity, and brand alignment to surface creators whose followers match your target audience. We filter by sustainability categories and check content history for values alignment.",
+      },
+      {
+        question: "Can I filter creators by platform?",
+        answer:
+          "Yes. Hudey supports Instagram, TikTok, YouTube, and X. You can select specific platforms when creating a campaign, or target all platforms at once.",
+      },
+      {
+        question: "What does the follower range filter do?",
+        answer:
+          "You can set minimum and maximum follower counts to target the right tier \u2014 nano (1K\u201310K), micro (10K\u2013100K), mid-tier (100K\u2013500K), or macro (500K+). Micro and mid-tier creators often deliver the best engagement rates.",
+      },
+    ],
+  },
+  {
+    icon: Mail,
+    title: "Outreach & Messaging",
+    description: "Sending messages, managing replies, and follow-ups.",
+    color: "#8B5CF6",
+    articles: [
+      {
+        question: "Does Hudey send messages automatically?",
+        answer:
+          "Hudey drafts personalised messages for each creator, but you approve every message before it\u2019s sent. You can edit the draft, adjust the tone, or write your own. Nothing goes out without your sign-off.",
+      },
+      {
+        question: "How do I manage replies from creators?",
+        answer:
+          'All creator replies appear in your Outreach inbox. You can view conversations, send follow-ups, and update each creator\u2019s status (Negotiating, Agreed, Declined) from a single view.',
+      },
+      {
+        question: "Can I use my own message templates?",
+        answer:
+          "Yes. You can create, edit, and save message templates in the Outreach \u2192 Templates tab. Templates support variables like creator name and campaign details that get filled in automatically.",
+      },
+    ],
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics & Reporting",
+    description: "Track campaign performance and measure ROI.",
+    color: "#10B981",
+    articles: [
+      {
+        question: "What metrics does Hudey track?",
+        answer:
+          "Hudey tracks email delivery (sent, delivered, opened, clicked, bounced), engagement funnel (contacted \u2192 responded \u2192 negotiating \u2192 agreed), response rates by platform, budget utilisation, and content performance.",
+      },
+      {
+        question: "Can I export analytics reports?",
+        answer:
+          "Yes. You can export a PDF report from the Analytics page that includes all key metrics, charts, and campaign comparisons. The report is branded and ready to share with stakeholders.",
+      },
+    ],
+  },
+  {
+    icon: FileText,
+    title: "Contracts & Agreements",
+    description: "Create and manage creator contracts.",
+    color: "#F59E0B",
+    articles: [
+      {
+        question: "How do contracts work in Hudey?",
+        answer:
+          "You can create contract templates in the Contracts section with your standard terms \u2014 deliverables, timelines, usage rights, payment terms. When you reach agreement with a creator, Hudey can auto-generate a contract from your template pre-filled with the deal details.",
+      },
+      {
+        question: "Can I customise contract templates?",
+        answer:
+          "Yes. The contract editor supports full rich text editing with clause blocks, variables, and formatting. You can create multiple templates for different campaign types.",
+      },
+    ],
+  },
+  {
+    icon: Settings,
+    title: "Account & Settings",
+    description: "Manage your profile, team, and preferences.",
+    color: "#6B7280",
+    articles: [
+      {
+        question: "How do I update my brand profile?",
+        answer:
+          'Go to Settings from the left sidebar. You can update your brand name, company name, industry, and notification preferences. Changes save automatically.',
+      },
+      {
+        question: "How do I reset my password?",
+        answer:
+          'Click "Forgot?" on the login page and enter your email. You\u2019ll receive a password reset link. If you signed up with Google, you don\u2019t have a password to reset \u2014 just sign in with Google.',
+      },
+    ],
+  },
+  {
+    icon: CreditCard,
+    title: "Billing & Plans",
+    description: "Pricing, payments, and subscription management.",
+    color: "#EC4899",
+    articles: [
+      {
+        question: "How does pricing work?",
+        answer:
+          "Hudey uses per-campaign pricing. You pay when you launch a campaign. Founding cohort members get a locked-in rate that won\u2019t change as we scale. Visit our Pricing page for current plans.",
+      },
+      {
+        question: "What payment methods do you accept?",
+        answer:
+          "We accept all major credit and debit cards through our payment provider Paddle. You can manage your payment method and view invoices from Settings \u2192 Billing.",
+      },
+    ],
+  },
+];
+
+export default function HelpPage() {
+  const [search, setSearch] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(
+    "Getting Started"
+  );
+  const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
+
+  const query = search.toLowerCase().trim();
+
+  const filtered = query
+    ? categories
+        .map((cat) => ({
+          ...cat,
+          articles: cat.articles.filter(
+            (a) =>
+              a.question.toLowerCase().includes(query) ||
+              a.answer.toLowerCase().includes(query)
+          ),
+        }))
+        .filter((cat) => cat.articles.length > 0)
+    : categories;
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Nav */}
+      <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <HudeyLogo className="w-7 h-7" />
+            <span className="font-bold text-lg text-gray-900">Hudey</span>
+          </Link>
+          <Link
+            href="/"
+            className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+        </div>
+      </nav>
+
+      {/* Header + Search */}
+      <header className="pt-16 sm:pt-20 pb-10 px-5 sm:px-8 bg-gradient-to-b from-[#E8DCC8]/20 to-white">
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+            Help Center
+          </h1>
+          <p className="text-lg text-gray-600 mb-8">
+            Find answers to common questions about using Hudey.
+          </p>
+          <div className="relative max-w-lg mx-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search for help..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#2F4538]/20 focus:border-[#2F4538] transition-colors"
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* Categories + Articles */}
+      <main className="px-5 sm:px-8 pb-20">
+        <div className="max-w-3xl mx-auto space-y-4">
+          {filtered.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-gray-500 text-lg mb-2">
+                No results for &ldquo;{search}&rdquo;
+              </p>
+              <p className="text-gray-400 text-sm">
+                Try different keywords or{" "}
+                <Link href="/contact" className="text-[#2F4538] underline">
+                  contact support
+                </Link>
+                .
+              </p>
+            </div>
+          )}
+
+          {filtered.map((cat) => {
+            const Icon = cat.icon;
+            const isOpen = query ? true : expandedCategory === cat.title;
+
+            return (
+              <div
+                key={cat.title}
+                className="border-2 border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition-colors"
+              >
+                {/* Category header */}
+                <button
+                  onClick={() =>
+                    setExpandedCategory(isOpen && !query ? null : cat.title)
+                  }
+                  className="w-full flex items-center gap-4 p-5 sm:p-6 text-left hover:bg-gray-50/50 transition-colors"
+                >
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: cat.color }}
+                  >
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-bold text-gray-900">{cat.title}</h2>
+                    <p className="text-sm text-gray-500">{cat.description}</p>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Articles */}
+                {isOpen && (
+                  <div className="border-t border-gray-200">
+                    {cat.articles.map((article) => {
+                      const artKey = `${cat.title}-${article.question}`;
+                      const artOpen = expandedArticle === artKey;
+
+                      return (
+                        <div
+                          key={article.question}
+                          className="border-b border-gray-100 last:border-b-0"
+                        >
+                          <button
+                            onClick={() =>
+                              setExpandedArticle(artOpen ? null : artKey)
+                            }
+                            className="w-full flex items-center justify-between gap-4 px-5 sm:px-6 py-4 text-left hover:bg-gray-50/50 transition-colors"
+                          >
+                            <span className="text-sm font-medium text-gray-800">
+                              {article.question}
+                            </span>
+                            <ChevronDown
+                              className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
+                                artOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                          {artOpen && (
+                            <div className="px-5 sm:px-6 pb-4">
+                              <p className="text-sm text-gray-600 leading-relaxed">
+                                {article.answer}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* Contact CTA */}
+      <section className="px-5 sm:px-8 pb-20">
+        <div className="max-w-3xl mx-auto rounded-2xl bg-[#E8DCC8]/30 border-2 border-[#E8DCC8]/50 p-8 text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Still need help?
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Our team typically responds within 24 hours.
+          </p>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 bg-[#2F4538] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#1f2f26] transition-colors"
+          >
+            Contact Support
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 py-8 px-5 sm:px-8">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <HudeyLogo className="w-5 h-5" />
+            <span className="font-semibold text-sm text-gray-900">Hudey</span>
+          </div>
+          <div className="flex gap-6 text-sm text-gray-400">
+            <Link href="/about" className="hover:text-gray-700 transition-colors">About</Link>
+            <Link href="/blog" className="hover:text-gray-700 transition-colors">Blog</Link>
+            <Link href="/contact" className="hover:text-gray-700 transition-colors">Contact</Link>
+            <Link href="/privacy" className="hover:text-gray-700 transition-colors">Privacy</Link>
+          </div>
+          <p className="text-xs text-gray-400">
+            &copy; {new Date().getFullYear()} Hudey
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}

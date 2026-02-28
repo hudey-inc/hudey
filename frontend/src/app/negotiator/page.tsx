@@ -12,6 +12,7 @@ import {
   updateEngagementStatus,
 } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { captureError } from "@/lib/errors";
 import { SkeletonStatCardCompact, SkeletonEmptyCard } from "@/components/skeleton";
 import {
   Bot,
@@ -237,8 +238,8 @@ function CounterOfferPreview({
         proposed_terms: offer.proposed_terms,
       });
       onSent();
-    } catch {
-      // User can retry
+    } catch (err) {
+      captureError(err, { action: "sendCounter" });
     } finally {
       setSending(false);
     }
@@ -353,8 +354,8 @@ function NegotiatorReply({
       await replyToCreator(campaignId, creatorId, text.trim());
       setText("");
       onSent();
-    } catch {
-      // retry
+    } catch (err) {
+      captureError(err, { action: "startNegotiation" });
     } finally {
       setSending(false);
     }
@@ -436,8 +437,8 @@ function ActiveNegotiationCard({
       const result = await generateCounterOffer(campaignId, engagement.creator_id);
       setCounterOffer(result.counter_offer);
       setCounterScore(result.score);
-    } catch {
-      // retry
+    } catch (err) {
+      captureError(err, { action: "sendCounter" });
     } finally {
       setGenerating(false);
     }
@@ -449,8 +450,8 @@ function ActiveNegotiationCard({
       const terms = engagement.latest_proposal || engagement.terms || {};
       await acceptTerms(campaignId, engagement.creator_id, terms, true);
       onDataChange();
-    } catch {
-      // retry
+    } catch (err) {
+      captureError(err, { action: "acceptDeal" });
     } finally {
       setAccepting(false);
     }
@@ -461,8 +462,8 @@ function ActiveNegotiationCard({
     try {
       await updateEngagementStatus(campaignId, engagement.creator_id, "declined");
       onDataChange();
-    } catch {
-      // retry
+    } catch (err) {
+      captureError(err, { action: "rejectDeal" });
     } finally {
       setDeclining(false);
     }
@@ -1129,7 +1130,7 @@ export default function NegotiatorPage() {
     setLoading(true);
     getAggregateNegotiations()
       .then(setData)
-      .catch(() => {})
+      .catch((err) => captureError(err, { action: "negotiatorFetch" }))
       .finally(() => setLoading(false));
   }, [user, refreshKey]);
 

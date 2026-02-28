@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { AggregateOutreach, CreatorEngagement } from "@/lib/api";
 import { getAggregateOutreach, replyToCreator, updateEngagementStatus } from "@/lib/api";
 import { useRequireAuth } from "@/lib/useRequireAuth";
+import { trackOutreachReply, trackEngagementStatusChange } from "@/lib/analytics";
+import { captureError } from "@/lib/errors";
 import { SkeletonStatCardCompact, SkeletonEmptyCard } from "@/components/skeleton";
 import {
   Inbox,
@@ -22,7 +24,6 @@ import {
   Bot,
   Reply,
   ExternalLink,
-  Archive,
   Trash2,
   Paperclip,
   Tag,
@@ -31,7 +32,7 @@ import {
 
 // ── Types ────────────────────────────────────────────────────
 
-type TabKey = "inbox" | "sent" | "sequences" | "templates" | "analytics";
+type TabKey = "inbox" | "sent" | "templates" | "analytics";
 type FilterKey = "all" | "unread" | "starred" | "important";
 
 type Template = {
@@ -195,10 +196,11 @@ function ReplyComposer({
     setSending(true);
     try {
       await replyToCreator(campaignId, creatorId, text.trim());
+      trackOutreachReply();
       setText("");
       onSent();
-    } catch {
-      // retry
+    } catch (err) {
+      captureError(err, { action: "outreachReply" });
     } finally {
       setSending(false);
     }
@@ -258,9 +260,10 @@ function StatusActions({
     setUpdating(newStatus);
     try {
       await updateEngagementStatus(campaignId, creatorId, newStatus);
+      trackEngagementStatusChange(newStatus as "negotiating" | "agreed" | "declined");
       onUpdated();
-    } catch {
-      // retry
+    } catch (err) {
+      captureError(err, { action: "updateEngagementStatus" });
     } finally {
       setUpdating(null);
     }
@@ -623,7 +626,6 @@ export default function OutreachPage() {
   const tabs: { key: TabKey; label: string; count?: number }[] = [
     { key: "inbox", label: "Inbox", count: unreadCount },
     { key: "sent", label: "Sent" },
-    { key: "sequences", label: "Sequences" },
     { key: "templates", label: "Templates" },
     { key: "analytics", label: "Analytics" },
   ];
@@ -838,17 +840,6 @@ export default function OutreachPage() {
                             <div className="text-xs text-gray-400 mt-1">{formatTime(selectedMessage.timestamp)}</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Star className="w-4 h-4 text-gray-400" />
-                          </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Archive className="w-4 h-4 text-gray-400" />
-                          </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4 text-gray-400" />
-                          </button>
-                        </div>
                       </div>
                       <div className="text-xl font-semibold text-gray-900 mb-2">{selectedMessage.subject}</div>
                       <div className="flex items-center gap-3 flex-wrap">
@@ -940,9 +931,6 @@ export default function OutreachPage() {
                               >
                                 Open in Negotiator
                               </Link>
-                              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white font-medium text-sm transition-colors">
-                                Write Custom Reply
-                              </button>
                             </div>
                           </div>
                         </div>
@@ -1141,23 +1129,6 @@ export default function OutreachPage() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ─── Sequences Tab ─────────────────────────────── */}
-          {selectedTab === "sequences" && (
-            <div className="flex flex-col items-center justify-center py-16 sm:py-24">
-              <div className="w-16 h-16 rounded-2xl bg-[#2F4538]/10 flex items-center justify-center mb-5">
-                <Mail className="w-8 h-8 text-[#2F4538]" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Sequences Coming Soon</h2>
-              <p className="text-sm text-gray-500 max-w-md text-center leading-relaxed">
-                Automated multi-step follow-up sequences for influencer outreach.
-                Set triggers, delays, and conditions to nurture creator relationships on autopilot.
-              </p>
-              <span className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
-                In Development
-              </span>
             </div>
           )}
 

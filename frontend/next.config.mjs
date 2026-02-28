@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
@@ -34,11 +36,11 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.paddle.com https://*.profitwell.com https://*.googletagmanager.com https://*.google-analytics.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.paddle.com https://*.profitwell.com https://*.googletagmanager.com https://*.google-analytics.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live https://*.sentry.io",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.paddle.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://*.profitwell.com https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live wss://vercel.live https://*.hudey.co https://*.up.railway.app",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://*.profitwell.com https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.vercel-insights.com https://*.vercel-scripts.com https://vercel.live wss://vercel.live https://*.hudey.co https://*.up.railway.app https://*.sentry.io https://*.ingest.sentry.io",
               "frame-src 'self' https://*.paddle.com https://vercel.live",
               "frame-ancestors 'self'",
               "object-src 'none'",
@@ -52,4 +54,14 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Sentry build-time options — only active when SENTRY_AUTH_TOKEN is set
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI, // Suppress logs in local dev
+
+  // Runtime options
+  widenClientFileUpload: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+});

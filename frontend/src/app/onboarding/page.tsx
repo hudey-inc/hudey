@@ -6,6 +6,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { getBrand, updateBrand } from "@/lib/api";
 import type { Brand } from "@/lib/api";
 import { INDUSTRY_OPTIONS } from "@/lib/constants";
+import { captureError } from "@/lib/errors";
 import { HudeyLogo } from "@/components/hudey-logo";
 import { Building2, Briefcase, Mail, ArrowRight, Loader2, AlertTriangle } from "lucide-react";
 
@@ -78,8 +79,8 @@ export default function OnboardingPage() {
       // Pre-fill form
       setBrandName(b.name || "");
       setIndustry(b.industry || "");
-    } catch {
-      // Brand fetch failed — will show empty form
+    } catch (err) {
+      captureError(err, { action: "completeOnboarding" });
     } finally {
       setBrandLoading(false);
     }
