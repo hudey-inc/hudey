@@ -16,24 +16,24 @@ export const metadata: Metadata = {
 const channels = [
   {
     icon: Mail,
-    title: "Email Us",
-    description: "For general enquiries, partnerships, or press.",
+    title: "General Enquiries",
+    description: "Questions about the platform, partnerships, or press.",
     value: "hello@hudey.co",
     href: "mailto:hello@hudey.co",
     color: "#2F4538",
   },
   {
     icon: MessageSquare,
-    title: "Support",
-    description: "Need help with your account or a campaign?",
+    title: "Campaign Support",
+    description: "Need help with your account, a campaign, or a creator issue?",
     value: "support@hudey.co",
     href: "mailto:support@hudey.co",
     color: "#D16B42",
   },
   {
     icon: Clock,
-    title: "Response Time",
-    description: "We respond to all enquiries within one business day.",
+    title: "We Reply Fast",
+    description: "Every message gets a response within one business day.",
     value: "< 24 hours",
     href: null,
     color: "#8B5CF6",
@@ -42,7 +42,7 @@ const channels = [
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Nav */}
       <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
@@ -67,8 +67,8 @@ export default function ContactPage() {
             Get in touch
           </h1>
           <p className="text-lg text-gray-600 max-w-xl mx-auto">
-            Whether you&apos;re interested in joining our founding cohort,
-            have a question about the platform, or just want to say hello.
+            Want to join our founding cohort, ask about a feature, or report
+            an issue? We&apos;d love to hear from you.
           </p>
         </div>
       </header>
@@ -109,11 +109,11 @@ export default function ContactPage() {
       <section className="px-5 sm:px-8 pb-20">
         <div className="max-w-3xl mx-auto rounded-2xl bg-[#E8DCC8]/30 border-2 border-[#E8DCC8]/50 p-8 sm:p-10 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Looking for quick answers?
+            Need a quick answer?
           </h2>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Check our Help Center for guides on getting started, managing
-            campaigns, and common questions.
+            Our Help Center has step-by-step guides for getting started,
+            running campaigns, and managing your account.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link

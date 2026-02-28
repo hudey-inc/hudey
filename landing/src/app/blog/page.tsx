@@ -23,7 +23,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Nav */}
       <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
@@ -48,8 +48,8 @@ export default function BlogPage() {
             Blog
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl">
-            Insights on influencer marketing, sustainable brand growth, and
-            product updates from the Hudey team.
+            Practical guides, industry insights, and product updates
+            for sustainable brands running influencer campaigns.
           </p>
         </div>
       </header>

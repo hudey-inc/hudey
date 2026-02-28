@@ -39,17 +39,17 @@ const categories: HelpCategory[] = [
       {
         question: "How do I create my first campaign?",
         answer:
-          'After signing in, click "New Campaign" from your dashboard. Fill in your brand brief \u2014 your goals, target audience, budget, and deliverables \u2014 and Hudey will start matching you with creators. You can also use one of our pre-built templates to get started faster.',
+          'Sign in, click "New Campaign" on your dashboard, and fill in the basics: what you\u2019re promoting, who you want to reach, your budget, and what you need from creators (e.g. 1 Reel + 2 Stories). Hudey will start finding matching creators. You can also pick a pre-built template to skip the setup.',
       },
       {
         question: "What do I need to set up before launching?",
         answer:
-          "Complete your brand profile in Settings (brand name, industry, values) and optionally upload a contract template. This lets Hudey personalise outreach and auto-generate agreements for creator partnerships.",
+          "Just your brand profile in Settings \u2014 your brand name, industry, and the sustainability values you care about. You can also upload a contract template if you want Hudey to auto-generate agreements when you sign a creator.",
       },
       {
-        question: "How does the onboarding process work?",
+        question: "How long does onboarding take?",
         answer:
-          "After signing up, you\u2019ll go through a quick onboarding flow where you set your brand details, industry, and preferences. This takes about 2 minutes and helps Hudey tailor recommendations to your brand.",
+          "About 2 minutes. After signing up, you\u2019ll answer a few questions about your brand, industry, and campaign preferences. This helps Hudey recommend the right creators from your very first campaign.",
       },
     ],
   },
@@ -62,7 +62,7 @@ const categories: HelpCategory[] = [
       {
         question: "How does Hudey find creators?",
         answer:
-          "Hudey analyses engagement rates, audience demographics, content authenticity, and brand alignment to surface creators whose followers match your target audience. We filter by sustainability categories and check content history for values alignment.",
+          "Hudey looks at each creator\u2019s engagement rate, who their followers are (age, location, interests), how authentic their audience is, and whether their content aligns with your brand\u2019s sustainability values. You only see creators who are a genuine match.",
       },
       {
         question: "Can I filter creators by platform?",
@@ -72,7 +72,7 @@ const categories: HelpCategory[] = [
       {
         question: "What does the follower range filter do?",
         answer:
-          "You can set minimum and maximum follower counts to target the right tier \u2014 nano (1K\u201310K), micro (10K\u2013100K), mid-tier (100K\u2013500K), or macro (500K+). Micro and mid-tier creators often deliver the best engagement rates.",
+          "It lets you choose the size of creators you want to work with. Set a minimum and maximum follower count to target nano (1K\u201310K), micro (10K\u2013100K), mid-tier (100K\u2013500K), or macro (500K+) creators. Smaller creators often get better engagement because their audiences are more trusting.",
       },
     ],
   },
@@ -83,9 +83,9 @@ const categories: HelpCategory[] = [
     color: "#8B5CF6",
     articles: [
       {
-        question: "Does Hudey send messages automatically?",
+        question: "Does Hudey send messages without me seeing them?",
         answer:
-          "Hudey drafts personalised messages for each creator, but you approve every message before it\u2019s sent. You can edit the draft, adjust the tone, or write your own. Nothing goes out without your sign-off.",
+          "No. Hudey writes a personalised draft for each creator, but you see and approve every message before it\u2019s sent. You can edit the wording, change the tone, or rewrite it completely. Nothing goes out until you say so.",
       },
       {
         question: "How do I manage replies from creators?",
@@ -108,7 +108,7 @@ const categories: HelpCategory[] = [
       {
         question: "What metrics does Hudey track?",
         answer:
-          "Hudey tracks email delivery (sent, delivered, opened, clicked, bounced), engagement funnel (contacted \u2192 responded \u2192 negotiating \u2192 agreed), response rates by platform, budget utilisation, and content performance.",
+          "You can see how many outreach emails were sent, opened, and clicked. Your engagement funnel shows how creators move from contacted to responded to negotiating to signed. You also get response rates by platform, how much of your budget you\u2019ve used, and content performance once campaigns go live.",
       },
       {
         question: "Can I export analytics reports?",
@@ -126,7 +126,7 @@ const categories: HelpCategory[] = [
       {
         question: "How do contracts work in Hudey?",
         answer:
-          "You can create contract templates in the Contracts section with your standard terms \u2014 deliverables, timelines, usage rights, payment terms. When you reach agreement with a creator, Hudey can auto-generate a contract from your template pre-filled with the deal details.",
+          "You create a contract template once with your standard terms \u2014 what the creator needs to deliver, deadlines, content usage rights, and payment details. When you agree a deal with a creator, Hudey fills in the specifics automatically and generates a ready-to-sign contract.",
       },
       {
         question: "Can I customise contract templates?",
@@ -162,7 +162,7 @@ const categories: HelpCategory[] = [
       {
         question: "How does pricing work?",
         answer:
-          "Hudey uses per-campaign pricing. You pay when you launch a campaign. Founding cohort members get a locked-in rate that won\u2019t change as we scale. Visit our Pricing page for current plans.",
+          "You pay per campaign, not per month. There are no subscriptions or hidden fees \u2014 you\u2019re only charged when you launch a campaign. Founding cohort members get a locked-in rate of \u00a3250/campaign that won\u2019t increase. Visit our Pricing page for full details.",
       },
       {
         question: "What payment methods do you accept?",
@@ -196,7 +196,7 @@ export default function HelpPage() {
     : categories;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Nav */}
       <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
@@ -221,7 +221,7 @@ export default function HelpPage() {
             Help Center
           </h1>
           <p className="text-lg text-gray-600 mb-8">
-            Find answers to common questions about using Hudey.
+            Step-by-step answers to help you get the most out of Hudey.
           </p>
           <div className="relative max-w-lg mx-auto">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

@@ -19,37 +19,37 @@ export const metadata: Metadata = {
 const values = [
   {
     icon: Heart,
-    title: "Values-First",
+    title: "Your Values, Protected",
     description:
-      "We believe every partnership should reflect your brand\u2019s principles. That\u2019s why values alignment is at the core of everything we build.",
+      "Every creator recommendation is checked against your brand\u2019s sustainability standards. No more accidental partnerships that undermine your message.",
     color: "#D16B42",
   },
   {
     icon: Shield,
-    title: "Human in the Loop",
+    title: "You Stay in Control",
     description:
-      "AI handles the heavy lifting, but you make the decisions. Every message, every offer, every partnership is approved by you.",
+      "AI does the research, writes the outreach, and suggests deals. But you approve every message, every offer, and every partnership before anything happens.",
     color: "#2F4538",
   },
   {
     icon: Target,
-    title: "Built for Focus",
+    title: "Built Only for Sustainable Brands",
     description:
-      "We\u2019re not trying to serve everyone. We\u2019re building the best influencer marketing tool for brands that genuinely care about sustainability.",
+      "We don\u2019t serve fast fashion or mass-market DTC. Hudey is designed specifically for eco, ethical, and wellness brands who need creator vetting they can trust.",
     color: "#8B5CF6",
   },
   {
     icon: Zap,
-    title: "Speed Without Shortcuts",
+    title: "Weeks of Work in Hours",
     description:
-      "What takes weeks manually takes hours with Hudey. But we never sacrifice quality — every recommendation is vetted, every message is personalised.",
+      "Go from campaign brief to signed creators in under 48 hours. Every creator is still vetted, every message is still personalised — it just happens faster.",
     color: "#10B981",
   },
 ];
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Nav */}
       <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
@@ -71,14 +71,13 @@ export default function AboutPage() {
       <header className="pt-16 sm:pt-20 pb-12 px-5 sm:px-8 bg-gradient-to-b from-[#E8DCC8]/20 to-white">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-            Smarter campaigns for brands that{" "}
-            <span className="text-[#2F4538]">care</span>
+            Influencer marketing that{" "}
+            <span className="text-[#2F4538]">matches your mission</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-            Hudey is an AI-powered influencer marketing platform built
-            specifically for sustainable brands. We automate the work so you
-            can focus on what matters&mdash;building genuine partnerships that
-            reflect your values.
+            Hudey helps sustainable brands find, contact, and sign the right
+            creators&mdash;without spending weeks on manual research, outreach,
+            and negotiation.
           </p>
         </div>
       </header>
@@ -91,26 +90,26 @@ export default function AboutPage() {
           </h2>
           <div className="prose prose-lg prose-gray max-w-none prose-p:text-gray-700 prose-p:leading-relaxed">
             <p>
-              Influencer marketing works. But for sustainable brands, the
-              process is broken. Discovery tools don&apos;t filter by values.
-              Outreach is manual and repetitive. Negotiations happen in
-              scattered DMs. And by the time you&apos;ve launched a campaign,
-              you&apos;ve spent more hours on coordination than strategy.
+              Influencer marketing works. But if you run a sustainable brand,
+              the process is painful. Most discovery tools don&apos;t let you
+              filter by values. Outreach means copy-pasting the same DM dozens
+              of times. Negotiations drag on across email, Instagram, and
+              WhatsApp. By the time you&apos;ve signed one creator, you&apos;ve
+              burned half your budget on coordination.
             </p>
             <p>
-              We built Hudey because we believe sustainable brands deserve
-              better tooling. Not a generic platform that treats eco-friendly
-              skincare the same as fast fashion&mdash;but a purpose-built system
-              that understands vetting isn&apos;t optional, that values
-              alignment matters, and that your time is better spent on
-              creative direction than copy-pasting DMs.
+              We built Hudey because sustainable brands shouldn&apos;t have to
+              choose between growing through creators and protecting their
+              brand. You need a tool that understands why vetting matters, that
+              checks a creator&apos;s content history before you reach out, and
+              that frees you up to focus on creative direction instead of admin.
             </p>
             <p>
-              Hudey uses AI to handle the repetitive work&mdash;finding creators,
-              writing personalised outreach, negotiating fair terms, tracking
-              deliverables&mdash;while keeping you in control of every decision.
-              You approve every message. You sign off on every partnership. The
-              AI works for you, not the other way around.
+              Hudey uses AI to find the right creators, write personalised
+              outreach, negotiate fair rates, and track every
+              deliverable&mdash;while you stay in control of every decision.
+              You approve every message. You sign off on every partnership.
+              Nothing happens without you.
             </p>
           </div>
         </div>
@@ -121,10 +120,10 @@ export default function AboutPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              What we stand for
+              How we build Hudey
             </h2>
             <p className="text-lg text-gray-600">
-              The principles that guide how we build Hudey.
+              The principles behind every feature and decision.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -160,8 +159,8 @@ export default function AboutPage() {
               Join the founding cohort
             </h2>
             <p className="text-[#E8DCC8]/80 text-lg mb-8 max-w-md mx-auto">
-              We&apos;re working with a small group of UK sustainable brands to
-              build Hudey together.
+              10 spots for UK sustainable brands who want better influencer
+              campaigns without the manual work.
             </p>
             <a
               href={`${APP_URL}/signup`}

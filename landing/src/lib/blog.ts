@@ -25,98 +25,98 @@ export function getCategoryLabel(category: BlogPost["category"]): string {
 export const posts: BlogPost[] = [
   {
     slug: "introducing-hudey",
-    title: "Introducing Hudey: AI-Powered Influencer Marketing for Sustainable Brands",
+    title: "Introducing Hudey: Find, Contact, and Sign Creators Without the Busywork",
     description:
-      "We built Hudey because sustainable brands deserve better tools. Here\u2019s why we started and what\u2019s coming next.",
+      "We built Hudey to help sustainable brands run influencer campaigns in hours, not weeks. Here\u2019s the problem we\u2019re solving and what\u2019s live now.",
     date: "2026-02-28",
     category: "product",
     readTime: "4 min read",
     content: `
-      <p>Running influencer campaigns as a sustainable brand shouldn\u2019t mean choosing between your values and your growth targets. But for most teams, that\u2019s exactly the trade-off.</p>
+      <p>If you run a sustainable brand, you already know influencer marketing works. The problem is everything around it: finding creators who share your values, writing dozens of personalised messages, negotiating rates over email and DMs, and tracking results across spreadsheets.</p>
 
-      <p>Discovery takes weeks. Outreach is manual and repetitive. Negotiations stall in DMs. And by the time you\u2019ve signed a creator, you\u2019ve burned through half your budget on coordination alone.</p>
+      <p>Most teams spend 15\u201320 hours a week just on coordination. By the time you\u2019ve signed one creator, you\u2019ve burned through half your budget on admin.</p>
 
       <h2>Why We Built Hudey</h2>
 
-      <p>We started Hudey after watching brand teams spend 15\u201320 hours a week on tasks that should take minutes. The problem wasn\u2019t a lack of talent\u2014it was a lack of tooling designed for how modern influencer marketing actually works.</p>
+      <p>We started Hudey because sustainable brands shouldn\u2019t need a full-time coordinator to run a single influencer campaign. The problem isn\u2019t your team\u2014it\u2019s that the tools weren\u2019t built for how creator marketing actually works today.</p>
 
-      <p>So we built an AI agent that handles the heavy lifting: finding the right creators, writing personalised outreach, negotiating fair deals, and tracking every result. You stay in control\u2014you approve every message, every offer, every partnership\u2014but you stop doing the busywork.</p>
+      <p>Hudey is an AI-powered platform that handles the repetitive parts: finding creators who fit your brand, writing a unique outreach message for each one, negotiating fair rates, and tracking every deliverable. You stay in control\u2014you approve every message and sign off on every deal\u2014but you stop doing the busywork.</p>
 
-      <h2>What\u2019s Live Now</h2>
+      <h2>What You Can Do Today</h2>
 
       <ul>
-        <li><strong>AI-Powered Discovery</strong> \u2014 Surface creators matched on engagement data, audience overlap, and brand alignment</li>
-        <li><strong>Smart Outreach</strong> \u2014 Personalised messages drafted for each creator, approved by you before sending</li>
-        <li><strong>Negotiation Agent</strong> \u2014 Counter-offers, deal terms, and contract generation handled automatically</li>
-        <li><strong>Campaign Analytics</strong> \u2014 Real-time tracking of deliverables, engagement, and ROI</li>
+        <li><strong>Find Matching Creators</strong> \u2014 Search by engagement rate, audience demographics, niche, and sustainability values</li>
+        <li><strong>Send Personalised Outreach</strong> \u2014 AI writes a unique message for each creator. You review and approve before anything sends</li>
+        <li><strong>Negotiate Deals Automatically</strong> \u2014 Hudey handles counter-offers, deal terms, and contract generation</li>
+        <li><strong>Track Campaign Results</strong> \u2014 See responses, signed deals, spend, and ROI in a live dashboard</li>
       </ul>
 
-      <h2>What\u2019s Next</h2>
+      <h2>What\u2019s Coming Next</h2>
 
-      <p>We\u2019re working with our founding cohort of UK sustainable brands to refine every part of the experience. If you\u2019re running influencer campaigns and want a smarter way to do it, we\u2019d love to hear from you.</p>
+      <p>We\u2019re working with our founding cohort of UK sustainable brands to improve every part of the experience. If you\u2019re spending too much time on influencer coordination and want a faster way to run campaigns, we\u2019d love to hear from you.</p>
     `,
   },
   {
     slug: "why-sustainable-brands-need-better-influencer-tools",
-    title: "Why Sustainable Brands Need Better Influencer Marketing Tools",
+    title: "Why Generic Influencer Platforms Don\u2019t Work for Sustainable Brands",
     description:
-      "Generic platforms don\u2019t account for values alignment. Here\u2019s what\u2019s different when your brand actually stands for something.",
+      "Most creator tools sort by follower count and engagement rate. They don\u2019t check if a creator promoted fast fashion last week. Here\u2019s what sustainable brands actually need.",
     date: "2026-02-25",
     category: "industry",
     readTime: "5 min read",
     content: `
-      <p>The influencer marketing industry is worth over \u00a315 billion globally. But most of the tooling was built for fast fashion, supplement brands, and mass-market DTC\u2014not for brands that care about where their products come from and who represents them.</p>
+      <p>Influencer marketing is a \u00a315 billion industry. But almost every tool on the market was designed for mass-market DTC brands, supplement companies, and fast fashion\u2014not for brands that actually care about who represents them.</p>
 
-      <h2>The Values Alignment Problem</h2>
+      <h2>The Wrong Creator Is a Brand Risk</h2>
 
-      <p>When you\u2019re a sustainable brand, choosing the wrong creator isn\u2019t just a wasted campaign\u2014it\u2019s a brand risk. A creator who promotes fast fashion one week and your eco-friendly line the next undermines your entire message.</p>
+      <p>When you\u2019re a sustainable brand, partnering with the wrong creator isn\u2019t just a wasted budget\u2014it\u2019s a reputation problem. If a creator promotes fast fashion one week and your eco-friendly line the next, your audience notices. And they stop trusting you.</p>
 
-      <p>Generic discovery tools sort by follower count and engagement rate. They don\u2019t filter by content history, values alignment, or audience authenticity. That leaves your team doing manual vetting\u2014scrolling through months of posts to check if a creator actually lives the values they\u2019d be promoting.</p>
+      <p>Most discovery tools sort by follower count and engagement rate. They don\u2019t check a creator\u2019s past partnerships, flag fake followers, or tell you whether their content actually aligns with sustainability. That means your team is stuck manually scrolling through months of posts to vet each creator before you even reach out.</p>
 
-      <h2>What Better Tooling Looks Like</h2>
+      <h2>What Sustainable Brands Actually Need</h2>
 
-      <p>The right platform for sustainable brands needs to understand that vetting isn\u2019t optional\u2014it\u2019s the entire point. That means:</p>
+      <p>For eco, ethical, and wellness brands, vetting isn\u2019t a nice-to-have\u2014it\u2019s the whole point. The right platform should handle:</p>
 
       <ul>
-        <li><strong>Content history analysis</strong> \u2014 Checking past partnerships and brand associations automatically</li>
-        <li><strong>Audience authenticity scoring</strong> \u2014 Filtering out inflated follower counts and bot engagement</li>
-        <li><strong>Values-based matching</strong> \u2014 Surfacing creators whose content genuinely aligns with sustainability</li>
-        <li><strong>Human-in-the-loop approval</strong> \u2014 AI handles the research, but you make the final call</li>
+        <li><strong>Past partnership checks</strong> \u2014 Automatically reviewing a creator\u2019s brand history for conflicts</li>
+        <li><strong>Fake follower detection</strong> \u2014 Filtering out inflated audiences and bot engagement</li>
+        <li><strong>Sustainability matching</strong> \u2014 Only recommending creators whose content genuinely reflects your values</li>
+        <li><strong>Your final approval</strong> \u2014 AI does the research, but you decide who makes the cut</li>
       </ul>
 
-      <p>That\u2019s the approach we\u2019re taking with Hudey. Every recommendation is vetted, every message is approved by you, and every partnership reflects your brand\u2019s actual values.</p>
+      <p>That\u2019s exactly how Hudey works. Every creator recommendation is vetted, every outreach message is approved by you, and every partnership reflects what your brand actually stands for.</p>
     `,
   },
   {
     slug: "5-mistakes-first-influencer-campaign",
-    title: "5 Mistakes Brands Make on Their First Influencer Campaign",
+    title: "5 Mistakes That Waste Budget on Your First Influencer Campaign",
     description:
-      "From overpaying for reach to skipping contracts, here are the most common pitfalls and how to avoid them.",
+      "Overpaying for followers, sending generic DMs, and skipping contracts. Here are the pitfalls first-time brands hit and how to avoid each one.",
     date: "2026-02-20",
     category: "guide",
     readTime: "6 min read",
     content: `
-      <p>Your first influencer campaign is exciting\u2014and it\u2019s where most brands learn the hard way. Here are the five mistakes we see most often, and what to do instead.</p>
+      <p>Your first influencer campaign is exciting\u2014and it\u2019s where most brands waste the most money. Here are the five mistakes we see again and again, and what to do instead.</p>
 
-      <h2>1. Prioritising Follower Count Over Engagement</h2>
+      <h2>1. Paying for Followers Instead of Engagement</h2>
 
-      <p>A creator with 500K followers and 0.5% engagement will almost always underperform one with 50K followers and 5% engagement. Micro and mid-tier creators consistently deliver better ROI because their audiences are more engaged and trusting.</p>
+      <p>A creator with 500K followers and 0.5% engagement will almost always underperform one with 50K followers and 5% engagement. Smaller creators get better results because their audiences actually trust them. Focus on engagement rate and audience quality, not vanity metrics.</p>
 
-      <h2>2. Sending Generic Outreach</h2>
+      <h2>2. Sending the Same DM to Every Creator</h2>
 
-      <p>Creators receive dozens of brand pitches weekly. A templated message that could be sent to anyone will be ignored. Personalisation\u2014referencing specific content, explaining why <em>this</em> creator fits <em>your</em> brand\u2014is what gets responses.</p>
+      <p>Creators get dozens of brand pitches every week. A generic message that could be sent to anyone gets ignored. The outreach messages that get replies reference the creator\u2019s specific content and explain exactly why they\u2019re a fit for your brand.</p>
 
-      <h2>3. Skipping the Contract</h2>
+      <h2>3. Agreeing to a Deal Without a Contract</h2>
 
-      <p>A handshake deal in the DMs isn\u2019t a contract. Without clear terms on deliverables, timelines, usage rights, and payment, you\u2019re setting yourself up for disputes. Always formalise the agreement, even for gifted collaborations.</p>
+      <p>A handshake deal over DMs is not a contract. Without written terms covering deliverables, deadlines, content usage rights, and payment, you\u2019re setting yourself up for disputes. Put it in writing, even for gifted collaborations.</p>
 
-      <h2>4. Not Defining Success Metrics Upfront</h2>
+      <h2>4. Not Deciding What \u201CSuccess\u201D Means Before You Start</h2>
 
-      <p>If you don\u2019t know what success looks like before the campaign starts, you can\u2019t measure it afterward. Define your KPIs\u2014whether that\u2019s reach, engagement, click-throughs, or conversions\u2014and make sure your tracking is in place.</p>
+      <p>If you don\u2019t define what a successful campaign looks like upfront, you can\u2019t measure it after. Decide what matters most\u2014reach, engagement, website clicks, or sales\u2014and make sure your tracking is set up before the first post goes live.</p>
 
-      <h2>5. Trying to Manage Everything Manually</h2>
+      <h2>5. Running Everything from Spreadsheets and DMs</h2>
 
-      <p>Spreadsheets and DMs don\u2019t scale. By your third campaign, you\u2019ll be drowning in threads, missed follow-ups, and scattered data. Invest in proper tooling early\u2014your future self will thank you.</p>
+      <p>Spreadsheets and scattered DMs don\u2019t scale. By your third campaign, you\u2019ll be drowning in message threads, missed follow-ups, and data you can\u2019t find. Use a purpose-built tool from the start\u2014your future self will thank you.</p>
     `,
   },
 ];

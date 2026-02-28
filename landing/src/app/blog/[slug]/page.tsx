@@ -39,7 +39,7 @@ export default function BlogPostPage({ params }: Props) {
   if (!post) notFound();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Nav */}
       <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
@@ -105,16 +105,17 @@ export default function BlogPostPage({ params }: Props) {
           {/* CTA */}
           <div className="mt-16 rounded-2xl bg-gradient-to-br from-[#2F4538] to-[#3a5745] p-8 sm:p-10 text-center">
             <h3 className="text-2xl font-bold text-white mb-3">
-              Ready to run smarter campaigns?
+              Stop spending weeks on influencer admin
             </h3>
             <p className="text-[#E8DCC8]/80 mb-6 max-w-md mx-auto">
-              Join our founding cohort and let Hudey handle the heavy lifting.
+              Hudey finds creators, writes outreach, and negotiates deals.
+              You approve everything.
             </p>
             <a
               href="https://app.hudey.co/signup"
               className="inline-flex items-center gap-2 bg-white text-[#2F4538] px-8 py-3 rounded-full font-semibold hover:bg-[#E8DCC8] transition-colors"
             >
-              Get Started Free
+              Apply for Early Access
             </a>
           </div>
 

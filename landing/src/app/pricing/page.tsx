@@ -13,23 +13,23 @@ const APP_URL = "https://app.hudey.co";
 const plans = [
   {
     name: "Starter",
-    description: "Run your first AI-powered campaign",
+    description: "Perfect for your first influencer campaign",
     price: "£750",
     period: "/campaign",
     cta: "Apply for Early Access",
     ctaHref: `${APP_URL}/signup`,
     highlight: false,
     features: [
-      "Up to 25 creator outreaches",
-      "AI creator discovery",
-      "AI-written outreach emails",
-      "Basic analytics dashboard",
+      "Contact up to 25 creators",
+      "AI finds matching creators for you",
+      "Personalised outreach emails written by AI",
+      "Campaign dashboard with key metrics",
       "Email support",
     ],
   },
   {
     name: "Growth",
-    description: "For brands scaling their influencer programmes",
+    description: "For brands running multiple campaigns a quarter",
     price: "£1,500",
     period: "/campaign",
     cta: "Apply for Early Access",
@@ -37,18 +37,18 @@ const plans = [
     highlight: true,
     badge: "Most Popular",
     features: [
-      "Up to 100 creator outreaches",
-      "AI creator discovery & vetting",
-      "AI-written personalised outreach",
-      "AI-powered negotiation",
-      "Campaign performance tracking",
-      "Advanced analytics & reporting",
+      "Contact up to 100 creators",
+      "AI creator discovery with values vetting",
+      "Personalised outreach for every creator",
+      "AI handles rate negotiation for you",
+      "Live campaign performance tracking",
+      "Exportable analytics reports",
       "Priority email support",
     ],
   },
   {
     name: "Scale",
-    description: "Full-service campaigns with dedicated support",
+    description: "For teams running campaigns across multiple brands",
     price: "£3,000",
     period: "/campaign",
     cta: "Apply for Early Access",
@@ -56,18 +56,18 @@ const plans = [
     highlight: false,
     features: [
       "Everything in Growth",
-      "Unlimited outreaches",
-      "Custom AI negotiation rules",
-      "White-label reports",
+      "Unlimited creator outreach",
+      "Custom negotiation rules and rate limits",
+      "White-label reports with your branding",
       "Dedicated account manager",
-      "Slack & webhook integrations",
+      "Slack and webhook integrations",
     ],
   },
 ];
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -93,7 +93,7 @@ export default function PricingPage() {
             Pay per campaign, not per month
           </h1>
           <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-            No subscriptions, no hidden fees. You only pay when you launch a campaign.
+            No monthly subscriptions. No hidden fees. You pay once when you launch a campaign.
           </p>
         </div>
       </section>
@@ -196,27 +196,27 @@ export default function PricingPage() {
             {[
               {
                 q: "How does per-campaign pricing work?",
-                a: "You pay once when you launch a campaign. The price depends on the tier you choose, which determines the number of creator outreaches and features included. No recurring charges.",
+                a: "You pay a one-time fee when you launch a campaign. The price depends on the tier you choose, which sets how many creators you can contact and which features you get. There are no recurring charges or subscriptions.",
               },
               {
                 q: "What is the founding cohort rate?",
-                a: "Our first 10 brands pay just £250 per campaign — regardless of tier. This rate is locked in for as long as you remain in the cohort.",
+                a: "Our first 10 brands pay just £250 per campaign, regardless of which tier they pick. This rate stays locked in for as long as you're part of the founding cohort — it won't go up as we grow.",
               },
               {
-                q: "Can I run multiple campaigns?",
-                a: "Yes. Each campaign is priced independently. Run as many as you need, when you need them.",
+                q: "Can I run multiple campaigns at once?",
+                a: "Yes. Each campaign is priced separately. Launch as many as you need, whenever you need them.",
               },
               {
-                q: "What is your refund policy?",
-                a: "We offer a 30-day money-back guarantee on all purchases. If you're not satisfied, contact us for a full refund within 30 days of your purchase.",
+                q: "What if I'm not happy — can I get a refund?",
+                a: "Yes. We offer a 30-day money-back guarantee on every campaign purchase. If you're not satisfied, email us within 30 days for a full refund.",
               },
               {
-                q: "Who processes payments?",
-                a: "All payments are securely processed by Paddle, our Merchant of Record. Paddle handles billing, taxes, and compliance so you don't have to worry about anything.",
+                q: "How are payments processed?",
+                a: "All payments go through Paddle, a trusted payment provider that handles billing, VAT, and compliance. Your card details are never stored on our servers.",
               },
               {
                 q: "How do I join the founding cohort?",
-                a: "Apply for early access and we'll review your brand. We're specifically looking for UK-based sustainable brands for our founding group.",
+                a: "Click 'Apply for Early Access' and tell us about your brand. We're looking for UK-based sustainable brands who are actively running or planning influencer campaigns.",
               },
             ].map((faq) => (
               <details
