@@ -742,79 +742,80 @@ export default function LandingPage() {
         {/* Footer */}
         <footer className="border-t border-white/10 px-5 sm:px-8 py-8 sm:py-10 relative z-10">
           <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-2">
-                <HudeyLogo className="w-6 h-6" bg="bg-white" fill="#111827" />
-                <span className="font-semibold text-white">Hudey</span>
-              </div>
-
-              <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-[#E8DCC8]/60 text-center">
-                <a
-                  href="#how-it-works"
-                  className="hover:text-white transition-colors"
-                >
-                  How It Works
-                </a>
-                <a
-                  href="#features"
-                  className="hover:text-white transition-colors"
-                >
-                  Features
-                </a>
-                <Link
-                  href="/pricing"
-                  className="hover:text-white transition-colors"
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/blog"
-                  className="hover:text-white transition-colors"
-                >
-                  Blog
-                </Link>
-                <Link
-                  href="/about"
-                  className="hover:text-white transition-colors"
-                >
-                  About
-                </Link>
-                <Link
-                  href="/contact"
-                  className="hover:text-white transition-colors"
-                >
-                  Contact
-                </Link>
-                <Link
-                  href="/help"
-                  className="hover:text-white transition-colors"
-                >
-                  Help
-                </Link>
-                <Link
-                  href="/terms"
-                  className="hover:text-white transition-colors"
-                >
-                  Terms
-                </Link>
-                <Link
-                  href="/privacy"
-                  className="hover:text-white transition-colors"
-                >
-                  Privacy
-                </Link>
-                <Link
-                  href="/refund"
-                  className="hover:text-white transition-colors"
-                >
-                  Refund Policy
-                </Link>
-              </div>
-
-              <p className="text-xs text-[#E8DCC8]/40">
-                &copy; {new Date().getFullYear()} Hudey
-              </p>
+            {/* Logo */}
+            <div className="flex items-center justify-center md:justify-start gap-2 mb-6">
+              <HudeyLogo className="w-6 h-6" bg="bg-white" fill="#111827" />
+              <span className="font-semibold text-white">Hudey</span>
             </div>
+
+            {/* Links — 2-col on mobile, inline on md+ */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:flex-wrap sm:justify-center md:justify-start sm:gap-x-6 sm:gap-y-2 text-sm text-[#E8DCC8]/60 mb-6">
+              <a
+                href="#how-it-works"
+                className="hover:text-white transition-colors"
+              >
+                How It Works
+              </a>
+              <a
+                href="#features"
+                className="hover:text-white transition-colors"
+              >
+                Features
+              </a>
+              <Link
+                href="/pricing"
+                className="hover:text-white transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/blog"
+                className="hover:text-white transition-colors"
+              >
+                Blog
+              </Link>
+              <Link
+                href="/about"
+                className="hover:text-white transition-colors"
+              >
+                About
+              </Link>
+              <Link
+                href="/contact"
+                className="hover:text-white transition-colors"
+              >
+                Contact
+              </Link>
+              <Link
+                href="/help"
+                className="hover:text-white transition-colors"
+              >
+                Help
+              </Link>
+              <Link
+                href="/terms"
+                className="hover:text-white transition-colors"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="hover:text-white transition-colors"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/refund"
+                className="hover:text-white transition-colors"
+              >
+                Refund Policy
+              </Link>
+            </div>
+
+            {/* Copyright */}
+            <p className="text-xs text-[#E8DCC8]/40 text-center md:text-left">
+              &copy; {new Date().getFullYear()} Hudey
+            </p>
           </div>
         </footer>
       </section>
