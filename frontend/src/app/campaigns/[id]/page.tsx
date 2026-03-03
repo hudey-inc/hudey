@@ -141,7 +141,7 @@ export default function CampaignDetail() {
   const [creatorContent, setCreatorContent] = useState<Record<string, { posts: CreatorPost[]; loading: boolean }>>({});
   const contentLoadedRef = useRef(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { paddle, onEvent, offEvent } = usePaddle();
+  const { paddle, paddleError, onEvent, offEvent } = usePaddle();
 
   const fetchAll = useCallback(() => {
     Promise.all([
@@ -289,9 +289,9 @@ export default function CampaignDetail() {
             captureError(err, { action: "fetchBatchResults" });
           }
         }
-        // Webhook hasn't arrived yet — still show success
+        // Webhook hasn't arrived yet — inform the user
         setPaying(false);
-        setRunError(null);
+        setRunError("Payment received but confirmation is delayed. Please refresh the page in a minute to check status.");
         fetchAll();
       } else if (eventName === "checkout.closed") {
         offEvent();
@@ -762,9 +762,9 @@ export default function CampaignDetail() {
             </div>
           )}
 
-          {runError && (
+          {(runError || paddleError) && (
             <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-              {runError}
+              {runError || paddleError}
             </div>
           )}
 

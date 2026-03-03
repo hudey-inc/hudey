@@ -92,8 +92,7 @@ export default function SignupPage() {
         return "";
       case "password":
         if (!value) return "Password is required";
-        if (value.length < 6) return "Must be at least 6 characters";
-        if (value.length < 8) return "We recommend at least 8 characters";
+        if (value.length < 8) return "Must be at least 8 characters";
         return "";
       default:
         return "";
@@ -117,7 +116,7 @@ export default function SignupPage() {
     const fields = ["fullName", "email", "company", "password"] as const;
     for (const name of fields) {
       const err = validateField(name, formData[name]);
-      if (err && err !== "We recommend at least 8 characters") errors[name] = err;
+      if (err) errors[name] = err;
     }
     if (!formData.acceptTerms) errors.acceptTerms = "You must accept the terms";
     setFieldErrors(errors);
@@ -401,18 +400,18 @@ export default function SignupPage() {
                     onBlur={handleBlur}
                     placeholder="Create a strong password"
                     required
-                    minLength={6}
+                    minLength={8}
                     className={`w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-[#2F4538] focus:border-transparent outline-none transition-all text-base text-gray-900 placeholder:text-gray-400 ${
                       touched.password && fieldErrors.password ? "border-red-300" : "border-gray-300"
                     }`}
                   />
                 </div>
                 {touched.password && fieldErrors.password ? (
-                  <p className={`mt-1 text-xs ${fieldErrors.password === "We recommend at least 8 characters" ? "text-amber-600" : "text-red-600"}`}>
+                  <p className="mt-1 text-xs text-red-600">
                     {fieldErrors.password}
                   </p>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-400">Must be at least 6 characters</p>
+                  <p className="mt-1 text-xs text-gray-400">Must be at least 8 characters</p>
                 )}
               </div>
 

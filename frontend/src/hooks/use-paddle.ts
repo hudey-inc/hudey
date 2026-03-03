@@ -19,11 +19,15 @@ type EventHandler = (eventName: PaddleEventName, data?: PaddleCheckoutData) => v
  */
 export function usePaddle() {
   const [paddle, setPaddle] = useState<Paddle>();
+  const [paddleError, setPaddleError] = useState<string | null>(null);
   const handlerRef = useRef<EventHandler | null>(null);
 
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-    if (!token) return;
+    if (!token) {
+      setPaddleError("Payment system is not configured");
+      return;
+    }
 
     initializePaddle({
       environment:
@@ -43,7 +47,7 @@ export function usePaddle() {
         setPaddle(instance);
       }
     }).catch(() => {
-      // Paddle initialization failed silently
+      setPaddleError("Payment system unavailable. Please try again later.");
     });
   }, []);
 
@@ -57,5 +61,5 @@ export function usePaddle() {
     handlerRef.current = null;
   }
 
-  return { paddle, onEvent, offEvent };
+  return { paddle, paddleError, onEvent, offEvent };
 }

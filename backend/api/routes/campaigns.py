@@ -100,11 +100,11 @@ def run_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     if existing_job and existing_job["status"] in ("queued", "running"):
         raise HTTPException(status_code=409, detail="Campaign already queued or running")
 
-    # Mark as running and enqueue
-    repo_update(campaign_id, {"status": "running", "agent_state": "brief_received"})
+    # Enqueue first, then mark as running (avoids stuck "running" state if enqueue fails)
     job_id = enqueue(campaign["id"])
     if not job_id:
         raise HTTPException(status_code=503, detail="Failed to enqueue campaign job")
+    repo_update(campaign_id, {"status": "running", "agent_state": "brief_received"})
 
     logger.info("Campaign %s enqueued as job %s", campaign_id, job_id)
     return {"ok": True, "status": "running", "job_id": job_id}
