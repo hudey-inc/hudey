@@ -81,6 +81,9 @@ export type Campaign = CampaignSummary & {
   amount_paid?: number;
   paid_at?: string;
   contract_template_id?: string;
+  job_attempts?: number;
+  job_max_attempts?: number;
+  job_last_error?: string;
 };
 
 export async function listCampaigns(): Promise<CampaignSummary[]> {

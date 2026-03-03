@@ -118,16 +118,20 @@ def complete(job_id: str) -> bool:
         return False
 
 
-def fail(job_id: str, error: str, max_attempts: int = 3) -> bool:
-    """Mark a job as failed. Re-queues if attempts < max."""
+def fail(job_id: str, error: str, max_attempts: int = 3) -> str | None:
+    """Mark a job as failed. Re-queues if attempts < max.
+
+    Returns the new job status ("queued" if retrying, "failed" if exhausted)
+    or None on error.
+    """
     sb = get_supabase()
     if not sb:
-        return False
+        return None
     try:
         # Get current attempt count
         r = sb.table("campaign_jobs").select("attempts, max_attempts").eq("id", job_id).execute()
         if not r.data:
-            return False
+            return None
 
         attempts = r.data[0]["attempts"]
         max_att = r.data[0].get("max_attempts", max_attempts)
@@ -142,10 +146,10 @@ def fail(job_id: str, error: str, max_attempts: int = 3) -> bool:
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
         ).eq("id", job_id).execute()
-        return True
+        return new_status
     except Exception as e:
         logger.warning("Failed to mark job %s as failed: %s", job_id, e)
-        return False
+        return None
 
 
 def recover_stale_jobs() -> int:

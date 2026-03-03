@@ -147,14 +147,42 @@ def _worker_loop() -> None:
                 job_repo.complete(job_id)
             except Exception as e:
                 logger.exception("Campaign %s failed: %s", campaign_id, e)
-                job_repo.fail(job_id, str(e))
-                # Also mark campaign as failed
+                new_status = job_repo.fail(job_id, str(e))
+
                 try:
-                    from backend.db.repositories.campaign_repo import update_campaign
-                    update_campaign(campaign_id, {
-                        "status": "failed",
-                        "agent_state": f"error: {str(e)[:200]}",
-                    })
+                    from backend.db.repositories.campaign_repo import (
+                        get_campaign,
+                        update_campaign,
+                    )
+
+                    if new_status == "queued":
+                        # Automatic retry — keep campaign as running
+                        update_campaign(campaign_id, {"agent_state": "retrying"})
+                        logger.info("Campaign %s will be retried (attempt %d)", campaign_id, job["attempts"])
+                    else:
+                        # Max attempts exhausted — mark as failed
+                        update_campaign(campaign_id, {
+                            "status": "failed",
+                            "agent_state": f"error: {str(e)[:200]}",
+                        })
+
+                        # Send failure notification
+                        try:
+                            from backend.db.repositories.notification_repo import maybe_create_notification
+                            cmp = get_campaign(campaign_id)
+                            if cmp and cmp.get("brand_id"):
+                                campaign_name = cmp.get("name", "Campaign")
+                                short_id = cmp.get("short_id") or campaign_id
+                                maybe_create_notification(
+                                    brand_id=cmp["brand_id"],
+                                    notification_type="campaign_completion",
+                                    title=f"{campaign_name} failed",
+                                    body=f"Campaign failed after {job['attempts']} attempts: {str(e)[:200]}",
+                                    campaign_id=campaign_id,
+                                    link=f"/campaigns/{short_id}",
+                                )
+                        except Exception:
+                            pass
                 except Exception:
                     pass
 

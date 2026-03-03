@@ -84,6 +84,7 @@ const STATE_LABELS: Record<string, string> = {
   payment_pending: "Processing payments\u2026",
   campaign_active: "Monitoring campaign\u2026",
   completed: "Completed",
+  retrying: "Retrying after error\u2026",
 };
 
 type DetailTab = "overview" | "influencers" | "content" | "insights";
@@ -693,6 +694,11 @@ export default function CampaignDetail() {
                   <span className="text-sm text-[#2F4538] font-medium">
                     {STATE_LABELS[campaign.agent_state] || campaign.agent_state}
                   </span>
+                  {campaign.agent_state === "retrying" && campaign.job_attempts != null && campaign.job_max_attempts != null && (
+                    <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                      Attempt {campaign.job_attempts} of {campaign.job_max_attempts}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -754,11 +760,18 @@ export default function CampaignDetail() {
 
           {/* Failed message */}
           {isFailed && (
-            <div className="mt-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <span className="text-sm text-red-700">
-                Campaign failed{campaign.agent_state?.startsWith("error:") ? `: ${campaign.agent_state.slice(7)}` : ""}
-              </span>
+            <div className="mt-4 rounded-lg bg-red-50 border border-red-100 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <span className="text-sm font-medium text-red-700">
+                  Campaign failed{campaign.job_attempts ? ` after ${campaign.job_attempts} attempt${campaign.job_attempts > 1 ? "s" : ""}` : ""}
+                </span>
+              </div>
+              {(campaign.job_last_error || campaign.agent_state?.startsWith("error:")) && (
+                <p className="mt-1.5 ml-6 text-xs text-red-600">
+                  {campaign.job_last_error || campaign.agent_state?.slice(7)}
+                </p>
+              )}
             </div>
           )}
 

@@ -41,6 +41,15 @@ def get_campaign(campaign_id: str, brand: dict = Depends(get_current_brand)):
     row = repo_get(campaign_id, brand_id=brand["id"])
     if not row:
         raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Enrich with job queue info (attempts, errors)
+    from backend.db.repositories.job_repo import get_job_for_campaign
+    job = get_job_for_campaign(row["id"])
+    if job:
+        row["job_attempts"] = job.get("attempts", 0)
+        row["job_max_attempts"] = job.get("max_attempts", 3)
+        row["job_last_error"] = job.get("last_error")
+
     return row
 
 
