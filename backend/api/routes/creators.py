@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from backend.api.rate_limit import default_limit, search_limit
 from backend.api.schemas import BrandFitRequest, SearchCreatorsRequest
 from backend.auth.current_brand import get_current_brand
+from backend.cache import cache_key, content_cache, search_cache
 from backend.db.client import get_supabase
 from backend.db.repositories.creator_repo import upsert_creators
 
@@ -135,36 +136,45 @@ def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict =
     locations = body.locations or []
     limit = body.limit
 
-    # Lazy import to keep startup light
-    from services.phyllo_client import PhylloClient
+    # ── Cache check: same search params → reuse creator IDs from last hour ──
+    sk = cache_key("search", platforms, follower_min, follower_max, categories, locations, limit)
+    cached_ids = search_cache.get(sk)
 
-    client = PhylloClient()
-    if not client.is_configured:
-        return {"creators": [], "total": 0, "configured": False}
+    if not cached_ids:
+        # Cache miss — call InsightIQ
+        from services.phyllo_client import PhylloClient
 
-    # Search via InsightIQ
-    raw_results = client.search_creators(
-        platforms=platforms,
-        follower_min=follower_min,
-        follower_max=follower_max,
-        categories=categories or None,
-        locations=locations or None,
-        limit=limit,
-    )
+        client = PhylloClient()
+        if not client.is_configured:
+            return {"creators": [], "total": 0, "configured": False}
 
-    if not raw_results:
-        return {"creators": [], "total": 0, "configured": True}
+        raw_results = client.search_creators(
+            platforms=platforms,
+            follower_min=follower_min,
+            follower_max=follower_max,
+            categories=categories or None,
+            locations=locations or None,
+            limit=limit,
+        )
 
-    # Map to Creator models
-    from tools.creator_discovery import _map_phyllo_to_creator
+        if not raw_results:
+            return {"creators": [], "total": 0, "configured": True}
 
-    mapped = [_map_phyllo_to_creator(r) for r in raw_results]
+        # Map to Creator models and persist to DB
+        from tools.creator_discovery import _map_phyllo_to_creator
 
-    # Cache to creators table (returns list of UUIDs)
-    creator_dicts = [m.model_dump() for m in mapped]
-    cached_ids = upsert_creators(creator_dicts)
+        mapped = [_map_phyllo_to_creator(r) for r in raw_results]
+        creator_dicts = [m.model_dump() for m in mapped]
+        cached_ids = upsert_creators(creator_dicts)
 
-    # Fetch cached rows to get DB-generated UUIDs
+        # Store creator IDs in cache (not the full response — saved status is per-brand)
+        if cached_ids:
+            search_cache.set(sk, cached_ids)
+            logger.info("Search cache MISS — fetched %d creators from InsightIQ", len(cached_ids))
+    else:
+        logger.info("Search cache HIT — returning %d cached creators", len(cached_ids))
+
+    # Resolve full rows + per-brand saved status (always fresh)
     sb = get_supabase()
     creators_out = []
 
@@ -192,12 +202,6 @@ def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict =
             if row:
                 row["is_saved"] = cid in saved_ids
                 creators_out.append(_creator_to_dict(row))
-    else:
-        # Fallback: return mapped data without DB ids
-        for m in mapped:
-            d = m.model_dump()
-            d["is_saved"] = False
-            creators_out.append(_creator_to_dict(d))
 
     return {"creators": creators_out, "total": len(creators_out), "configured": True}
 
@@ -414,13 +418,21 @@ def creator_content(
     if not external_id:
         return {"posts": [], "total": 0, "configured": True}
 
+    capped_limit = min(int(limit), 50)
+
+    # ── Cache check: same creator + limit → reuse content for 2 hours ──
+    ck = cache_key("content", creator_id, capped_limit)
+    cached_result = content_cache.get(ck)
+    if cached_result:
+        logger.info("Content cache HIT — creator %s", creator_id)
+        return cached_result
+
     from services.phyllo_client import PhylloClient
 
     client = PhylloClient()
     if not client.is_configured:
         return {"posts": [], "total": 0, "configured": False}
 
-    capped_limit = min(int(limit), 50)
     posts = client.get_creator_content(external_id, platform, limit=capped_limit)
 
     # Normalise each post to a consistent shape
@@ -439,7 +451,14 @@ def creator_content(
             "views": p.get("views") or p.get("view_count") or 0,
         })
 
-    return {"posts": normalised, "total": len(normalised), "configured": True}
+    result = {"posts": normalised, "total": len(normalised), "configured": True}
+
+    # Cache the normalised response
+    if normalised:
+        content_cache.set(ck, result)
+        logger.info("Content cache MISS — fetched %d posts for creator %s", len(normalised), creator_id)
+
+    return result
 
 
 @router.delete("/{creator_id}/save")

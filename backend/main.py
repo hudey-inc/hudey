@@ -129,5 +129,13 @@ def _stop_campaign_worker():
 
 @app.get("/health")
 def health():
-    """Health check."""
-    return {"status": "ok"}
+    """Health check with cache stats."""
+    from backend.cache import content_cache, search_cache
+
+    return {
+        "status": "ok",
+        "cache": {
+            "search": search_cache.stats(),
+            "content": content_cache.stats(),
+        },
+    }
