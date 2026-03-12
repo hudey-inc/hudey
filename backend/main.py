@@ -2,18 +2,40 @@
 
 import logging
 import os
+import uuid
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.rate_limit import limiter, rate_limit_exceeded_handler
 from backend.api.security import SecurityMiddleware
 from backend.api.routes import analytics, approvals, brands, campaigns, contracts, creators, notifications, paddle_webhooks, templates, webhooks
+from backend.logging_config import setup_logging, correlation_id_var
 
+# ── Structured logging (must be before any logger usage) ──
+setup_logging()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+
+# ── Sentry (enabled only when SENTRY_DSN is set, matching frontend behavior) ──
+_sentry_dsn = os.getenv("SENTRY_DSN", "").strip()
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[
+            FastApiIntegration(),
+            StarletteIntegration(),
+        ],
+        traces_sample_rate=0.2,
+        environment=os.getenv("RAILWAY_ENVIRONMENT", "development"),
+        send_default_pii=False,
+    )
+    logger.info("Sentry initialized")
 
 app = FastAPI(title="Hudey API")
 
@@ -25,14 +47,30 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all: log full trace server-side, return generic message to client."""
+    sentry_sdk.capture_exception(exc)
     logger.exception("Unhandled exception on %s %s: %s", request.method, request.url.path, exc)
     return JSONResponse(
         status_code=500,
         content={"detail": "An internal error occurred. Please try again."},
     )
 
+
+# ── Correlation ID middleware ──
+class CorrelationIdMiddleware(BaseHTTPMiddleware):
+    """Attach a unique correlation ID to each request for log tracing."""
+
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+        correlation_id_var.set(request_id)
+        sentry_sdk.set_tag("correlation_id", request_id)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+
 # ── Security middleware (runs first — blocks injection probes) ──
 app.add_middleware(SecurityMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
 
 # CORS: allow frontend origin (restrict in production)
 _origins = [

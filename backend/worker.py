@@ -14,6 +14,8 @@ import logging
 import threading
 import time
 
+import sentry_sdk
+
 logger = logging.getLogger(__name__)
 
 _worker_thread: threading.Thread | None = None
@@ -146,6 +148,7 @@ def _worker_loop() -> None:
                 _execute_campaign(campaign_id)
                 job_repo.complete(job_id)
             except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.exception("Campaign %s failed: %s", campaign_id, e)
                 new_status = job_repo.fail(job_id, str(e))
 
@@ -187,6 +190,7 @@ def _worker_loop() -> None:
                     pass
 
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.exception("Worker loop error: %s", e)
             _stop_event.wait(10)  # Back off on unexpected errors
 
