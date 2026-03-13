@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
-import { HudeyLogo } from "@/components/hudey-logo";
+import { FloatingHeader } from "@/components/ui/floating-header";
+import { Badge } from "@/components/ui/badge";
+import { PricingComparison } from "@/components/ui/pricing-comparison";
 
 export const metadata = {
   title: "Pricing | Hudey",
@@ -10,162 +11,46 @@ export const metadata = {
 
 const APP_URL = "https://app.hudey.co";
 
-const plans = [
-  {
-    name: "Starter",
-    description: "Perfect for your first influencer campaign",
-    price: "£750",
-    period: "/campaign",
-    cta: "Apply for Early Access",
-    ctaHref: `${APP_URL}/signup`,
-    highlight: false,
-    features: [
-      "Contact up to 25 creators",
-      "AI finds matching creators for you",
-      "Personalised outreach emails written by AI",
-      "Campaign dashboard with key metrics",
-      "Email support",
-    ],
-  },
-  {
-    name: "Growth",
-    description: "For brands running multiple campaigns a quarter",
-    price: "£1,500",
-    period: "/campaign",
-    cta: "Apply for Early Access",
-    ctaHref: `${APP_URL}/signup?plan=growth`,
-    highlight: true,
-    badge: "Most Popular",
-    features: [
-      "Contact up to 100 creators",
-      "AI creator discovery with values vetting",
-      "Personalised outreach for every creator",
-      "AI handles rate negotiation for you",
-      "Live campaign performance tracking",
-      "Exportable analytics reports",
-      "Priority email support",
-    ],
-  },
-  {
-    name: "Scale",
-    description: "For teams running campaigns across multiple brands",
-    price: "£3,000",
-    period: "/campaign",
-    cta: "Apply for Early Access",
-    ctaHref: `${APP_URL}/signup?plan=scale`,
-    highlight: false,
-    features: [
-      "Everything in Growth",
-      "Unlimited creator outreach",
-      "Custom negotiation rules and rate limits",
-      "White-label reports with your branding",
-      "Dedicated account manager",
-      "Slack and webhook integrations",
-    ],
-  },
+const navItems = [
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Features", href: "/#features" },
+  { label: "Founding Cohort", href: "/#founding-cohort" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <HudeyLogo className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="font-bold text-lg sm:text-xl text-gray-900">
-              Hudey
-            </span>
-          </Link>
-          <a
-            href={`${APP_URL}/signup`}
-            className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all"
-          >
-            Apply for Early Access
-          </a>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-white overflow-x-clip">
+      {/* Navigation */}
+      <FloatingHeader navItems={navItems} appUrl={APP_URL} />
 
       {/* Hero */}
-      <section className="pt-32 sm:pt-40 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
-            Pay per campaign, not per month
-          </h1>
-          <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-            No monthly subscriptions. No hidden fees. You pay once when you launch a campaign.
-          </p>
+      <section className="pt-10 sm:pt-16 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="flex text-center justify-center items-center gap-4 flex-col">
+          <Badge>Pricing</Badge>
+          <div className="flex gap-2 flex-col">
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight text-center text-gray-900 leading-[1.08]">
+              Pay per campaign, not per month
+            </h1>
+            <p className="text-lg leading-relaxed tracking-tight text-gray-400 max-w-xl text-center mx-auto">
+              No monthly subscriptions. No hidden fees. You pay once when you
+              launch a campaign.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Plans */}
+      {/* Comparison Grid */}
       <section className="pb-14 sm:pb-20 lg:pb-28 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl border p-6 sm:p-8 flex flex-col ${
-                plan.highlight
-                  ? "border-[#2F4538] shadow-xl shadow-[#2F4538]/10 ring-1 ring-[#2F4538]"
-                  : "border-gray-200 hover:shadow-lg"
-              } transition-all duration-300`}
-            >
-              {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-[#2F4538] to-[#1f2f26] text-white text-xs font-semibold px-4 py-1 rounded-full">
-                    {plan.badge}
-                  </span>
-                </div>
-              )}
-
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">
-                  {plan.name}
-                </h3>
-                <p className="text-sm text-gray-500">{plan.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <span className="text-4xl sm:text-5xl font-bold text-gray-900">
-                  {plan.price}
-                </span>
-                {plan.period && (
-                  <span className="text-gray-500 text-lg">{plan.period}</span>
-                )}
-              </div>
-
-              <a
-                href={plan.ctaHref}
-                className={`block w-full text-center py-3 sm:py-3.5 rounded-full font-semibold text-sm sm:text-base transition-all mb-8 ${
-                  plan.highlight
-                    ? "bg-[#2F4538] hover:bg-[#1f2f26] text-white shadow-lg shadow-[#2F4538]/20"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-900"
-                }`}
-              >
-                {plan.cta}
-              </a>
-
-              <ul className="space-y-3 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check
-                      className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                        plan.highlight ? "text-[#2F4538]" : "text-gray-400"
-                      }`}
-                    />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <PricingComparison />
 
         {/* Trust note */}
         <div className="max-w-2xl mx-auto mt-12 sm:mt-16 text-center">
           <p className="text-sm text-gray-500">
-            Founding cohort rate: <strong>£250 per campaign</strong> for our first 10 brands.{" "}
-            Protected by our{" "}
+            Founding cohort rate:{" "}
+            <strong className="text-[#D16B42]">£250 per campaign</strong> for
+            our first 10 brands. Protected by our{" "}
             <Link
               href="/refund"
               className="text-[#2F4538] hover:underline"
@@ -189,7 +74,7 @@ export default function PricingPage() {
       {/* FAQ */}
       <section className="pb-14 sm:pb-20 lg:pb-28 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-3xl mx-auto pt-14 sm:pt-20">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-10 sm:mb-14">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-gray-900 text-center mb-10 sm:mb-14 tracking-tight">
             Frequently asked questions
           </h2>
           <div className="space-y-6">
@@ -241,9 +126,9 @@ export default function PricingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-[#2F4538] text-white/60 py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-white/40">
             &copy; {new Date().getFullYear()} Hudey. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">
