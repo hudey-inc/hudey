@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FloatingHeader } from "@/components/ui/floating-header";
 import { Badge } from "@/components/ui/badge";
 import { PricingComparison } from "@/components/ui/pricing-comparison";
+import { Footer } from "@/components/ui/footer";
 
 export const metadata = {
   title: "Pricing | Hudey",
@@ -125,34 +126,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#2F4538] text-white/60 py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-white/40">
-            &copy; {new Date().getFullYear()} Hudey. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6 text-sm">
-            <Link
-              href="/terms"
-              className="hover:text-white transition-colors"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="hover:text-white transition-colors"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/refund"
-              className="hover:text-white transition-colors"
-            >
-              Refund Policy
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

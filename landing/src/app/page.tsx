@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { HudeyLogo } from "@/components/hudey-logo";
 import {
-  IconTarget,
   IconSparkles,
   IconMessage,
   IconChart,
@@ -23,7 +22,6 @@ import {
   AnimatedContainer,
 } from "@/components/ui/grid-feature-cards";
 import { FoundingCards } from "@/components/ui/founding-cards";
-import { TestimonialsColumn } from "@/components/ui/testimonials-columns";
 import {
   CustomAccordion,
   CustomAccordionItem,
@@ -37,6 +35,12 @@ import {
 } from "@/components/ui/highlighter";
 import { Tiles } from "@/components/ui/tiles";
 import { BGPattern } from "@/components/ui/bg-pattern";
+import { TestimonialsColumn } from "@/components/ui/testimonials-columns";
+import { Marquee } from "@/components/ui/marquee";
+import InteractiveHoverButton from "@/components/ui/interactive-hover-button";
+import { Footer } from "@/components/ui/footer";
+import { Badge } from "@/components/ui/badge";
+import { Heart, Shield, Target, Zap } from "lucide-react";
 import {
   SuccessIcon,
   SendIcon,
@@ -60,46 +64,88 @@ const navItems = [
 
 const features = [
   {
+    icon: IconSparkles,
+    animatedIcon: HeartIcon,
+    title: "Values-First Matching",
+    description:
+      "Every creator is screened for sustainability alignment. Not just bio keywords \u2014 actual content history, past partnerships, and audience values.",
+  },
+  {
     icon: IconUsers,
     animatedIcon: SuccessIcon,
     title: "Creator Discovery",
     description:
-      "Search by niche, engagement rate, audience location, and follower size. Find creators your customers already follow.",
+      "Filter by niche, engagement, location, or audience size. Find creators your customers already follow.",
   },
   {
     icon: IconMessage,
     animatedIcon: SendIcon,
     title: "Personalised Outreach",
     description:
-      "AI writes a unique message for each creator, referencing their content. You review and approve before anything sends.",
+      "Every message references the creator\u2019s recent posts, tone, and niche. You review before it sends.",
   },
   {
     icon: IconDollar,
     animatedIcon: ToggleIcon,
-    title: "AI Negotiation",
+    title: "Rate Negotiation",
     description:
-      "Hudey suggests fair rates based on follower count, engagement, and market benchmarks. You approve the final deal.",
-  },
-  {
-    icon: IconChart,
-    animatedIcon: NotificationIcon,
-    title: "Live Dashboard",
-    description:
-      "Track outreach, responses, deals closed, and spend in real time. Export reports for your team in one click.",
+      "Fair rates based on reach, engagement history, and what similar partnerships cost. You set the ceiling.",
   },
   {
     icon: IconShield,
     animatedIcon: LockUnlockIcon,
     title: "Creator Vetting",
     description:
-      "Every creator is checked for fake followers, past brand conflicts, and content that clashes with your values.",
+      "Fake followers, past brand conflicts, misaligned content. All flagged before you ever reach out.",
   },
   {
-    icon: IconSparkles,
-    animatedIcon: HeartIcon,
-    title: "Built for Sustainability",
+    icon: IconChart,
+    animatedIcon: NotificationIcon,
+    title: "Live Dashboard",
     description:
-      "Filter creators by eco, ethical, and wellness categories. Only partner with creators who genuinely share your mission.",
+      "See who\u2019s been contacted, who\u2019s replied, what\u2019s been agreed, and what you\u2019ve spent. Export a report when you need it.",
+  },
+];
+
+const marqueeQuestions = [
+  "How do I find creators who share my values?",
+  "How do I vet creators for sustainability?",
+  "How long should outreach take?",
+  "What\u2019s a fair rate for a nano-creator?",
+  "How do I scale campaigns without more headcount?",
+  "Can AI write outreach that sounds like my brand?",
+  "How do I know if a creator\u2019s audience is real?",
+  "What platforms work best for eco brands?",
+  "How do I negotiate rates fairly?",
+  "How do I track campaign ROI?",
+  "Should I work with micro or macro creators?",
+  "How do I manage DMs across four platforms?",
+];
+
+const whyFeatures = [
+  {
+    icon: Heart,
+    title: "Discovery tools don\u2019t filter for values",
+    description:
+      "Most platforms rank creators by reach. Nobody checks whether their content or audience actually cares about sustainability.",
+  },
+  {
+    icon: Shield,
+    title: "One off-brand DM can cost you",
+    description:
+      "Other tools send messages you never see. A single tone-deaf outreach can burn a creator relationship before it starts.",
+  },
+  {
+    icon: Target,
+    title: "Generic tools, generic results",
+    description:
+      "Platforms built for every industry end up solving none of them well. Sustainable brands have vetting needs most tools ignore.",
+  },
+  {
+    icon: Zap,
+    title: "Three weeks for one creator",
+    description:
+      "Research, outreach, negotiation, follow-ups. Most teams burn 15+ hours a week before signing anyone.",
   },
 ];
 
@@ -111,43 +157,43 @@ const testimonials = [
     role: "Marketing Director, Earthkind Co.",
   },
   {
-    text: "The AI negotiation tool alone saved us 15 hours a week. We ran three campaigns simultaneously without hiring extra headcount.",
+    text: "The AI negotiation tool alone saved us 15 hours a week. We ran three campaigns at once without hiring anyone new.",
     name: "Marcus Williams",
     initials: "MW",
     role: "Brand Manager, GreenThread",
   },
   {
-    text: "Finally a platform that understands sustainable brands aren\u2019t just a niche. The creator vetting is exactly what we needed.",
+    text: "Finally a platform that gets sustainable brands aren\u2019t just a niche. The creator vetting is exactly what we needed.",
     name: "Emma Clarke",
     initials: "EC",
     role: "Head of Partnerships, Bloom & Wild",
   },
   {
-    text: "Every creator recommendation actually aligned with our sustainability values, not just follower count. That\u2019s what sold us.",
+    text: "Every creator recommendation actually matched our sustainability values, not just follower count. That\u2019s what sold us.",
     name: "Priya Sharma",
     initials: "PS",
     role: "CMO, EcoRevive",
   },
   {
-    text: "We went from zero influencer presence to three signed partnerships in our first week. The onboarding was seamless.",
+    text: "We went from zero influencer presence to three signed partnerships in our first week. Onboarding took maybe 20 minutes.",
     name: "James O\u2019Brien",
     initials: "JO",
     role: "Founder, NatureBox UK",
   },
   {
-    text: "Hudey\u2019s AI drafted outreach messages that sounded exactly like our brand voice. Creators responded because it felt genuine.",
+    text: "The outreach messages sounded like us, not like a bot. Creators responded because it felt like a real person wrote it.",
     name: "Amara Osei",
     initials: "AO",
     role: "Marketing Lead, PureEarth",
   },
   {
-    text: "The dashboard gives us complete visibility. We track every conversation, deal, and campaign metric in one place.",
+    text: "One dashboard for every conversation, deal, and campaign metric. We stopped toggling between four apps.",
     name: "Tom Richardson",
     initials: "TR",
     role: "Growth Manager, WildKind",
   },
   {
-    text: "Other platforms flooded us with irrelevant creators. Hudey\u2019s recommendations were spot-on from day one.",
+    text: "Other platforms flooded us with irrelevant creators. Hudey\u2019s shortlist was right from the first campaign.",
     name: "Laura Bennett",
     initials: "LB",
     role: "Brand Director, Conscious & Co.",
@@ -168,27 +214,27 @@ const faqs = [
   {
     question: "How does Hudey find the right creators for my brand?",
     answer:
-      "Hudey looks at real engagement rates, audience demographics, content topics, and past brand partnerships to recommend creators whose followers match your target customers. For sustainable brands, we also check that the creator\u2019s content genuinely aligns with eco and ethical values.",
+      "Hudey checks engagement rates, audience demographics, content history, and past partnerships to shortlist creators whose followers look like your customers. For sustainable brands, it also checks whether the creator\u2019s content backs up their eco or ethical positioning.",
   },
   {
     question: "Do I have control over what gets sent to creators?",
     answer:
-      "Yes, always. Hudey writes personalised outreach and negotiation messages, but you see and approve every message before it goes out. You can edit anything, adjust the offer, or rewrite the message entirely.",
+      "Yes. Hudey drafts every outreach and negotiation message, but nothing sends until you say so. Edit the copy, change the offer, or rewrite the whole thing.",
   },
   {
     question: "Which social platforms does Hudey support?",
     answer:
-      "Instagram, TikTok, YouTube, and X. You can target one or all platforms when setting up a campaign, and manage everything from one dashboard.",
+      "Instagram, TikTok, YouTube, and X. You can target one or all platforms when setting up a campaign.",
   },
   {
-    question: "How much time will I actually save?",
+    question: "Is this a beta, or am I paying to be a test user?",
     answer:
-      "Most teams spend 15\u201320 hours per week on creator research, outreach, and back-and-forth negotiation. With Hudey, you can go from campaign brief to signed creators in under 48 hours.",
+      "Hudey is fully functional today. The founding cohort isn\u2019t a beta \u2014 it\u2019s a small group of brands we work with closely so we can build the best product for UK sustainable brands. You get a working platform and more attention from our team than any customer will get again.",
   },
   {
     question: "Can I bring in creators I already work with?",
     answer:
-      "Yes. You can add existing creator partnerships to Hudey and use the dashboard to track their campaigns alongside new creators that Hudey finds for you.",
+      "Yes. Add existing partnerships to Hudey and track their campaigns alongside new creators the platform finds for you.",
   },
 ];
 
@@ -216,15 +262,19 @@ export default function LandingPage() {
         }
         title={
           <>
-            Influencer marketing,
+            Creator partnerships,
             <br />
             <em>handled by AI</em>
           </>
         }
-        subtitle="Hudey finds the right creators, writes personalised outreach, and negotiates fair deals — you review and approve every step."
-        ctaText="Apply for Early Access"
-        ctaLink={`${APP_URL}/signup`}
-        onCtaClick={() => trackCTAClick("hero")}
+        subtitle="Hudey finds the right creators, writes personalised outreach, and negotiates fair rates. You approve everything before it goes out."
+        ctaSlot={
+          <InteractiveHoverButton
+            text="Join the Founding Cohort"
+            href={`${APP_URL}/signup`}
+            onClick={() => trackCTAClick("hero")}
+          />
+        }
         dashboardPreview={
           <div className="overflow-hidden">
             {/* Browser chrome bar */}
@@ -345,12 +395,12 @@ export default function LandingPage() {
               How It Works
             </p>
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-gray-900 mb-4 sm:mb-6 leading-[1.08] tracking-tight px-4">
-              Brief to signed creators
+              Four steps. You stay
               <br />
-              <em>in 48 hours</em>
+              <em>in control</em>
             </h2>
             <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              Four steps. You approve everything along the way.
+              From campaign brief to signed creators. Nothing goes out without your sign-off.
             </p>
           </AnimatedContainer>
 
@@ -379,8 +429,8 @@ export default function LandingPage() {
                     <SuccessIcon size={48} color="#2F4538" className="m-auto" />
                   </div>
                   <div className="relative z-10 mt-6 space-y-2 text-center">
-                    <h2 className="text-lg font-medium text-gray-900">Tell Us What You Need</h2>
-                    <p className="text-gray-500 text-sm">Set your campaign goal, target audience, and budget. Hudey uses this to find creators who actually fit.</p>
+                    <h2 className="text-lg font-medium text-gray-900">Set Your Brief</h2>
+                    <p className="text-gray-500 text-sm">Campaign goal, target audience, budget. Takes five minutes. Hudey uses this to shortlist creators who fit.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -412,8 +462,8 @@ export default function LandingPage() {
                     </svg>
                   </div>
                   <div className="relative z-10 mt-14 space-y-2 text-center">
-                    <h2 className="text-lg font-medium text-gray-900">Get Matched with Creators</h2>
-                    <p className="text-gray-500 text-sm">AI recommends creators based on real engagement rates, audience fit, and content alignment with your values.</p>
+                    <h2 className="text-lg font-medium text-gray-900">Get a Vetted Shortlist</h2>
+                    <p className="text-gray-500 text-sm">Hudey pulls engagement data, audience demographics, and content history to recommend creators worth your time.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -427,7 +477,7 @@ export default function LandingPage() {
                     </div>
                     <div className="space-y-2">
                       <h2 className="text-lg font-medium text-gray-900">Review and Approve</h2>
-                      <p className="text-gray-500 text-sm">AI writes personalised outreach and handles negotiation. You read every message before it sends.</p>
+                      <p className="text-gray-500 text-sm">Hudey drafts the outreach and handles back-and-forth on rates. You read every message before it goes.</p>
                     </div>
                   </div>
                   <div className="rounded-tl-lg relative -mb-6 -mr-6 mt-6 h-fit border-l border-t border-gray-200 p-6 py-6 sm:ml-6">
@@ -471,8 +521,8 @@ export default function LandingPage() {
                       <NotificationIcon size={22} color="#2F4538" className="m-auto" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-lg font-medium text-gray-900">See Results in Real Time</h2>
-                      <p className="text-gray-500 text-sm">Track responses, deals, and campaign ROI from one dashboard. No spreadsheets, no manual updates.</p>
+                      <h2 className="text-lg font-medium text-gray-900">Track Deals and ROI</h2>
+                      <p className="text-gray-500 text-sm">Responses, deals, and spend update live in your dashboard. No spreadsheets required.</p>
                     </div>
                   </div>
                   <div className="before:bg-gray-200 relative mt-6 before:absolute before:inset-0 before:mx-auto before:w-px sm:-my-6 sm:-mr-6">
@@ -533,13 +583,12 @@ export default function LandingPage() {
               Features
             </p>
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-gray-900 mb-4 sm:mb-6 leading-[1.08] tracking-tight px-4">
-              Everything you need,
+              Replace the agency,
               <br />
-              <em>one agent</em>
+              <em>the spreadsheets, the inbox</em>
             </h2>
             <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              Find creators, send outreach, negotiate deals, and track
-              results — without switching tools.
+              Discovery, outreach, negotiation, and reporting. One platform.
             </p>
           </AnimatedContainer>
 
@@ -554,6 +603,103 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Why We Built This ─── */}
+      <section className="reveal-section relative bg-white py-20 sm:py-28 lg:py-36 overflow-hidden">
+        {/* Tiles background */}
+        <div className="absolute inset-0 z-0 opacity-100">
+          <Tiles rows={80} cols={14} tileSize="md" />
+        </div>
+        {/* Fade edges */}
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 50% at 50% 50%, transparent 0%, white 100%)",
+          }}
+        />
+        <div className="relative z-[2] mx-auto max-w-5xl px-5 sm:px-8">
+          <AnimatedContainer className="mx-auto flex flex-col items-center justify-center space-y-4 text-center">
+            <p className="text-[11px] sm:text-xs tracking-[0.25em] uppercase text-gray-400 font-medium">
+              Why we built this
+            </p>
+            <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-gray-900 leading-[1.08] tracking-tight max-w-3xl">
+              The questions brands <em>kept asking</em>
+            </h2>
+            <p className="max-w-xl text-base sm:text-lg text-gray-400">
+              We talked to 40+ UK sustainable brand founders. The same problems
+              came up every time. So we built a platform to solve them.
+            </p>
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={0.3} className="relative mx-auto max-w-3xl overflow-hidden mt-8 sm:mt-12">
+            <div className="absolute left-0 z-10 h-full w-20 bg-gradient-to-r from-white pointer-events-none" />
+            <div className="absolute right-0 z-10 h-full w-20 bg-gradient-to-l from-white pointer-events-none" />
+            <div className="flex flex-col gap-2">
+              <Marquee className="[--duration:45s]" repeat={4}>
+                {marqueeQuestions.slice(0, 4).map((q) => (
+                  <Badge
+                    className="rounded-lg border-[#2F4538]/15 bg-[#2F4538]/[0.06] text-gray-700 whitespace-nowrap"
+                    key={q}
+                    size="lg"
+                    variant="outline"
+                  >
+                    {q}
+                  </Badge>
+                ))}
+              </Marquee>
+              <Marquee className="[--duration:50s]" repeat={4} reverse>
+                {marqueeQuestions.slice(4, 8).map((q) => (
+                  <Badge
+                    className="rounded-lg border-[#2F4538]/15 bg-[#2F4538]/[0.06] text-gray-700 whitespace-nowrap"
+                    key={q}
+                    size="lg"
+                    variant="outline"
+                  >
+                    {q}
+                  </Badge>
+                ))}
+              </Marquee>
+              <Marquee className="[--duration:42s]" repeat={4}>
+                {marqueeQuestions.slice(8).map((q) => (
+                  <Badge
+                    className="rounded-lg border-[#2F4538]/15 bg-[#2F4538]/[0.06] text-gray-700 whitespace-nowrap"
+                    key={q}
+                    size="lg"
+                    variant="outline"
+                  >
+                    {q}
+                  </Badge>
+                ))}
+              </Marquee>
+            </div>
+          </AnimatedContainer>
+
+          <div className="mt-10 sm:mt-16 grid grid-cols-1 divide-y divide-dashed divide-gray-200 border-t border-dashed border-gray-200 sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
+            {whyFeatures.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  className="flex flex-col gap-4 px-5 py-8 lg:px-6 lg:py-10"
+                  key={feature.title}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-[#2F4538]/[0.06] flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[#2F4538]" />
+                  </div>
+                  <div className="flex flex-col gap-2 pt-4 sm:pt-6">
+                    <h3 className="text-sm md:text-base font-medium text-gray-900">
+                      {feature.title}
+                    </h3>
+                    <p className="text-xs font-light text-gray-400 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ─── Testimonials ─── */}
       <section className="reveal-section relative py-20 sm:py-28 lg:py-36 px-5 sm:px-8 bg-white overflow-hidden">
         <BGPattern
@@ -565,15 +711,11 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-7xl mx-auto">
           <AnimatedContainer className="text-center mb-10 sm:mb-14">
             <p className="text-[11px] sm:text-xs tracking-[0.25em] uppercase text-gray-400 font-medium mb-6 sm:mb-8">
-              Trusted by Brands
+              From our brands
             </p>
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-gray-900 mb-4 sm:mb-6 leading-[1.08] tracking-tight px-4">
               What our brands <em>say</em>
             </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              See how sustainable brands are saving time and finding better
-              creator partners with Hudey.
-            </p>
           </AnimatedContainer>
 
           <div className="flex justify-center gap-6 [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)] max-h-[740px] overflow-hidden">
@@ -609,12 +751,12 @@ export default function LandingPage() {
               Founding Cohort
             </p>
             <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-gray-900 mb-4 sm:mb-6 leading-[1.08] tracking-tight px-4">
+
               Be one of the <em>first 10 brands</em>
             </h2>
             <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto mb-10 sm:mb-14 px-4">
-              We&apos;re building Hudey alongside a small group of UK sustainable
-              brands. Founding members get personal onboarding, a locked-in
-              rate of &pound;250/campaign, and a direct line to our team.
+              We&apos;re building Hudey with a small group of UK sustainable
+              brands. Founding members get hands-on onboarding, &pound;250/campaign locked in, and a direct line to our team.
             </p>
           </div>
           <div className="mb-10 sm:mb-14">
@@ -626,7 +768,7 @@ export default function LandingPage() {
               onClick={() => trackCTAClick("founding_cohort")}
               className="inline-flex items-center gap-3 bg-[#2F4538] hover:bg-[#253b2e] text-white px-8 py-4 sm:px-10 sm:py-5 rounded-xl font-medium text-base sm:text-lg transition-colors group"
             >
-              Apply for Early Access
+              Join the Founding Cohort
               <IconArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
@@ -650,8 +792,7 @@ export default function LandingPage() {
               Frequently asked <em>questions</em>
             </h2>
             <p className="text-base sm:text-lg lg:text-xl text-gray-400 px-4">
-              Quick answers about how Hudey works, what you control, and what it
-              costs.
+              What you control, what Hudey handles, and what it costs.
             </p>
           </div>
 
@@ -691,8 +832,8 @@ export default function LandingPage() {
                       Still have <em>questions?</em>
                     </h3>
                     <p className="text-sm sm:text-base text-gray-400 mb-6 sm:mb-8">
-                      Our team is here to help. Get in touch and we&apos;ll
-                      answer any questions you have.
+                      Email us at hello@hudey.co. We respond within one business
+                      day.
                     </p>
                     <a
                       href="mailto:hello@hudey.co"
@@ -722,15 +863,15 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <div className="reveal-item">
               <p className="text-[11px] sm:text-xs tracking-[0.25em] uppercase text-white/50 font-medium mb-6 sm:mb-8">
-                Ready to get started?
+                Founding Cohort
               </p>
 
               <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-white mb-4 sm:mb-6 leading-[1.08] tracking-tight px-4">
-                Join the founding <em>cohort</em>
+                10 spots. <em>First come, first served.</em>
               </h2>
               <p className="text-base sm:text-lg lg:text-xl text-white/60 mb-10 sm:mb-14 max-w-2xl mx-auto px-4">
-                10 spots for UK sustainable brands who want to run influencer
-                campaigns without the busywork.
+                UK sustainable brands only. Founding members get hands-on
+                onboarding and a locked-in rate that won&apos;t come back.
               </p>
             </div>
 
@@ -747,7 +888,7 @@ export default function LandingPage() {
                 onClick={() => trackCTAClick("footer")}
                 className="bg-white hover:bg-gray-100 text-gray-900 px-8 py-4 rounded-xl font-medium text-sm sm:text-base transition-colors whitespace-nowrap text-center"
               >
-                Apply Now
+                Join Now
               </a>
             </div>
 
@@ -769,82 +910,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="border-t border-white/10 px-5 sm:px-8 pt-14 sm:pt-20 pb-8 sm:pb-10 relative z-10">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex w-full flex-col justify-between gap-10 lg:flex-row lg:items-start">
-              {/* Left — Brand + Description + Socials */}
-              <div className="flex w-full flex-col gap-6 lg:max-w-xs">
-                <div className="flex items-center gap-2">
-                  <HudeyLogo className="w-7 h-7" bg="bg-white" fill="#111827" />
-                  <span className="text-xl font-semibold text-white">Hudey</span>
-                </div>
-                <p className="text-sm text-white/50 leading-relaxed">
-                  AI-powered influencer marketing for sustainable brands. Find creators, send outreach, and close deals — all from one platform.
-                </p>
-                <ul className="flex items-center gap-5">
-                  {/* Instagram */}
-                  <li>
-                    <a href="https://instagram.com/hudeyco" aria-label="Instagram" className="text-white/40 hover:text-white transition-colors">
-                      <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                    </a>
-                  </li>
-                  {/* X (Twitter) */}
-                  <li>
-                    <a href="https://x.com/hudeyco" aria-label="X" className="text-white/40 hover:text-white transition-colors">
-                      <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    </a>
-                  </li>
-                  {/* LinkedIn */}
-                  <li>
-                    <a href="https://linkedin.com/company/hudey" aria-label="LinkedIn" className="text-white/40 hover:text-white transition-colors">
-                      <svg className="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Right — Link columns */}
-              <div className="grid w-full grid-cols-2 gap-8 sm:grid-cols-3 lg:max-w-lg lg:gap-16">
-                <div>
-                  <h3 className="mb-4 text-sm font-semibold text-white">Product</h3>
-                  <ul className="space-y-3 text-sm text-white/50">
-                    <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
-                    <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                    <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-                    <li><a href="#founding-cohort" className="hover:text-white transition-colors">Founding Cohort</a></li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="mb-4 text-sm font-semibold text-white">Company</h3>
-                  <ul className="space-y-3 text-sm text-white/50">
-                    <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
-                    <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-                    <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="mb-4 text-sm font-semibold text-white">Resources</h3>
-                  <ul className="space-y-3 text-sm text-white/50">
-                    <li><Link href="/help" className="hover:text-white transition-colors">Help Centre</Link></li>
-                    <li><Link href="/terms" className="hover:text-white transition-colors">Terms</Link></li>
-                    <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link></li>
-                    <li><Link href="/refund" className="hover:text-white transition-colors">Refund Policy</Link></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom bar */}
-            <div className="mt-12 flex flex-col justify-between gap-4 border-t border-white/10 pt-8 text-xs text-white/40 sm:flex-row sm:items-center">
-              <p>&copy; {new Date().getFullYear()} Hudey. All rights reserved.</p>
-              <ul className="flex gap-4 sm:gap-6">
-                <li><Link href="/terms" className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
-                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              </ul>
-            </div>
-          </div>
-        </footer>
+        <div className="relative z-10">
+          <Footer />
+        </div>
       </section>
     </div>
   );

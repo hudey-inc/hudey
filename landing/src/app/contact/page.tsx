@@ -2,11 +2,12 @@ import Link from "next/link";
 import { FloatingHeader } from "@/components/ui/floating-header";
 import { Badge } from "@/components/ui/badge";
 import { Mail, MessageSquare, Clock } from "lucide-react";
+import { Footer } from "@/components/ui/footer";
 
 export const metadata = {
   title: "Contact | Hudey",
   description:
-    "Get in touch with the Hudey team. Whether you have questions about the platform, want to join our founding cohort, or need support.",
+    "Questions about Hudey? Email us at hello@hudey.co. We respond within one business day.",
 };
 
 const APP_URL = "https://app.hudey.co";
@@ -23,22 +24,21 @@ const channels = [
   {
     icon: Mail,
     title: "General Enquiries",
-    description: "Questions about the platform, partnerships, or press.",
+    description: "Product questions, partnerships, or press.",
     value: "hello@hudey.co",
     href: "mailto:hello@hudey.co",
   },
   {
     icon: MessageSquare,
     title: "Campaign Support",
-    description:
-      "Need help with your account, a campaign, or a creator issue?",
+    description: "Account help, campaign issues, or creator questions.",
     value: "support@hudey.co",
     href: "mailto:support@hudey.co",
   },
   {
     icon: Clock,
-    title: "We Reply Fast",
-    description: "Every message gets a response within one business day.",
+    title: "Response Time",
+    description: "We respond to every message within one business day.",
     value: "< 24 hours",
     href: null,
   },
@@ -59,8 +59,8 @@ export default function ContactPage() {
               Get in <em>touch</em>
             </h1>
             <p className="text-lg leading-relaxed tracking-tight text-gray-400 max-w-xl text-center mx-auto">
-              Want to join our founding cohort, ask about a feature, or report
-              an issue? We&apos;d love to hear from you.
+              Have a question about Hudey, or want to apply for the founding
+              cohort? Here&apos;s how to reach us.
             </p>
           </div>
         </div>
@@ -113,8 +113,8 @@ export default function ContactPage() {
             Need a quick <em>answer?</em>
           </h2>
           <p className="text-sm sm:text-base text-gray-400 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed">
-            Our Help Centre has step-by-step guides for getting started,
-            running campaigns, and managing your account.
+            Check the Help Centre for guides on getting started and running
+            campaigns.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
@@ -148,34 +148,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#2F4538] text-white/60 py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-white/40">
-            &copy; {new Date().getFullYear()} Hudey. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6 text-sm">
-            <Link
-              href="/terms"
-              className="hover:text-white transition-colors"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="hover:text-white transition-colors"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/refund"
-              className="hover:text-white transition-colors"
-            >
-              Refund Policy
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

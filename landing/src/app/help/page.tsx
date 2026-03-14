@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Search,
   Rocket,
   Users,
@@ -14,7 +13,19 @@ import {
   ChevronDown,
   Mail,
 } from "lucide-react";
-import { HudeyLogo } from "@/components/hudey-logo";
+import { FloatingHeader } from "@/components/ui/floating-header";
+import { Badge } from "@/components/ui/badge";
+import { Footer } from "@/components/ui/footer";
+
+const APP_URL = "https://app.hudey.co";
+
+const navItems = [
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Features", href: "/#features" },
+  { label: "Founding Cohort", href: "/#founding-cohort" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
+];
 
 interface HelpArticle {
   question: string;
@@ -197,30 +208,18 @@ export default function HelpPage() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      {/* Nav */}
-      <nav className="border-b border-gray-200 bg-white/90 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <HudeyLogo className="w-7 h-7" />
-            <span className="font-bold text-lg text-gray-900">Hudey</span>
-          </Link>
-          <Link
-            href="/"
-            className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-        </div>
-      </nav>
+      <FloatingHeader navItems={navItems} appUrl={APP_URL} />
 
       {/* Header + Search */}
-      <header className="pt-16 sm:pt-20 pb-10 px-5 sm:px-8 bg-gradient-to-b from-[#E8DCC8]/20 to-white">
+      <header className="pt-10 sm:pt-16 pb-10 px-5 sm:px-8">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Help Center
+          <div className="flex justify-center mb-4">
+            <Badge>Help Centre</Badge>
+          </div>
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight text-gray-900 leading-[1.08] mb-4">
+            How can we <em>help?</em>
           </h1>
-          <p className="text-lg text-gray-600 mb-8">
+          <p className="text-lg leading-relaxed tracking-tight text-gray-400 max-w-xl mx-auto mb-8">
             Step-by-step answers to help you get the most out of Hudey.
           </p>
           <div className="relative max-w-lg mx-auto">
@@ -261,7 +260,7 @@ export default function HelpPage() {
             return (
               <div
                 key={cat.title}
-                className="border-2 border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition-colors"
+                className="border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300"
               >
                 {/* Category header */}
                 <button
@@ -270,14 +269,11 @@ export default function HelpPage() {
                   }
                   className="w-full flex items-center gap-4 p-5 sm:p-6 text-left hover:bg-gray-50/50 transition-colors"
                 >
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: cat.color }}
-                  >
-                    <Icon className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-[#2F4538]/[0.06] flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-5 h-5 text-[#2F4538]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="font-bold text-gray-900">{cat.title}</h2>
+                    <h2 className="font-semibold text-gray-900">{cat.title}</h2>
                     <p className="text-sm text-gray-500">{cat.description}</p>
                   </div>
                   <ChevronDown
@@ -334,40 +330,23 @@ export default function HelpPage() {
 
       {/* Contact CTA */}
       <section className="px-5 sm:px-8 pb-20">
-        <div className="max-w-3xl mx-auto rounded-2xl bg-[#E8DCC8]/30 border-2 border-[#E8DCC8]/50 p-8 text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Still need help?
+        <div className="max-w-3xl mx-auto bg-gray-50 rounded-2xl border border-gray-200 p-8 sm:p-12 text-center">
+          <h2 className="font-serif text-2xl sm:text-3xl text-gray-900 mb-3 tracking-tight">
+            Still need <em>help?</em>
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-sm sm:text-base text-gray-400 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed">
             Our team typically responds within 24 hours.
           </p>
           <Link
             href="/contact"
-            className="inline-flex items-center gap-2 bg-[#2F4538] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#1f2f26] transition-colors"
+            className="inline-flex items-center gap-2 bg-[#2F4538] hover:bg-[#253b2e] text-white px-7 py-3.5 rounded-xl font-medium text-sm transition-colors"
           >
             Contact Support
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 py-8 px-5 sm:px-8">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <HudeyLogo className="w-5 h-5" />
-            <span className="font-semibold text-sm text-gray-900">Hudey</span>
-          </div>
-          <div className="flex gap-6 text-sm text-gray-400">
-            <Link href="/about" className="hover:text-gray-700 transition-colors">About</Link>
-            <Link href="/blog" className="hover:text-gray-700 transition-colors">Blog</Link>
-            <Link href="/contact" className="hover:text-gray-700 transition-colors">Contact</Link>
-            <Link href="/privacy" className="hover:text-gray-700 transition-colors">Privacy</Link>
-          </div>
-          <p className="text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} Hudey
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

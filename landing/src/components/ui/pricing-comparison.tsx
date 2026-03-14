@@ -149,7 +149,11 @@ const features: { category: string; rows: FeatureRow[] }[] = [
 
 function FeatureCell({ value }: { value: FeatureValue }) {
   if (typeof value === "string") {
-    return <p className="text-gray-500 text-sm">{value}</p>;
+    return (
+      <p className="text-gray-500 text-[11px] sm:text-sm text-center">
+        {value}
+      </p>
+    );
   }
   if (value) {
     return <Check className="w-4 h-4 text-[#2F4538]" />;
@@ -159,54 +163,67 @@ function FeatureCell({ value }: { value: FeatureValue }) {
 
 function PricingComparison() {
   return (
-    <div className="w-full">
-      <div className="max-w-6xl mx-auto">
-        {/* Plan headers + pricing */}
-        <div className="grid text-left w-full grid-cols-3 lg:grid-cols-4 divide-x divide-gray-100">
-          {/* Empty top-left cell */}
-          <div className="col-span-3 lg:col-span-1 hidden lg:block" />
+    <div className="w-full max-w-6xl mx-auto">
+      {/* ── Plan cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-0 sm:divide-x sm:divide-gray-100 mb-8 sm:mb-0">
+        {plans.map((plan) => (
+          <div
+            key={plan.name}
+            className="px-5 py-5 sm:px-6 sm:py-6 flex flex-col gap-2 rounded-xl sm:rounded-none border sm:border-0 border-gray-100"
+          >
+            <div className="flex items-center gap-2">
+              <p className="text-xl sm:text-2xl font-semibold text-gray-900">
+                {plan.name}
+              </p>
+              {plan.highlight && (
+                <Badge className="text-[10px] px-2 py-0">Popular</Badge>
+              )}
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              {plan.description}
+            </p>
+            <p className="flex items-center gap-1 mt-4 sm:mt-6">
+              <span className="text-3xl sm:text-4xl font-semibold text-gray-900">
+                {plan.price}
+              </span>
+              <span className="text-sm text-gray-400">{plan.period}</span>
+            </p>
+            {plan.name === "Scale" ? (
+              <Button variant="outline" className="gap-3 mt-4 sm:mt-6" asChild>
+                <a href={plan.ctaHref}>
+                  {plan.cta} <PhoneCall className="w-4 h-4" />
+                </a>
+              </Button>
+            ) : plan.highlight ? (
+              <Button className="gap-3 mt-4 sm:mt-6" asChild>
+                <a href={plan.ctaHref}>
+                  {plan.cta} <MoveRight className="w-4 h-4" />
+                </a>
+              </Button>
+            ) : (
+              <Button variant="outline" className="gap-3 mt-4 sm:mt-6" asChild>
+                <a href={plan.ctaHref}>
+                  {plan.cta} <MoveRight className="w-4 h-4" />
+                </a>
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
 
+      {/* ── Feature comparison table ── */}
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-[minmax(120px,1.4fr)_repeat(3,1fr)] sm:grid-cols-4">
+          {/* Column headers (plan names) */}
+          <div className="px-3 sm:px-6 py-3 border-b border-gray-200" />
           {plans.map((plan) => (
             <div
-              key={plan.name}
-              className="px-3 py-4 md:px-6 md:py-6 gap-2 flex flex-col"
+              key={`header-${plan.name}`}
+              className="px-2 sm:px-6 py-3 border-b border-gray-200 text-center"
             >
-              <div className="flex items-center gap-2">
-                <p className="text-xl sm:text-2xl font-semibold text-gray-900">
-                  {plan.name}
-                </p>
-                {plan.highlight && (
-                  <Badge className="text-[10px] px-2 py-0">Popular</Badge>
-                )}
-              </div>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                {plan.description}
-              </p>
-              <p className="flex flex-col lg:flex-row lg:items-center gap-1 mt-6">
-                <span className="text-3xl sm:text-4xl font-semibold text-gray-900">
-                  {plan.price}
-                </span>
-                <span className="text-sm text-gray-400">{plan.period}</span>
-              </p>
-              {plan.name === "Scale" ? (
-                <Button variant="outline" className="gap-3 mt-6" asChild>
-                  <a href={plan.ctaHref}>
-                    {plan.cta} <PhoneCall className="w-4 h-4" />
-                  </a>
-                </Button>
-              ) : plan.highlight ? (
-                <Button className="gap-3 mt-6" asChild>
-                  <a href={plan.ctaHref}>
-                    {plan.cta} <MoveRight className="w-4 h-4" />
-                  </a>
-                </Button>
-              ) : (
-                <Button variant="outline" className="gap-3 mt-6" asChild>
-                  <a href={plan.ctaHref}>
-                    {plan.cta} <MoveRight className="w-4 h-4" />
-                  </a>
-                </Button>
-              )}
+              <span className="text-xs sm:text-sm font-semibold text-gray-900">
+                {plan.name}
+              </span>
             </div>
           ))}
 
@@ -216,37 +233,36 @@ function PricingComparison() {
               {/* Category header */}
               <div
                 key={`cat-${group.category}`}
-                className="px-3 lg:px-6 col-span-3 lg:col-span-1 py-4 border-t border-gray-100"
+                className="col-span-4 px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/50"
               >
-                <b className="text-sm text-gray-900">{group.category}</b>
+                <b className="text-xs sm:text-sm text-gray-900">
+                  {group.category}
+                </b>
               </div>
-              <div className="border-t border-gray-100" />
-              <div className="border-t border-gray-100" />
-              <div className="border-t border-gray-100" />
 
               {group.rows.map((row) => (
                 <>
                   <div
                     key={`label-${row.name}`}
-                    className="px-3 lg:px-6 col-span-3 lg:col-span-1 py-3 text-sm text-gray-600"
+                    className="px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-600 border-b border-gray-50 flex items-center"
                   >
                     {row.name}
                   </div>
                   <div
                     key={`starter-${row.name}`}
-                    className="px-3 py-2 md:px-6 md:py-3 flex justify-center items-center"
+                    className="px-2 sm:px-6 py-2.5 sm:py-3 flex justify-center items-center border-b border-gray-50"
                   >
                     <FeatureCell value={row.starter} />
                   </div>
                   <div
                     key={`growth-${row.name}`}
-                    className="px-3 py-2 md:px-6 md:py-3 flex justify-center items-center"
+                    className="px-2 sm:px-6 py-2.5 sm:py-3 flex justify-center items-center border-b border-gray-50"
                   >
                     <FeatureCell value={row.growth} />
                   </div>
                   <div
                     key={`scale-${row.name}`}
-                    className="px-3 py-2 md:px-6 md:py-3 flex justify-center items-center"
+                    className="px-2 sm:px-6 py-2.5 sm:py-3 flex justify-center items-center border-b border-gray-50"
                   >
                     <FeatureCell value={row.scale} />
                   </div>

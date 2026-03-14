@@ -12,6 +12,7 @@ interface HeroProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> 
   ctaText?: string;
   ctaLink?: string;
   onCtaClick?: () => void;
+  ctaSlot?: React.ReactNode;
   dashboardPreview?: React.ReactNode;
 }
 
@@ -25,6 +26,7 @@ const Hero = React.forwardRef<HTMLDivElement, HeroProps>(
       ctaText,
       ctaLink,
       onCtaClick,
+      ctaSlot,
       dashboardPreview,
       ...props
     },
@@ -64,31 +66,33 @@ const Hero = React.forwardRef<HTMLDivElement, HeroProps>(
             </p>
           )}
 
-          {/* CTA — simple dark button with arrow */}
-          {ctaText && ctaLink && (
+          {/* CTA */}
+          {(ctaSlot || (ctaText && ctaLink)) && (
             <div className="mb-16 sm:mb-20 lg:mb-24 animate-appear opacity-0 delay-500">
-              <Link
-                href={ctaLink}
-                onClick={onCtaClick}
-                className="inline-flex items-center gap-3 bg-[#2F4538] hover:bg-[#253b2e] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium text-sm sm:text-base transition-colors"
-              >
-                {ctaText}
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+              {ctaSlot || (
+                <Link
+                  href={ctaLink!}
+                  onClick={onCtaClick}
+                  className="inline-flex items-center gap-3 bg-[#2F4538] hover:bg-[#253b2e] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium text-sm sm:text-base transition-colors"
                 >
-                  <path
-                    d="M6 3L11 8L6 13"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </Link>
+                  {ctaText}
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 3L11 8L6 13"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </Link>
+              )}
             </div>
           )}
 

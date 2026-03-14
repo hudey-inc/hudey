@@ -2,11 +2,12 @@ import Link from "next/link";
 import { FloatingHeader } from "@/components/ui/floating-header";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Shield, Target, Zap } from "lucide-react";
+import { Footer } from "@/components/ui/footer";
 
 export const metadata = {
   title: "About | Hudey",
   description:
-    "Hudey is an AI-powered influencer marketing platform built for sustainable brands. Learn about our mission, values, and the team behind the product.",
+    "Hudey helps sustainable brands run influencer campaigns in days instead of weeks. Learn why we built it and who it's for.",
 };
 
 const APP_URL = "https://app.hudey.co";
@@ -22,27 +23,27 @@ const navItems = [
 const values = [
   {
     icon: Heart,
-    title: "Your Values, Protected",
+    title: "Sustainability vetting is the default",
     description:
-      "Every creator recommendation is checked against your brand\u2019s sustainability standards. No more accidental partnerships that undermine your message.",
+      "Every recommendation checks content history, past partnerships, and audience values. Not just what\u2019s in someone\u2019s bio.",
   },
   {
     icon: Shield,
-    title: "You Stay in Control",
+    title: "Nothing sends without your sign-off",
     description:
-      "AI does the research, writes the outreach, and suggests deals. But you approve every message, every offer, and every partnership before anything happens.",
+      "Hudey drafts outreach and negotiation messages. You read, edit, and approve before anything goes to a creator.",
   },
   {
     icon: Target,
-    title: "Built Only for Sustainable Brands",
+    title: "One vertical, done well",
     description:
-      "We don\u2019t serve fast fashion or mass-market DTC. Hudey is designed specifically for eco, ethical, and wellness brands who need creator vetting they can trust.",
+      "We only work with eco, ethical, and wellness brands. The product is built around the problems those teams actually have.",
   },
   {
     icon: Zap,
-    title: "Weeks of Work in Hours",
+    title: "Days, not weeks",
     description:
-      "Go from campaign brief to signed creators in under 48 hours. Every creator is still vetted, every message is still personalised \u2014 it just happens faster.",
+      "Campaign brief to signed creators in under 48 hours. The vetting still happens. The personalisation still happens. You just skip the admin.",
   },
 ];
 
@@ -58,14 +59,13 @@ export default function AboutPage() {
           <Badge>About</Badge>
           <div className="flex gap-2 flex-col">
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight text-center text-gray-900 leading-[1.08]">
-              Influencer marketing that
+              Creator partnerships that
               <br />
-              <em>matches your mission</em>
+              <em>actually fit your brand</em>
             </h1>
             <p className="text-lg leading-relaxed tracking-tight text-gray-400 max-w-xl text-center mx-auto">
-              Hudey helps sustainable brands find, contact, and sign the right
-              creators — without spending weeks on manual research, outreach,
-              and negotiation.
+              Hudey finds creators, writes the outreach, and closes the deal.
+              You decide who represents your brand.
             </p>
           </div>
         </div>
@@ -79,26 +79,23 @@ export default function AboutPage() {
           </h2>
           <div className="space-y-6 text-base sm:text-lg text-gray-600 leading-relaxed">
             <p>
-              Influencer marketing works. But if you run a sustainable brand,
-              the process is painful. Most discovery tools don&apos;t let you
-              filter by values. Outreach means copy-pasting the same DM dozens
-              of times. Negotiations drag on across email, Instagram, and
-              WhatsApp. By the time you&apos;ve signed one creator, you&apos;ve
-              burned half your budget on coordination.
+              We talked to 40+ UK sustainable brand founders about how they run
+              influencer campaigns. The same story kept coming up: three weeks
+              to sign one creator. Most of that time spent on research, DMs
+              that go nowhere, and rate negotiations across four different apps.
             </p>
             <p>
-              We built Hudey because sustainable brands shouldn&apos;t have to
-              choose between growing through creators and protecting their
-              brand. You need a tool that understands why vetting matters, that
-              checks a creator&apos;s content history before you reach out, and
-              that frees you up to focus on creative direction instead of admin.
+              The bigger problem? Generic discovery tools don&apos;t filter for
+              values. So brands end up partnering with creators who look right
+              on paper but don&apos;t actually align with their mission. One bad
+              partnership can undo months of brand building.
             </p>
             <p>
-              Hudey uses AI to find the right creators, write personalised
-              outreach, negotiate fair rates, and track every
-              deliverable&mdash;while you stay in control of every decision.
-              You approve every message. You sign off on every partnership.
-              Nothing happens without you.
+              Hudey fixes both. AI does the research, writes
+              outreach that references each creator&apos;s actual content, and
+              proposes fair rates. You see everything before it goes out. The
+              result: campaigns that launch in days, with creators who genuinely
+              fit.
             </p>
           </div>
         </div>
@@ -112,10 +109,10 @@ export default function AboutPage() {
               Our Principles
             </p>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-gray-900 mb-4 tracking-tight leading-[1.08]">
-              How we build <em>Hudey</em>
+              What we <em>believe</em>
             </h2>
             <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto">
-              The principles behind every feature and decision.
+              Four things that shape how the product works.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -149,14 +146,14 @@ export default function AboutPage() {
             Join the founding <em>cohort</em>
           </h2>
           <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto mb-8 sm:mb-10">
-            10 spots for UK sustainable brands who want better influencer
-            campaigns without the manual work.
+            10 spots for UK sustainable brands. Hands-on onboarding,
+            &pound;250/campaign locked in, and a direct line to our team.
           </p>
           <a
             href={`${APP_URL}/signup`}
             className="inline-flex items-center gap-3 bg-[#2F4538] hover:bg-[#253b2e] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium text-sm sm:text-base transition-colors"
           >
-            Apply for Early Access
+            Join the Founding Cohort
             <svg
               width="16"
               height="16"
@@ -176,34 +173,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#2F4538] text-white/60 py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-white/40">
-            &copy; {new Date().getFullYear()} Hudey. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6 text-sm">
-            <Link
-              href="/terms"
-              className="hover:text-white transition-colors"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="hover:text-white transition-colors"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/refund"
-              className="hover:text-white transition-colors"
-            >
-              Refund Policy
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
