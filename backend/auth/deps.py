@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import time
 from typing import Optional
 
 import requests as http_requests
@@ -14,7 +15,20 @@ security = HTTPBearer()
 
 # Cache JWKS so we don't fetch on every request
 _jwks_cache: Optional[dict] = None
+_jwks_cached_at: float = 0.0  # epoch seconds; used to serve stale cache on transient failures
 _public_keys_cache: dict = {}  # kid -> public key object
+
+# How long a cached JWKS is considered fresh. After this window we try to
+# refetch, but if the refetch fails we keep serving the stale cache for up to
+# JWKS_STALE_OK_SECONDS — better to accept a slightly outdated key list than
+# to 500 every auth'd request during a brief Supabase blip.
+JWKS_FRESH_SECONDS = 60 * 60  # 1h
+JWKS_STALE_OK_SECONDS = 60 * 60 * 24  # 24h
+
+# Retry config for the JWKS HTTP fetch itself.
+_JWKS_RETRIES = 3
+_JWKS_BACKOFF_SECONDS = 0.5
+_JWKS_REQUEST_TIMEOUT = 5
 
 
 def _get_supabase_url() -> str:
@@ -25,10 +39,51 @@ def _get_jwt_secret() -> str:
     return os.getenv("SUPABASE_JWT_SECRET", "").strip()
 
 
-def _get_jwks() -> dict:
-    """Fetch the JWKS from Supabase (cached after first call)."""
-    global _jwks_cache
-    if _jwks_cache:
+def _fetch_jwks_with_retries(jwks_url: str) -> dict:
+    """GET the JWKS document with short exponential-ish backoff.
+
+    Raises the last exception if all attempts fail. Keep the per-attempt
+    timeout small so a slow upstream doesn't stall every incoming request.
+    """
+    last_err: Optional[Exception] = None
+    for attempt in range(1, _JWKS_RETRIES + 1):
+        try:
+            resp = http_requests.get(jwks_url, timeout=_JWKS_REQUEST_TIMEOUT)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            last_err = e
+            if attempt < _JWKS_RETRIES:
+                delay = _JWKS_BACKOFF_SECONDS * attempt
+                logger.warning(
+                    "JWKS fetch attempt %d/%d failed (%s) — retrying in %.2fs",
+                    attempt, _JWKS_RETRIES, e, delay,
+                )
+                time.sleep(delay)
+            else:
+                logger.error(
+                    "JWKS fetch failed after %d attempts: %s", _JWKS_RETRIES, e,
+                )
+    assert last_err is not None
+    raise last_err
+
+
+def _get_jwks(force_refresh: bool = False) -> dict:
+    """Return the JWKS document, refreshing from Supabase when needed.
+
+    Behavior:
+    - Serve from cache if fresh (< JWKS_FRESH_SECONDS old) and not forced.
+    - Otherwise try to refetch with retries.
+    - If refetch fails but we have a stale cache younger than
+      JWKS_STALE_OK_SECONDS, keep serving it rather than 500ing every request.
+    - Only raise 500 if we have no usable cache at all.
+    """
+    global _jwks_cache, _jwks_cached_at
+
+    now = time.time()
+    cache_age = now - _jwks_cached_at if _jwks_cache else float("inf")
+
+    if _jwks_cache and not force_refresh and cache_age < JWKS_FRESH_SECONDS:
         return _jwks_cache
 
     supabase_url = _get_supabase_url()
@@ -40,16 +95,25 @@ def _get_jwks() -> dict:
 
     jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
     try:
-        resp = http_requests.get(jwks_url, timeout=10)
-        resp.raise_for_status()
-        _jwks_cache = resp.json()
-        logger.info("Fetched JWKS from %s (%d keys)", jwks_url, len(_jwks_cache.get("keys", [])))
+        jwks = _fetch_jwks_with_retries(jwks_url)
+        _jwks_cache = jwks
+        _jwks_cached_at = now
+        logger.info(
+            "Fetched JWKS from %s (%d keys)", jwks_url, len(jwks.get("keys", [])),
+        )
         return _jwks_cache
     except Exception as e:
-        logger.error("Failed to fetch JWKS from %s: %s", jwks_url, e)
+        # Fall back to stale cache if we have one within the grace window.
+        if _jwks_cache and cache_age < JWKS_STALE_OK_SECONDS:
+            logger.warning(
+                "JWKS refresh failed (%s); serving stale cache (age=%.0fs)",
+                e, cache_age,
+            )
+            return _jwks_cache
+        logger.error("Failed to fetch JWKS from %s and no usable cache: %s", jwks_url, e)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch signing keys",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Signing keys temporarily unavailable",
         )
 
 
@@ -66,10 +130,8 @@ def _get_ec_public_key(kid: str):
             break
 
     if not key_data:
-        # Clear cache and retry (key rotation)
-        global _jwks_cache
-        _jwks_cache = None
-        jwks_data = _get_jwks()
+        # Unknown kid — likely key rotation. Force a fresh fetch.
+        jwks_data = _get_jwks(force_refresh=True)
         for k in jwks_data.get("keys", []):
             if k.get("kid") == kid:
                 key_data = k

@@ -54,26 +54,39 @@ def _execute_campaign(campaign_id: str) -> None:
     def _on_step(ctx):
         try:
             db_update(campaign_id, {"agent_state": ctx.state.value})
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                "Campaign %s: on_step DB update failed (state=%s): %s — retrying with fresh client",
+                campaign_id, ctx.state.value, e,
+            )
             try:
                 from backend.db.client import reset_supabase
                 reset_supabase()
                 db_update(campaign_id, {"agent_state": ctx.state.value})
-            except Exception:
-                pass
+            except Exception as retry_err:
+                # Non-fatal for step tracking, but capture so we see it.
+                logger.error(
+                    "Campaign %s: on_step retry also failed (state=%s): %s",
+                    campaign_id, ctx.state.value, retry_err,
+                )
+                sentry_sdk.capture_exception(retry_err)
 
     context = agent.execute_campaign(brief, approve_all=False, on_step=_on_step)
 
-    # Build monitor summary from context
+    # Build monitor summary from context (non-fatal — report still saved if this fails)
     monitor_summary = {}
     if context.monitor_updates:
         try:
             from tools.campaign_monitor import build_monitor_summary
             monitor_summary = build_monitor_summary(context.monitor_updates)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Campaign %s: failed to build monitor summary: %s", campaign_id, e)
+            sentry_sdk.capture_exception(e)
 
-    # Save result — includes monitor summary alongside report
+    # Save result — includes monitor summary alongside report.
+    # This is the critical completion write: if it fails, the campaign is
+    # "done" but looks stuck. Retry once with a fresh client, then raise so
+    # the job queue marks the job failed and can retry.
     result = {
         "brief": context.brief.model_dump() if context.brief else None,
         "strategy": context.strategy.model_dump() if context.strategy else None,
@@ -82,11 +95,23 @@ def _execute_campaign(campaign_id: str) -> None:
         "report": context.report,
         "monitor_summary": monitor_summary,
     }
-    db_update(campaign_id, {
+    completion_payload = {
         "status": "completed",
         "agent_state": "completed",
         "result_json": result,
-    })
+    }
+    try:
+        db_update(campaign_id, completion_payload)
+    except Exception as e:
+        logger.warning(
+            "Campaign %s: completion write failed, retrying with fresh client: %s",
+            campaign_id, e,
+        )
+        from backend.db.client import reset_supabase
+        reset_supabase()
+        # Let this raise — the outer worker loop will capture it, mark the
+        # job as failed/retryable, and surface it via Sentry.
+        db_update(campaign_id, completion_payload)
     logger.info("Campaign %s completed via job queue", campaign_id)
 
     # Completion notification with metrics (non-fatal)
@@ -114,8 +139,10 @@ def _execute_campaign(campaign_id: str) -> None:
                 campaign_id=campaign_id,
                 link=f"/campaigns/{short_id}",
             )
-    except Exception:
-        pass
+    except Exception as e:
+        # Notification is non-fatal — campaign is already marked complete.
+        logger.warning("Campaign %s: completion notification failed: %s", campaign_id, e)
+        sentry_sdk.capture_exception(e)
 
 
 def _worker_loop() -> None:
@@ -169,7 +196,7 @@ def _worker_loop() -> None:
                             "agent_state": f"error: {str(e)[:200]}",
                         })
 
-                        # Send failure notification
+                        # Send failure notification (non-fatal)
                         try:
                             from backend.db.repositories.notification_repo import maybe_create_notification
                             cmp = get_campaign(campaign_id)
@@ -184,10 +211,20 @@ def _worker_loop() -> None:
                                     campaign_id=campaign_id,
                                     link=f"/campaigns/{short_id}",
                                 )
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                        except Exception as notif_err:
+                            logger.warning(
+                                "Campaign %s: failure notification failed: %s",
+                                campaign_id, notif_err,
+                            )
+                            sentry_sdk.capture_exception(notif_err)
+                except Exception as status_err:
+                    # Couldn't update campaign status after failure — campaign
+                    # may be stuck "running". Log loudly + Sentry.
+                    logger.error(
+                        "Campaign %s: failed to update status after job failure: %s",
+                        campaign_id, status_err,
+                    )
+                    sentry_sdk.capture_exception(status_err)
 
         except Exception as e:
             sentry_sdk.capture_exception(e)
