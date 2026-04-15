@@ -243,6 +243,22 @@ const faqs = [
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (value: string) => EMAIL_RE.test(value.trim());
 
+// Dummy chart values for the hero dashboard preview. Kept as a named
+// constant so the shape can be tweaked without hunting through JSX, and
+// so the numbers read as "sample data" rather than magic.
+const HERO_CHART_BARS = [35, 55, 42, 72, 48, 85, 62, 78, 55, 92, 68, 82];
+const HERO_TOP_CREATORS = [
+  { name: "Sarah M.", pct: 92 },
+  { name: "James K.", pct: 87 },
+  { name: "Lily T.", pct: 74 },
+];
+const HERO_STATS = [
+  { label: "Active Campaigns", value: "3" },
+  { label: "Creators Contacted", value: "47" },
+  { label: "Response Rate", value: "68%" },
+  { label: "Deals Closed", value: "12" },
+];
+
 export default function LandingPage() {
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -304,12 +320,7 @@ export default function LandingPage() {
             {/* Dashboard content */}
             <div className="bg-white p-5 sm:p-8 lg:p-10">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-8">
-                {[
-                  { label: "Active Campaigns", value: "3" },
-                  { label: "Creators Contacted", value: "47" },
-                  { label: "Response Rate", value: "68%" },
-                  { label: "Deals Closed", value: "12" },
-                ].map((stat) => (
+                {HERO_STATS.map((stat) => (
                   <div
                     key={stat.label}
                     className="rounded-xl border border-black/[0.06] p-3 sm:p-4"
@@ -329,7 +340,7 @@ export default function LandingPage() {
                     Campaign Performance
                   </div>
                   <div className="flex items-end gap-1.5 h-20 sm:h-28">
-                    {[35, 55, 42, 72, 48, 85, 62, 78, 55, 92, 68, 82].map(
+                    {HERO_CHART_BARS.map(
                       (h, i) => (
                         <div
                           key={i}
@@ -348,11 +359,7 @@ export default function LandingPage() {
                     Top Creators
                   </div>
                   <div className="space-y-3">
-                    {[
-                      { name: "Sarah M.", pct: 92 },
-                      { name: "James K.", pct: 87 },
-                      { name: "Lily T.", pct: 74 },
-                    ].map((creator) => (
+                    {HERO_TOP_CREATORS.map((creator) => (
                       <div
                         key={creator.name}
                         className="flex items-center gap-2.5"

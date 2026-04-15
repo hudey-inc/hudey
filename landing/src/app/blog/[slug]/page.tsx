@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock } from "lucide-react";
-import { getPostBySlug, getAllSlugs, getCategoryLabel } from "@/lib/blog";
+import { getPostBySlug, getAllSlugs, getCategoryLabel, type BlogPost } from "@/lib/blog";
 import { FloatingHeader } from "@/components/ui/floating-header";
 import { Footer } from "@/components/ui/footer";
 
@@ -39,7 +39,9 @@ export function generateMetadata({ params }: Props): Metadata {
   };
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
+// Keyed on the narrow BlogPost["category"] union so the type checker
+// enforces exhaustive coverage whenever a new category is introduced.
+const CATEGORY_COLORS: Record<BlogPost["category"], string> = {
   product: "bg-[#2F4538] text-white",
   industry: "bg-[#E8DCC8] text-[#2F4538]",
   guide: "bg-[#D16B42]/10 text-[#D16B42]",
@@ -59,7 +61,7 @@ export default function BlogPostPage({ params }: Props) {
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${CATEGORY_COLORS[post.category] ?? "bg-gray-100 text-gray-700"}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${CATEGORY_COLORS[post.category]}`}
             >
               {getCategoryLabel(post.category)}
             </span>
