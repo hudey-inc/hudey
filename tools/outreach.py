@@ -73,8 +73,20 @@ class OutreachTool(BaseTool):
         if mapping_path.exists():
             try:
                 existing = json.loads(mapping_path.read_text())
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                # Corrupt mapping file — rename it out of the way so we start
+                # fresh instead of silently losing routes for future messages.
+                logger.warning(
+                    "outreach: mapping file %s is corrupt (%s); backing up and starting fresh",
+                    mapping_path, e,
+                )
+                try:
+                    mapping_path.rename(mapping_path.with_suffix(".corrupt.json"))
+                except OSError as rename_err:
+                    logger.warning(
+                        "outreach: could not back up corrupt mapping file: %s",
+                        rename_err,
+                    )
         for m in messages:
             mid = m.get("message_id")
             if mid:

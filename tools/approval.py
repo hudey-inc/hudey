@@ -1,6 +1,7 @@
 """Approval tool - request and check human approval."""
 
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -11,6 +12,8 @@ from typing import Optional
 
 from models.actions import AgentAction, AgentActionType, ToolResult
 from models.context import CampaignContext
+
+logger = logging.getLogger(__name__)
 
 
 class ApprovalTool:
@@ -193,8 +196,12 @@ class WebApprovalTool(ApprovalTool):
                     campaign_id=self.campaign_db_id,
                     link=f"/campaigns/{short_id}",
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            # Notification is non-fatal — approval request itself already saved.
+            logger.warning(
+                "approval: failed to send approval-request notification for campaign %s: %s",
+                self.campaign_db_id, e,
+            )
 
         # Update campaign status
         update_campaign(self.campaign_db_id, {
@@ -221,8 +228,12 @@ class WebApprovalTool(ApprovalTool):
                             "request_id": approval_id,
                         },
                     )
-            except Exception:
+            except Exception as e:
                 consecutive_errors += 1
+                logger.warning(
+                    "approval: polling get_approval(%s) failed (%d/20): %s",
+                    approval_id, consecutive_errors, e,
+                )
                 if consecutive_errors > 20:
                     return ToolResult(
                         success=False,
@@ -232,8 +243,11 @@ class WebApprovalTool(ApprovalTool):
                 try:
                     from backend.db.client import reset_supabase
                     reset_supabase()
-                except Exception:
-                    pass
+                except Exception as reset_err:
+                    logger.warning(
+                        "approval: failed to reset Supabase client: %s",
+                        reset_err,
+                    )
                 # Back off on errors
                 time.sleep(min(5 * consecutive_errors, 30))
                 continue

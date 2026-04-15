@@ -85,8 +85,19 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Only the verbs we actually serve. Tighter than `*` and avoids leaking
+    # future methods via preflight cache if we ever add an admin route.
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Requested-With",
+        "X-Correlation-Id",
+        "Accept",
+        "Origin",
+    ],
+    expose_headers=["X-Correlation-Id"],
+    max_age=600,
 )
 
 app.include_router(analytics.router)

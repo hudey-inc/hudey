@@ -1,6 +1,7 @@
 """Analytics tool - aggregate metrics and generate campaign report."""
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -14,6 +15,8 @@ from dotenv import load_dotenv
 from models.actions import AgentAction, AgentActionType, ToolResult
 from models.context import CampaignContext
 from tools.base import BaseTool
+
+logger = logging.getLogger(__name__)
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -100,20 +103,28 @@ class AnalyticsTool(BaseTool):
                 "recommendations": ["Collect real metrics for analysis."],
             }
 
-        # Load campaign insights — try DB first, fall back to JSON file
+        # Load campaign insights — try DB first, fall back to JSON file.
+        # Both paths are optional: a missing summary just produces a leaner
+        # report, so we log and move on rather than failing the whole run.
         insights_data = {}
         try:
             from backend.db.repositories.insights_repo import get_insights_summary
             insights_data = get_insights_summary(context.campaign_id)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(
+                "analytics: failed to load insights from DB for campaign %s: %s",
+                context.campaign_id, e,
+            )
         if not insights_data:
             insights_path = self.output_dir / f"campaign_insights_{context.campaign_id}.json"
             if insights_path.exists():
                 try:
                     insights_data = json.loads(insights_path.read_text()).get("summary", {})
-                except Exception:
-                    pass
+                except (OSError, json.JSONDecodeError) as e:
+                    logger.warning(
+                        "analytics: failed to read insights file %s: %s",
+                        insights_path, e,
+                    )
 
         prompt = REPORT_PROMPT.format(
             brief_json=context.brief.model_dump_json(indent=2) if context.brief else "{}",
@@ -132,15 +143,23 @@ class AnalyticsTool(BaseTool):
             text = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
         try:
             return json.loads(text)
-        except json.JSONDecodeError:
-            # Try extracting JSON object from response
+        except json.JSONDecodeError as first_err:
+            # LLM sometimes wraps JSON in prose — try to extract the first object.
             import re
             match = re.search(r"\{.*\}", text, re.DOTALL)
             if match:
                 try:
                     return json.loads(match.group())
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as extract_err:
+                    logger.warning(
+                        "analytics: report JSON malformed even after extraction: %s",
+                        extract_err,
+                    )
+            else:
+                logger.warning(
+                    "analytics: report response was not JSON: %s",
+                    first_err,
+                )
             return {
                 "executive_summary": ["Campaign completed."],
                 "highlights": ["Report generation encountered a formatting issue."],
@@ -150,7 +169,12 @@ class AnalyticsTool(BaseTool):
             }
 
     def _run_campaign_insights(self, context: CampaignContext) -> dict:
-        """Run Purchase Intent + Comments Relevance via campaign_insights tool."""
+        """Run Purchase Intent + Comments Relevance via campaign_insights tool.
+
+        Insights are a nice-to-have on top of the core report, so a failure
+        here returns an empty summary and logs the cause rather than breaking
+        the whole analytics step.
+        """
         try:
             from tools.campaign_insights import CampaignInsightsTool
             tool = CampaignInsightsTool(output_dir=self.output_dir)
@@ -162,7 +186,11 @@ class AnalyticsTool(BaseTool):
                 product_description=product_desc,
             )
             return tool._build_summary(results)
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                "analytics: campaign insights failed for %s: %s",
+                context.campaign_id, e,
+            )
             return {}
 
     def execute(

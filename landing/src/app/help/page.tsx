@@ -223,9 +223,16 @@ export default function HelpPage() {
             Step-by-step answers to help you get the most out of Hudey.
           </p>
           <div className="relative max-w-lg mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search
+              aria-hidden="true"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+            />
+            <label htmlFor="help-search" className="sr-only">
+              Search help articles
+            </label>
             <input
-              type="text"
+              id="help-search"
+              type="search"
               placeholder="Search for help..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}

@@ -1,6 +1,7 @@
 """Negotiation tool - summarize threads, compose counter offers, score proposals."""
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -17,6 +18,8 @@ from models.context import CampaignContext
 from tools.base import BaseTool
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+logger = logging.getLogger(__name__)
 
 
 COUNTER_OFFER_PROMPT = """You are negotiating on behalf of a brand with a creator for an influencer campaign.
@@ -168,8 +171,18 @@ class NegotiationTool(BaseTool):
                     lines = text.split("\n")
                     text = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
                 return json.loads(text)
-            except Exception:
-                pass
+            except json.JSONDecodeError as e:
+                logger.warning(
+                    "negotiation: LLM counter-offer response was not JSON — using deterministic fallback: %s",
+                    e,
+                )
+            except Exception as e:
+                # Upstream (network, rate limit, model error) — non-fatal, we
+                # fall through to the deterministic fallback below.
+                logger.warning(
+                    "negotiation: LLM counter-offer call failed — using deterministic fallback: %s",
+                    e,
+                )
 
         # Fallback
         fee = int(context.brief.budget_gbp / 5)
