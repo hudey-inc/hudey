@@ -23,25 +23,37 @@ logger = logging.getLogger(__name__)
 
 
 def _get_user_or_ip(request: Request) -> str:
-    """Extract user id from JWT for authenticated routes, fall back to IP."""
-    # Try Authorization header → decode JWT sub without full validation
-    # (the route itself validates properly; this is just for the limiter key)
-    auth = request.headers.get("authorization", "")
-    if auth.lower().startswith("bearer "):
-        token = auth[7:]
-        try:
-            import base64
-            import json
+    """Extract user id from JWT for authenticated routes, fall back to IP.
 
-            parts = token.split(".")
-            if len(parts) >= 2:
-                payload_b64 = parts[1] + "=" * (4 - len(parts[1]) % 4)
-                payload = json.loads(base64.urlsafe_b64decode(payload_b64))
-                sub = payload.get("sub")
-                if sub:
-                    return f"user:{sub}"
-        except Exception:
-            pass
+    We only *decode* the JWT payload here (no signature verification) — the
+    route itself validates the token properly via `get_current_user`. This is
+    purely for picking a rate-limit bucket.
+
+    Malformed tokens fall through to IP-based limiting. We log at DEBUG so
+    noisy client bugs don't spam production logs, but the failure isn't
+    silent if you need to investigate.
+    """
+    auth = request.headers.get("authorization", "")
+    if not auth.lower().startswith("bearer "):
+        return get_remote_address(request)
+
+    token = auth[7:]
+    try:
+        import base64
+        import binascii
+        import json
+
+        parts = token.split(".")
+        if len(parts) < 2:
+            raise ValueError("JWT must have at least header.payload")
+        payload_b64 = parts[1] + "=" * (4 - len(parts[1]) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+        sub = payload.get("sub")
+        if sub:
+            return f"user:{sub}"
+        logger.debug("Rate-limit key: bearer token has no sub claim; falling back to IP")
+    except (ValueError, binascii.Error, json.JSONDecodeError, UnicodeDecodeError) as e:
+        logger.debug("Rate-limit key: malformed bearer token (%s); falling back to IP", e)
     return get_remote_address(request)
 
 

@@ -238,9 +238,19 @@ const faqs = [
   },
 ];
 
+// Basic RFC-5322-ish check — we only need to block obvious junk before we
+// pass the value into a URL. Server-side still does its own validation.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isValidEmail = (value: string) => EMAIL_RE.test(value.trim());
+
 export default function LandingPage() {
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const scrollRef = useScrollReveal();
+
+  const trimmedEmail = email.trim();
+  const emailIsValid = isValidEmail(trimmedEmail);
+  const showEmailError = emailTouched && trimmedEmail.length > 0 && !emailIsValid;
 
   return (
     <div ref={scrollRef} className="min-h-screen bg-[#f3f1ea] overflow-x-clip">
@@ -875,21 +885,49 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="reveal-item flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-xl mx-auto mb-10 sm:mb-12 px-4">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your work email"
-                className="flex-1 px-5 sm:px-6 py-4 rounded-xl text-gray-900 bg-white outline-none focus:ring-2 focus:ring-[#D16B42]/40 text-sm sm:text-base"
-              />
-              <a
-                href={`${APP_URL}/signup${email ? `?email=${encodeURIComponent(email)}` : ""}`}
-                onClick={() => trackCTAClick("footer")}
-                className="bg-white hover:bg-gray-100 text-gray-900 px-8 py-4 rounded-xl font-medium text-sm sm:text-base transition-colors whitespace-nowrap text-center"
-              >
-                Join Now
-              </a>
+            <div className="reveal-item flex flex-col gap-2 max-w-xl mx-auto mb-10 sm:mb-12 px-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setEmailTouched(true)}
+                  placeholder="Enter your work email"
+                  aria-invalid={showEmailError || undefined}
+                  aria-describedby={showEmailError ? "email-error" : undefined}
+                  className={`flex-1 px-5 sm:px-6 py-4 rounded-xl text-gray-900 bg-white outline-none text-sm sm:text-base transition-shadow ${
+                    showEmailError
+                      ? "ring-2 ring-red-500/60 focus:ring-red-500/60"
+                      : "focus:ring-2 focus:ring-[#D16B42]/40"
+                  }`}
+                />
+                <a
+                  href={`${APP_URL}/signup${emailIsValid ? `?email=${encodeURIComponent(trimmedEmail)}` : ""}`}
+                  onClick={(e) => {
+                    // If the user typed something invalid, stop navigation so
+                    // we don't send junk to the signup page.
+                    if (trimmedEmail.length > 0 && !emailIsValid) {
+                      e.preventDefault();
+                      setEmailTouched(true);
+                      return;
+                    }
+                    trackCTAClick("footer");
+                  }}
+                  aria-disabled={showEmailError || undefined}
+                  className="bg-white hover:bg-gray-100 text-gray-900 px-8 py-4 rounded-xl font-medium text-sm sm:text-base transition-colors whitespace-nowrap text-center"
+                >
+                  Join Now
+                </a>
+              </div>
+              {showEmailError && (
+                <p
+                  id="email-error"
+                  role="alert"
+                  className="text-xs sm:text-sm text-red-300 text-left sm:text-center"
+                >
+                  Please enter a valid email address.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-8 text-xs sm:text-sm text-white/60 px-4">

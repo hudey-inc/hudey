@@ -7,50 +7,123 @@ reaches Supabase or downstream services.
 
 from __future__ import annotations
 
+import json
+import re
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+# Defensive size caps on free-form dict fields (brief, strategy, proposed_terms,
+# terms). These are paid-downstream and/or persisted to Supabase, so we reject
+# pathological payloads (deeply nested dicts, megabyte JSON blobs) before they
+# hit any of those paths. Generous limits — real briefs are a few KB.
+_MAX_DICT_JSON_BYTES = 64 * 1024      # 64 KB serialized
+_MAX_DICT_DEPTH = 8                   # reject billion-laughs style nesting
+_SHORT_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+
+
+def _json_depth(value: Any, _seen: int = 0) -> int:
+    """Return the deepest nesting level within a JSON-serializable value."""
+    if _seen > _MAX_DICT_DEPTH:
+        return _seen
+    if isinstance(value, dict):
+        return 1 + max((_json_depth(v, _seen + 1) for v in value.values()), default=0)
+    if isinstance(value, list):
+        return 1 + max((_json_depth(v, _seen + 1) for v in value), default=0)
+    return 0
+
+
+def _validate_dict_payload(v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Reject dicts that are too big or too deeply nested."""
+    if v is None:
+        return v
+    if _json_depth(v) > _MAX_DICT_DEPTH:
+        raise ValueError(f"payload nested more than {_MAX_DICT_DEPTH} levels deep")
+    # Serialize once to enforce a byte cap; also catches non-JSON-able values.
+    try:
+        serialized = json.dumps(v, default=str)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"payload is not JSON-serializable: {e}")
+    if len(serialized.encode("utf-8")) > _MAX_DICT_JSON_BYTES:
+        raise ValueError(
+            f"payload exceeds max size of {_MAX_DICT_JSON_BYTES // 1024} KB"
+        )
+    return v
 
 
 # ── Campaigns ────────────────────────────────────────────────
 
 
 class CreateCampaignRequest(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=200)
     brief: Optional[Dict[str, Any]] = None
     strategy: Optional[Dict[str, Any]] = None
-    short_id: Optional[str] = None
-    contract_template_id: Optional[str] = None
+    # short_id appears in URLs — restrict to URL-safe chars and reasonable length.
+    short_id: Optional[str] = Field(default=None, max_length=64)
+    contract_template_id: Optional[str] = Field(default=None, max_length=64)
+
+    @field_validator("short_id")
+    @classmethod
+    def _valid_short_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        if not _SHORT_ID_PATTERN.match(v):
+            raise ValueError(
+                "short_id must start with alphanumeric and contain only "
+                "letters, digits, underscore, or hyphen (max 64 chars)"
+            )
+        return v
+
+    @field_validator("brief", "strategy")
+    @classmethod
+    def _bounded_dict(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return _validate_dict_payload(v)
 
 
 class ReplyToCreatorRequest(BaseModel):
-    creator_id: str = Field(..., min_length=1)
-    message: str = Field(..., min_length=1)
+    creator_id: str = Field(..., min_length=1, max_length=64)
+    message: str = Field(..., min_length=1, max_length=10_000)
 
 
 class GenerateCounterOfferRequest(BaseModel):
-    creator_id: str = Field(..., min_length=1)
+    creator_id: str = Field(..., min_length=1, max_length=64)
 
 
 class SendCounterOfferRequest(BaseModel):
-    creator_id: str = Field(..., min_length=1)
-    message: str = Field(..., min_length=1)
-    subject: Optional[str] = None
+    creator_id: str = Field(..., min_length=1, max_length=64)
+    message: str = Field(..., min_length=1, max_length=10_000)
+    subject: Optional[str] = Field(default=None, max_length=500)
     proposed_terms: Optional[Dict[str, Any]] = None
+
+    @field_validator("proposed_terms")
+    @classmethod
+    def _bounded_terms(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return _validate_dict_payload(v)
 
 
 class AcceptTermsRequest(BaseModel):
-    creator_id: str = Field(..., min_length=1)
+    creator_id: str = Field(..., min_length=1, max_length=64)
     terms: Optional[Dict[str, Any]] = None
     contract_accepted: Optional[bool] = None
     send_confirmation: bool = True
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("terms")
+    @classmethod
+    def _bounded_terms(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return _validate_dict_payload(v)
 
 
 class UpdateEngagementStatusRequest(BaseModel):
     status: Literal["contacted", "responded", "negotiating", "agreed", "declined"]
     terms: Optional[Dict[str, Any]] = None
     latest_proposal: Optional[Dict[str, Any]] = None
+
+    @field_validator("terms", "latest_proposal")
+    @classmethod
+    def _bounded_dicts(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return _validate_dict_payload(v)
 
 
 class DuplicateCampaignRequest(BaseModel):
@@ -160,11 +233,16 @@ class UpdateContractRequest(BaseModel):
 
 
 class CreateTemplateRequest(BaseModel):
-    name: str = Field(..., min_length=1)
-    description: Optional[str] = ""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(default="", max_length=2000)
     brief: Optional[Dict[str, Any]] = None
     strategy: Optional[Dict[str, Any]] = None
-    campaign_id: Optional[str] = None
+    campaign_id: Optional[str] = Field(default=None, max_length=64)
+
+    @field_validator("brief", "strategy")
+    @classmethod
+    def _bounded_dict(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return _validate_dict_payload(v)
 
     @model_validator(mode="after")
     def brief_or_campaign(self) -> "CreateTemplateRequest":
@@ -174,5 +252,10 @@ class CreateTemplateRequest(BaseModel):
 
 
 class CreateCampaignFromTemplateRequest(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=200)
     brief_overrides: Optional[Dict[str, Any]] = None
+
+    @field_validator("brief_overrides")
+    @classmethod
+    def _bounded_overrides(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        return _validate_dict_payload(v)
