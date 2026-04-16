@@ -31,6 +31,9 @@ class PhylloClient:
         self.client_id = cid or None
         self.client_secret = csec or None
         self.base_url = (base_url or os.getenv("PHYLLO_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
+        # Stashed on every failed request so callers (and the /search endpoint)
+        # can surface a useful error instead of a silent empty list.
+        self.last_error: Optional[dict] = None
 
     @property
     def is_configured(self) -> bool:
@@ -51,6 +54,22 @@ class PhylloClient:
             h["Authorization"] = f"Bearer {self.api_key}"
         return h
 
+    def _capture_error(self, method: str, path: str, exc: Exception) -> None:
+        """Stash the last error so callers can surface it (instead of silent empty)."""
+        info: dict = {
+            "method": method,
+            "path": path,
+            "message": str(exc),
+        }
+        resp = getattr(exc, "response", None)
+        if resp is not None:
+            info["status_code"] = getattr(resp, "status_code", None)
+            try:
+                info["body"] = resp.text[:500]
+            except Exception:
+                pass
+        self.last_error = info
+
     def _get(self, path: str, params: Optional[dict] = None) -> Optional[dict]:
         if not self.is_configured:
             return None
@@ -66,8 +85,10 @@ class PhylloClient:
             return r.json()
         except requests.RequestException as e:
             logger.warning("InsightIQ GET %s failed: %s", path, e)
+            self._capture_error("GET", path, e)
             return None
-        except ValueError:
+        except ValueError as e:
+            self._capture_error("GET", path, e)
             return None
 
     def _post(self, path: str, body: dict) -> Optional[dict]:
@@ -87,8 +108,10 @@ class PhylloClient:
             logger.warning("InsightIQ POST %s failed: %s", path, e)
             if hasattr(e, "response") and e.response is not None:
                 logger.warning("Response body: %s", e.response.text[:500])
+            self._capture_error("POST", path, e)
             return None
-        except ValueError:
+        except ValueError as e:
+            self._capture_error("POST", path, e)
             return None
 
     # InsightIQ work_platform_id mapping

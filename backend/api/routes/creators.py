@@ -158,7 +158,29 @@ def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict =
         )
 
         if not raw_results:
-            return {"creators": [], "total": 0, "configured": True}
+            # Surface the real reason so we don't have to trawl Railway logs
+            # for every silent empty. Keeps the old ``configured`` flag for
+            # back-compat but adds an ``error`` + ``provider`` block.
+            err = client.last_error
+            env = "sandbox" if "sandbox" in client.base_url else "production"
+            logger.warning(
+                "creators/search returned 0 results (provider=insightiq, env=%s): %s",
+                env, err,
+            )
+            payload: dict = {
+                "creators": [],
+                "total": 0,
+                "configured": True,
+                "provider": {"name": "insightiq", "env": env},
+            }
+            if err:
+                payload["error"] = {
+                    "source": "insightiq",
+                    "status_code": err.get("status_code"),
+                    "message": err.get("message"),
+                    "body_snippet": err.get("body"),
+                }
+            return payload
 
         # Map to Creator models and persist to DB
         from tools.creator_discovery import _map_phyllo_to_creator
