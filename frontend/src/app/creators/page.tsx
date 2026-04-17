@@ -11,6 +11,10 @@ import {
   Globe,
   Loader2,
   Sparkles,
+  BadgeCheck,
+  Mail,
+  Link as LinkIcon,
+  Handshake,
 } from "lucide-react";
 import type { DiscoveredCreator, CreatorSearchParams } from "@/lib/api";
 import { searchCreators, getSavedCreators, saveCreator, unsaveCreator, enrichBrandFit } from "@/lib/api";
@@ -126,13 +130,25 @@ function CreatorCard({
       {/* Avatar */}
       <CreatorAvatar creator={creator} />
 
-      {/* Name */}
-      <div className="text-center mb-3">
-        <p className="font-semibold text-gray-900 text-sm truncate">
-          {creator.display_name || creator.username}
-        </p>
+      {/* Name + verified badge */}
+      <div className="text-center mb-2">
+        <div className="flex items-center justify-center gap-1">
+          <p className="font-semibold text-gray-900 text-sm truncate">
+            {creator.display_name || creator.username}
+          </p>
+          {creator.is_verified && (
+            <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+          )}
+        </div>
         <p className="text-xs text-gray-400 truncate">@{creator.username}</p>
       </div>
+
+      {/* Bio snippet */}
+      {creator.bio && (
+        <p className="text-xs text-gray-600 text-center mb-3 line-clamp-2">
+          {creator.bio}
+        </p>
+      )}
 
       {/* Metrics */}
       <div className="flex items-center justify-center gap-4 mb-3">
@@ -178,7 +194,7 @@ function CreatorCard({
 
       {/* Categories */}
       {creator.categories.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-1">
+        <div className="flex flex-wrap justify-center gap-1 mb-2">
           {creator.categories.slice(0, 3).map((cat, i) => (
             <span
               key={i}
@@ -190,6 +206,45 @@ function CreatorCard({
           {creator.categories.length > 3 && (
             <span className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-400 rounded-full">
               +{creator.categories.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Brand-useful contact chips */}
+      {(creator.email || creator.website || creator.open_to_collab) && (
+        <div className="flex flex-wrap justify-center gap-1 pt-2 border-t border-gray-100">
+          {creator.email && (
+            <a
+              href={`mailto:${creator.email}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-700 rounded-full hover:bg-emerald-100 transition-colors"
+              title={creator.email}
+            >
+              <Mail className="w-3 h-3" />
+              Email
+            </a>
+          )}
+          {creator.website && (
+            <a
+              href={creator.website.startsWith("http") ? creator.website : `https://${creator.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-700 rounded-full hover:bg-indigo-100 transition-colors"
+              title={creator.website}
+            >
+              <LinkIcon className="w-3 h-3" />
+              Site
+            </a>
+          )}
+          {creator.open_to_collab && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] bg-amber-50 text-amber-700 rounded-full"
+              title="Bio mentions collabs / partnerships / brand deals"
+            >
+              <Handshake className="w-3 h-3" />
+              Collabs
             </span>
           )}
         </div>

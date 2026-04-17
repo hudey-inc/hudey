@@ -1109,13 +1109,23 @@ export type DiscoveredCreator = {
   username: string;
   display_name: string;
   follower_count: number;
+  following_count?: number | null;
+  post_count?: number | null;
   engagement_rate: number | null;
   categories: string[];
   location: string | null;
   email: string | null;
+  website?: string | null;
+  bio?: string | null;
+  is_verified?: boolean | null;
+  is_private?: boolean | null;
+  open_to_collab?: boolean;
   is_saved: boolean;
   image_url: string | null;
+  profile_url?: string | null;
   brand_fit_score: number | null;
+  authenticity_score?: number | null;
+  values_score?: number | null;
 };
 
 export type CreatorSearchParams = {
