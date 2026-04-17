@@ -15,7 +15,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.rate_limit import limiter, rate_limit_exceeded_handler
 from backend.api.security import SecurityMiddleware
-from backend.api.routes import analytics, approvals, brands, campaigns, contracts, creators, notifications, paddle_webhooks, templates, webhooks
+from backend.api.routes import analytics, approvals, brands, campaigns, contracts, creator_stack_debug, creators, notifications, paddle_webhooks, templates, webhooks
 from backend.logging_config import setup_logging, correlation_id_var
 
 # ── Structured logging (must be before any logger usage) ──
@@ -106,6 +106,7 @@ app.include_router(brands.router)
 app.include_router(campaigns.router)
 app.include_router(contracts.router)
 app.include_router(creators.router)
+app.include_router(creator_stack_debug.router)
 app.include_router(notifications.router)
 app.include_router(paddle_webhooks.router)
 app.include_router(templates.router)
