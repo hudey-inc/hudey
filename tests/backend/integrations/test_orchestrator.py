@@ -235,15 +235,22 @@ def test_filter_by_basics_drops_when_breaker_open_returns_passthrough():
 
 
 def test_filter_keeps_profile_unenriched_on_provider_error():
-    """If SC fails for one handle, we still pass the profile through (un-enriched)."""
+    """If SC fails for one handle, we still pass the profile through (un-enriched).
+
+    The filter only rejects on data we actually have — missing
+    follower_count / ER means "unknown", not "fail". Better to surface a
+    handle without stats than silently drop it; the UI can curate.
+    """
     orch, _, _, sc = _orch()
     sc.enrich_profile_raise = ProviderError("sc", "429")
     result = asyncio.run(orch.filter_by_basics(
         [_profile("a")], DiscoveryQuery(min_followers=5_000),
     ))
-    # It's un-enriched → no follower_count → gets filtered out by the cut
-    assert result == []
-    # Breaker ticked up
+    # Un-enriched profile survives — we can't filter what we can't see.
+    assert len(result) == 1
+    assert result[0].handle == "a"
+    assert result[0].follower_count is None
+    # Breaker still ticked up on the provider error.
     assert orch._breakers[sc.name].status()["failures"] == 1
 
 

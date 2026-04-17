@@ -259,13 +259,17 @@ class DiscoveryOrchestrator:
         for p in enriched:
             if p is None:
                 continue
-            if p.is_private:
+            # Only filter on data we actually have. If ScrapeCreators failed
+            # to enrich (rate-limit, unknown handle, small account), we still
+            # surface the handle so the user sees *something* in the UI. Empty
+            # results because of silent filter-drops is worse than showing
+            # low-quality rows that the user can curate.
+            if p.is_private is True:  # explicit True; None = unknown, keep
                 continue
-            if p.follower_count is None:
-                continue
-            if p.follower_count < min_f or p.follower_count > max_f:
-                continue
-            if (p.avg_engagement_rate or 0) < 0.01:  # <1% ER = too low
+            if p.follower_count is not None:
+                if p.follower_count < min_f or p.follower_count > max_f:
+                    continue
+            if p.avg_engagement_rate is not None and p.avg_engagement_rate < 0.01:
                 continue
             survivors.append(p)
         return survivors
