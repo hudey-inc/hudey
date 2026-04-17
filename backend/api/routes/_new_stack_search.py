@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Optional
 
 from backend.integrations.creator_data.base import (
@@ -139,19 +140,57 @@ def _normalise_geo(locations: Optional[list[str]]) -> Optional[str]:
     return _GEO_ALIASES.get(raw.lower(), raw.upper() if len(raw) == 2 else raw)
 
 
+# Practical regexes for bio mining. Deliberately conservative — we'd
+# rather miss an unusual-format email than surface a false positive in
+# a brand-contact list.
+_BIO_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+_BIO_URL_RE = re.compile(
+    r"(?:https?://|www\.)[A-Za-z0-9][A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+"
+)
+# Some creators write "dm for collabs" or similar — useful signal for brands.
+_COLLAB_KEYWORDS_RE = re.compile(
+    r"\b(?:collab|collabs|partnership|brand deals?|business inquir|work with me|sponsorship)\b",
+    re.IGNORECASE,
+)
+
+
+def _extract_contact_from_bio(bio: Optional[str]) -> dict:
+    """Pull brand-useful contact signals out of a free-form bio.
+
+    Returns a dict with:
+      - email: first email found (None if none)
+      - website: first http(s) or www-prefixed URL (None if none)
+      - open_to_collab: True if the bio mentions collabs / partnerships /
+        brand deals — a quick signal for outreach-readiness.
+
+    Zero external API calls. Runs in microseconds per creator.
+    """
+    if not bio:
+        return {"email": None, "website": None, "open_to_collab": False}
+
+    email_match = _BIO_EMAIL_RE.search(bio)
+    url_match = _BIO_URL_RE.search(bio)
+    return {
+        "email": email_match.group(0) if email_match else None,
+        "website": url_match.group(0).rstrip(".,;") if url_match else None,
+        "open_to_collab": bool(_COLLAB_KEYWORDS_RE.search(bio)),
+    }
+
+
 def _profile_to_creator_dict(profile: CreatorProfile) -> dict:
     """Translate a new-stack ``CreatorProfile`` into the dict shape that
     ``upsert_creators`` / the DB / the frontend already consume.
 
     Matches the Phyllo mapping so the response looks identical to the UI
     regardless of which provider answered. Extra new-stack signals
-    (authenticity, values, bio) go into ``profile_data`` so they're
-    preserved for later display without requiring a DB migration.
+    (authenticity, values, bio, contact info) go into ``profile_data`` so
+    they're preserved for later display without requiring a DB migration.
     """
     sources = {
         name: ts.isoformat() if hasattr(ts, "isoformat") else str(ts)
         for name, ts in (profile.sources or {}).items()
     }
+    contact = _extract_contact_from_bio(profile.bio)
     return {
         # Use ``{platform}:{handle}`` so Instagram @foo and TikTok @foo
         # don't collide on the upsert's ``external_id`` conflict key.
@@ -163,11 +202,15 @@ def _profile_to_creator_dict(profile: CreatorProfile) -> dict:
         "engagement_rate": profile.avg_engagement_rate,
         "categories": [],  # new stack doesn't classify — leave empty
         "location": None,  # no geo metadata from discovery/filter layers
-        "email": None,
+        # Hoist the bio-extracted email up to the top level so the dashboard
+        # can render it without poking into profile_data.
+        "email": contact["email"],
         "profile_data": {
             "image_url": profile.avatar_url,
             "profile_url": profile.profile_url,
             "bio": profile.bio,
+            "website": contact["website"],
+            "open_to_collab": contact["open_to_collab"],
             "is_verified": profile.is_verified,
             "is_private": profile.is_private,
             "following_count": profile.following_count,

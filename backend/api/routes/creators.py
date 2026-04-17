@@ -94,9 +94,23 @@ def _normalise_location(loc) -> str | None:
 
 
 def _creator_to_dict(c) -> dict:
-    """Normalise a creator row (dict or model) for JSON response."""
+    """Normalise a creator row (dict or model) for JSON response.
+
+    Surfaces the fields the dashboard actually renders at the top level,
+    plus a few derived signals brands care about (bio, verified badge,
+    contact info, website, open-to-collab hint). Anything expensive to
+    compute or display stays inside ``profile_data`` for on-demand lookup.
+    """
     if hasattr(c, "model_dump"):
         c = c.model_dump()
+
+    # ``profile_data`` might be absent (older rows), a Creator model_dump
+    # with another layer of nesting, or the raw enrichment blob. Flatten
+    # defensively so we can pull out extras for the response.
+    pd = c.get("profile_data") or {}
+    if isinstance(pd, dict) and isinstance(pd.get("profile_data"), dict):
+        pd = {**pd.get("profile_data", {}), **{k: v for k, v in pd.items() if k != "profile_data"}}
+
     return {
         "id": str(c.get("id", "")),
         "external_id": c.get("external_id"),
@@ -104,13 +118,25 @@ def _creator_to_dict(c) -> dict:
         "username": c.get("username", ""),
         "display_name": c.get("display_name") or c.get("username", ""),
         "follower_count": c.get("follower_count", 0),
+        "following_count": pd.get("following_count"),
+        "post_count": pd.get("post_count"),
         "engagement_rate": c.get("engagement_rate"),
         "categories": c.get("categories") or [],
         "location": _normalise_location(c.get("location")),
-        "email": c.get("email"),
+        "email": c.get("email") or pd.get("email"),
+        "website": pd.get("website"),
+        "bio": pd.get("bio"),
+        "is_verified": pd.get("is_verified"),
+        "is_private": pd.get("is_private"),
+        "open_to_collab": pd.get("open_to_collab", False),
         "is_saved": c.get("is_saved", False),
         "image_url": _extract_image_url(c),
+        "profile_url": pd.get("profile_url"),
         "brand_fit_score": c.get("brand_fit_score"),
+        # Keep these available for future UI surfaces (authenticity bars,
+        # values-scored chips) without making the frontend dig.
+        "authenticity_score": pd.get("authenticity_score"),
+        "values_score": pd.get("values_score"),
     }
 
 

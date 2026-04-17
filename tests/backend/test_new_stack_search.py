@@ -97,6 +97,35 @@ def test_normalise_geo_takes_first_entry():
     assert ns._normalise_geo(["UK", "US"]) == "GB"
 
 
+# ── bio contact extraction ──────────────────────────────────
+
+def test_extract_contact_from_bio_finds_email():
+    r = ns._extract_contact_from_bio("hello@brand.com | sustainable fashion")
+    assert r["email"] == "hello@brand.com"
+
+
+def test_extract_contact_from_bio_finds_website():
+    r = ns._extract_contact_from_bio("🌿 shop → https://ecogoods.co.uk/shop?ref=ig")
+    assert r["website"].startswith("https://ecogoods.co.uk")
+
+
+def test_extract_contact_from_bio_detects_collab_intent():
+    r = ns._extract_contact_from_bio("DM for collabs and brand deals ✨")
+    assert r["open_to_collab"] is True
+
+
+def test_extract_contact_from_bio_empty_inputs():
+    for val in (None, "", "   ", "just a plain bio with no contacts"):
+        r = ns._extract_contact_from_bio(val)
+        assert r == {"email": None, "website": None, "open_to_collab": False}
+
+
+def test_extract_contact_trims_trailing_punctuation_from_url():
+    # We want the URL, not the URL followed by the period at end of sentence.
+    r = ns._extract_contact_from_bio("check out www.brand.co.uk.")
+    assert r["website"] == "www.brand.co.uk"
+
+
 # ── profile → dict ──────────────────────────────────────────
 
 def test_profile_to_creator_dict_uses_platform_scoped_external_id():

@@ -353,6 +353,20 @@ def _parse_ig_user_search_items(items: list[dict]) -> list[CreatorProfile]:
             or _nested(item, "edge_owner_to_timeline_media", "count")
         )
 
+        # Cast "is_verified" / "is_private" carefully — need to distinguish
+        # explicit False from None. A chain of `or` calls swallows False.
+        is_verified = _pick_bool(item, "verified", "is_verified", "isVerified")
+        is_private = _pick_bool(item, "private", "is_private", "isPrivate")
+
+        avatar_url = (
+            item.get("profilePicUrlHD")
+            or item.get("profile_pic_url_hd")
+            or item.get("profilePicUrl")
+            or item.get("profile_pic_url")
+            or item.get("profilePic")
+            or _nested(item, "profile_pic_url")
+        )
+
         out.append(CreatorProfile(
             handle=str(handle),
             platform="instagram",
@@ -361,13 +375,32 @@ def _parse_ig_user_search_items(items: list[dict]) -> list[CreatorProfile]:
             follower_count=int(followers) if isinstance(followers, (int, float)) else None,
             following_count=int(following) if isinstance(following, (int, float)) else None,
             post_count=int(posts) if isinstance(posts, (int, float)) else None,
-            avatar_url=item.get("profilePicUrl") or item.get("profile_pic_url"),
+            avatar_url=avatar_url,
             profile_url=item.get("url") or f"https://instagram.com/{handle}",
-            is_private=item.get("private") if item.get("private") is not None else item.get("is_private"),
-            is_verified=item.get("verified") if item.get("verified") is not None else item.get("is_verified"),
+            is_private=is_private,
+            is_verified=is_verified,
             sources={"apify": now},
         ))
     return out
+
+
+def _pick_bool(data: dict, *keys: str) -> Optional[bool]:
+    """Return the first explicit bool across ``keys``. Preserves False vs None.
+
+    ``data.get('x') or data.get('y')`` short-circuits on False, which turns a
+    legitimate ``is_private: False`` into ``None``. This helper walks keys
+    explicitly and only returns when the value isn't ``None``.
+    """
+    for k in keys:
+        v = data.get(k)
+        if v is None:
+            continue
+        if isinstance(v, bool):
+            return v
+        # Some actors return "true"/"false" as strings
+        if isinstance(v, str) and v.lower() in ("true", "false"):
+            return v.lower() == "true"
+    return None
 
 
 def _parse_ig_hashtag_items(items: list[dict]) -> list[CreatorProfile]:
