@@ -24,15 +24,33 @@ from __future__ import annotations
 
 import logging
 import os
+import secrets
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends
-
-from backend.auth.current_brand import get_current_brand
+from fastapi import APIRouter, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/creators/_debug", tags=["creators-debug"])
+
+
+def _require_debug_key(key: Optional[str]) -> None:
+    """Simple shared-secret gate for the debug endpoint.
+
+    Uses ``DEBUG_PROVIDER_KEY`` if set, otherwise falls back to the
+    existing ``SUPABASE_JWT_SECRET`` (which every deployed env already has).
+    Constant-time comparison avoids timing side channels — overkill for a
+    diagnostic endpoint, but it's one line so why not.
+    """
+    expected = (
+        os.getenv("DEBUG_PROVIDER_KEY")
+        or os.getenv("SUPABASE_JWT_SECRET")
+        or ""
+    ).strip()
+    if not expected:
+        raise HTTPException(503, "debug key not configured on server")
+    if not key or not secrets.compare_digest(key, expected):
+        raise HTTPException(401, "missing or invalid ?key= query param")
 
 # Keep these short — we want failures to surface fast, not hang the UI.
 _HTTP_TIMEOUT = 10.0
@@ -201,13 +219,19 @@ def _diagnose(probe: dict) -> str:
 
 
 @router.get("/providers")
-async def diagnose_providers(brand: dict = Depends(get_current_brand)):  # noqa: ARG001 — auth guard
+async def diagnose_providers(key: Optional[str] = Query(default=None)):
     """Hit each provider with a cheap probe and return a structured report.
+
+    Gated by a shared-secret ``?key=`` param so it's safe to hit from a
+    browser without an auth cookie. The secret defaults to the same value
+    as ``SUPABASE_JWT_SECRET`` — check Railway for its value.
 
     The ``verdict`` field on each probe is the TL;DR — if it says 'OK' the
     provider is reachable with working creds; anything else points at the
     fix.
     """
+    _require_debug_key(key)
+
     apify, ed, sc = await _probe_apify(), await _probe_ensembledata(), await _probe_scrapecreators()
 
     probes = [apify, ed, sc]
