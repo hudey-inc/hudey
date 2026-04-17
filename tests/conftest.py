@@ -65,6 +65,10 @@ class MockSupabaseQuery:
     def neq(self, *a, **kw):
         return self
 
+    def in_(self, *a, **kw):
+        # Tests seed only the rows that should match; no filtering needed.
+        return self
+
     def order(self, *a, **kw):
         return self
 

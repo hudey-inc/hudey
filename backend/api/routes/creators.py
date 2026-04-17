@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from backend.api.rate_limit import default_limit, search_limit
+from backend.api.routes import _new_stack_search
 from backend.api.schemas import BrandFitRequest, SearchCreatorsRequest
 from backend.auth.current_brand import get_current_brand
 from backend.cache import cache_key, content_cache, search_cache
@@ -117,17 +119,33 @@ def _creator_to_dict(c) -> dict:
 
 @router.post("/search")
 @search_limit
-def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict = Depends(get_current_brand)):
-    """Search creators via InsightIQ (Phyllo).
+async def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict = Depends(get_current_brand)):
+    """Search creators via the multi-provider stack.
 
     Body: {
         platforms: ["instagram", "tiktok"],
         follower_min: 10000,
         follower_max: 500000,
-        categories: ["fashion"],   // optional
+        categories: ["fashion"],   // optional — but REQUIRED to use new stack
         locations: ["UK"],         // optional
         limit: 20                  // optional, default 20, max 50
     }
+
+    Provider selection order:
+
+      1. **New stack** (Apify + EnsembleData + ScrapeCreators via
+         DiscoveryOrchestrator) — preferred whenever *any* new-stack env
+         var is set and the request includes at least one category (the
+         orchestrator uses categories as hashtag seeds for discovery).
+
+      2. **InsightIQ (Phyllo)** — fallback. Used when the new stack is
+         either not configured or can't run (e.g. no categories were
+         passed, which the orchestrator needs for hashtag-driven
+         discovery). Also used if the new stack returned zero results.
+
+    The response ``provider`` block tells the caller which backend actually
+    answered, and ``diagnostics`` carries funnel counts + breaker state for
+    debugging.
     """
     platforms = body.platforms
     follower_min = body.follower_min
@@ -140,60 +158,95 @@ def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict =
     sk = cache_key("search", platforms, follower_min, follower_max, categories, locations, limit)
     cached_ids = search_cache.get(sk)
 
+    provider_used: Optional[str] = None
+    diagnostics: dict = {}
+    error_block: Optional[dict] = None
+
     if not cached_ids:
-        # Cache miss — call InsightIQ
-        from services.phyllo_client import PhylloClient
-
-        client = PhylloClient()
-        if not client.is_configured:
-            return {"creators": [], "total": 0, "configured": False}
-
-        raw_results = client.search_creators(
-            platforms=platforms,
-            follower_min=follower_min,
-            follower_max=follower_max,
-            categories=categories or None,
-            locations=locations or None,
-            limit=limit,
-        )
-
-        if not raw_results:
-            # Surface the real reason so we don't have to trawl Railway logs
-            # for every silent empty. Keeps the old ``configured`` flag for
-            # back-compat but adds an ``error`` + ``provider`` block.
-            err = client.last_error
-            env = "sandbox" if "sandbox" in client.base_url else "production"
-            logger.warning(
-                "creators/search returned 0 results (provider=insightiq, env=%s): %s",
-                env, err,
+        # ── Path A: new stack ──
+        if _new_stack_search.new_stack_configured():
+            new_dicts, diagnostics = await _new_stack_search.run_search(
+                platforms=platforms,
+                follower_min=follower_min,
+                follower_max=follower_max,
+                categories=categories or None,
+                locations=locations or None,
+                limit=limit,
             )
-            payload: dict = {
-                "creators": [],
-                "total": 0,
-                "configured": True,
-                "provider": {"name": "insightiq", "env": env},
-            }
-            if err:
-                payload["error"] = {
-                    "source": "insightiq",
-                    "status_code": err.get("status_code"),
-                    "message": err.get("message"),
-                    "body_snippet": err.get("body"),
+            if new_dicts:
+                cached_ids = upsert_creators(new_dicts)
+                provider_used = "new_stack"
+                if cached_ids:
+                    search_cache.set(sk, cached_ids)
+                    logger.info(
+                        "Search cache MISS — new stack returned %d creators (providers=%s)",
+                        len(cached_ids), diagnostics.get("providers_enabled"),
+                    )
+            else:
+                logger.info(
+                    "New stack returned 0 creators (%s) — falling back to InsightIQ",
+                    diagnostics.get("reason"),
+                )
+
+        # ── Path B: InsightIQ fallback ──
+        if not cached_ids:
+            from services.phyllo_client import PhylloClient
+
+            client = PhylloClient()
+            if not client.is_configured:
+                return {
+                    "creators": [], "total": 0, "configured": False,
+                    "provider": {"name": "none", "reason": "no provider configured"},
                 }
-            return payload
 
-        # Map to Creator models and persist to DB
-        from tools.creator_discovery import _map_phyllo_to_creator
+            raw_results = client.search_creators(
+                platforms=platforms,
+                follower_min=follower_min,
+                follower_max=follower_max,
+                categories=categories or None,
+                locations=locations or None,
+                limit=limit,
+            )
 
-        mapped = [_map_phyllo_to_creator(r) for r in raw_results]
-        creator_dicts = [m.model_dump() for m in mapped]
-        cached_ids = upsert_creators(creator_dicts)
+            if not raw_results:
+                err = client.last_error
+                env = "sandbox" if "sandbox" in client.base_url else "production"
+                logger.warning(
+                    "creators/search returned 0 results (provider=insightiq, env=%s): %s",
+                    env, err,
+                )
+                payload: dict = {
+                    "creators": [],
+                    "total": 0,
+                    "configured": True,
+                    "provider": {"name": "insightiq", "env": env},
+                    "diagnostics": diagnostics,
+                }
+                if err:
+                    payload["error"] = {
+                        "source": "insightiq",
+                        "status_code": err.get("status_code"),
+                        "message": err.get("message"),
+                        "body_snippet": err.get("body"),
+                    }
+                return payload
 
-        # Store creator IDs in cache (not the full response — saved status is per-brand)
-        if cached_ids:
-            search_cache.set(sk, cached_ids)
-            logger.info("Search cache MISS — fetched %d creators from InsightIQ", len(cached_ids))
+            # Map to Creator models and persist to DB
+            from tools.creator_discovery import _map_phyllo_to_creator
+
+            mapped = [_map_phyllo_to_creator(r) for r in raw_results]
+            creator_dicts = [m.model_dump() for m in mapped]
+            cached_ids = upsert_creators(creator_dicts)
+            provider_used = "insightiq"
+
+            if cached_ids:
+                search_cache.set(sk, cached_ids)
+                logger.info(
+                    "Search cache MISS — fetched %d creators from InsightIQ (fallback)",
+                    len(cached_ids),
+                )
     else:
+        provider_used = "cache"
         logger.info("Search cache HIT — returning %d cached creators", len(cached_ids))
 
     # Resolve full rows + per-brand saved status (always fresh)
@@ -225,7 +278,17 @@ def search_creators(request: Request, body: SearchCreatorsRequest, brand: dict =
                 row["is_saved"] = cid in saved_ids
                 creators_out.append(_creator_to_dict(row))
 
-    return {"creators": creators_out, "total": len(creators_out), "configured": True}
+    payload: dict = {
+        "creators": creators_out,
+        "total": len(creators_out),
+        "configured": True,
+        "provider": {"name": provider_used or "unknown"},
+    }
+    if diagnostics:
+        payload["diagnostics"] = diagnostics
+    if error_block:
+        payload["error"] = error_block
+    return payload
 
 
 # ── Brand Fit Enrichment ──────────────────────────────────
