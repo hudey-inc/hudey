@@ -54,8 +54,20 @@ _DEFAULT_TIMEOUT = 30.0  # HTTP read timeout — actor run polling is long-lived
 # Sensible defaults for well-known community actors as of 2026-04. Override
 # via env if any of these change identity or get deprecated.
 _DEFAULT_IG_HASHTAG_ACTOR = "apify~instagram-hashtag-scraper"
+_DEFAULT_IG_SEARCH_ACTOR = "apify~instagram-scraper"  # flagship, returns full profiles
 _DEFAULT_YT_SEARCH_ACTOR = "streamers~youtube-scraper"
 _DEFAULT_IG_POSTS_ACTOR = "apify~instagram-post-scraper"
+
+# Discovery mode for Instagram:
+#   - "user_search" (default, new): use apify/instagram-scraper with
+#     searchType=user. Returns full profiles (followers, bio, verified)
+#     in one call — so the dashboard shows rich data even without Layer 2.
+#     Costs ~$0.25 per 1000 results; paid actor but still cheap.
+#   - "hashtag_posts" (legacy): use apify/instagram-hashtag-scraper.
+#     Returns only post-owner handles; Layer 2 must enrich. Free but
+#     produces the "handles with no profile info" UX problem.
+_IG_MODE_USER_SEARCH = "user_search"
+_IG_MODE_HASHTAG_POSTS = "hashtag_posts"
 
 
 class ApifyProvider:
@@ -68,16 +80,24 @@ class ApifyProvider:
         token: Optional[str] = None,
         base_url: Optional[str] = None,
         ig_hashtag_actor: Optional[str] = None,
+        ig_search_actor: Optional[str] = None,
         yt_search_actor: Optional[str] = None,
         ig_posts_actor: Optional[str] = None,
+        ig_discovery_mode: Optional[str] = None,
         run_timeout_secs: Optional[int] = None,
         http_timeout: float = _DEFAULT_TIMEOUT,
     ) -> None:
         self.token = (token or os.getenv("APIFY_TOKEN") or "").strip() or None
         self.base_url = (base_url or os.getenv("APIFY_BASE_URL") or _DEFAULT_BASE_URL).rstrip("/")
         self.ig_hashtag_actor = ig_hashtag_actor or os.getenv("APIFY_IG_HASHTAG_ACTOR_ID") or _DEFAULT_IG_HASHTAG_ACTOR
+        self.ig_search_actor = ig_search_actor or os.getenv("APIFY_IG_SEARCH_ACTOR_ID") or _DEFAULT_IG_SEARCH_ACTOR
         self.yt_search_actor = yt_search_actor or os.getenv("APIFY_YT_SEARCH_ACTOR_ID") or _DEFAULT_YT_SEARCH_ACTOR
         self.ig_posts_actor = ig_posts_actor or os.getenv("APIFY_IG_POSTS_ACTOR_ID") or _DEFAULT_IG_POSTS_ACTOR
+        self.ig_discovery_mode = (
+            ig_discovery_mode
+            or os.getenv("APIFY_IG_DISCOVERY_MODE")
+            or _IG_MODE_USER_SEARCH
+        ).strip().lower()
         self.run_timeout_secs = int(run_timeout_secs or os.getenv("APIFY_TIMEOUT_SECS") or 120)
         self.http_timeout = http_timeout
         self._client: Optional[httpx.AsyncClient] = None
@@ -117,8 +137,12 @@ class ApifyProvider:
             raise ProviderError(self.name, "API token not configured", retryable=False)
 
         tasks: list[asyncio.Task] = []
-        if "instagram" in query.platforms and query.hashtags:
-            tasks.append(asyncio.create_task(self._ig_hashtag_run(query)))
+        if "instagram" in query.platforms and (query.hashtags or query.keywords):
+            if self.ig_discovery_mode == _IG_MODE_HASHTAG_POSTS:
+                tasks.append(asyncio.create_task(self._ig_hashtag_run(query)))
+            else:
+                # Default: user-search mode — returns full profiles in one call.
+                tasks.append(asyncio.create_task(self._ig_user_search_run(query)))
         if "youtube" in query.platforms and (query.keywords or query.hashtags):
             tasks.append(asyncio.create_task(self._yt_search_run(query)))
 
@@ -184,6 +208,53 @@ class ApifyProvider:
         raw = await self._run_actor(self.ig_hashtag_actor, actor_input)
         return _parse_ig_hashtag_items(raw)
 
+    async def _ig_user_search_run(self, query: DiscoveryQuery) -> list[CreatorProfile]:
+        """Search IG's user index for each query term via apify/instagram-scraper.
+
+        Unlike hashtag-post scraping, this returns real creator profiles
+        (not random posters) along with full profile metadata — so Layer 2
+        enrichment becomes optional.
+        """
+        # IG's search bar takes one term at a time; fan out per term.
+        terms = [t.lstrip("#") for t in (query.keywords or query.hashtags) if t and t.strip()]
+        if not terms:
+            return []
+
+        # Divide the result budget across terms so we don't blow past the limit.
+        per_term = max(min(query.limit, 100) // max(len(terms), 1), 5)
+
+        async def run_one(term: str) -> list[dict]:
+            actor_input = {
+                "search": term,
+                "searchType": "user",
+                "searchLimit": per_term,
+                "resultsType": "details",
+                "resultsLimit": per_term,
+            }
+            return await self._run_actor(self.ig_search_actor, actor_input)
+
+        # ``return_exceptions=True`` so one bad search term doesn't kill the
+        # whole fan-out. But if EVERY term failed, propagate the first error
+        # so the orchestrator can trip the circuit breaker.
+        results = await asyncio.gather(
+            *[run_one(t) for t in terms], return_exceptions=True,
+        )
+        merged: list[dict] = []
+        errors: list[BaseException] = []
+        for term, r in zip(terms, results):
+            if isinstance(r, Exception):
+                errors.append(r)
+                logger.warning("Apify user-search for %r failed: %s", term, r)
+                continue
+            merged.extend(r)
+        if not merged and errors:
+            # Re-raise the first error so the orchestrator records a failure.
+            first = errors[0]
+            if isinstance(first, ProviderError):
+                raise first
+            raise ProviderError(self.name, f"user-search failed: {first}") from first
+        return _parse_ig_user_search_items(merged)
+
     async def _yt_search_run(self, query: DiscoveryQuery) -> list[CreatorProfile]:
         search_terms = query.keywords or [f"#{h}" for h in query.hashtags]
         actor_input = {
@@ -237,6 +308,66 @@ class ApifyProvider:
 
 
 # ─── Parsers ─────────────────────────────────────────────────
+
+
+def _parse_ig_user_search_items(items: list[dict]) -> list[CreatorProfile]:
+    """Extract full profile data from apify/instagram-scraper user-search output.
+
+    The flagship scraper emits rich per-user objects — we map every field we
+    care about into the CreatorProfile so the dashboard shows real stats
+    without needing Layer 2 enrichment.
+
+    Falls back gracefully: any missing field stays None. Also deduplicates
+    by handle (IG returns the same user across multiple search terms).
+    """
+    now = datetime.now(timezone.utc)
+    seen: set[str] = set()
+    out: list[CreatorProfile] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        handle = (
+            item.get("username")
+            or item.get("ownerUsername")
+            or _nested(item, "owner", "username")
+        )
+        if not handle or handle in seen:
+            continue
+        seen.add(handle)
+
+        # Field names follow apify/instagram-scraper's "details" output.
+        # Coalesce across naming variants since actors occasionally rename.
+        followers = (
+            item.get("followersCount")
+            or item.get("follower_count")
+            or _nested(item, "edge_followed_by", "count")
+        )
+        following = (
+            item.get("followsCount")
+            or item.get("following_count")
+            or _nested(item, "edge_follow", "count")
+        )
+        posts = (
+            item.get("postsCount")
+            or item.get("media_count")
+            or _nested(item, "edge_owner_to_timeline_media", "count")
+        )
+
+        out.append(CreatorProfile(
+            handle=str(handle),
+            platform="instagram",
+            display_name=item.get("fullName") or item.get("full_name") or item.get("ownerFullName"),
+            bio=item.get("biography") or item.get("bio"),
+            follower_count=int(followers) if isinstance(followers, (int, float)) else None,
+            following_count=int(following) if isinstance(following, (int, float)) else None,
+            post_count=int(posts) if isinstance(posts, (int, float)) else None,
+            avatar_url=item.get("profilePicUrl") or item.get("profile_pic_url"),
+            profile_url=item.get("url") or f"https://instagram.com/{handle}",
+            is_private=item.get("private") if item.get("private") is not None else item.get("is_private"),
+            is_verified=item.get("verified") if item.get("verified") is not None else item.get("is_verified"),
+            sources={"apify": now},
+        ))
+    return out
 
 
 def _parse_ig_hashtag_items(items: list[dict]) -> list[CreatorProfile]:
