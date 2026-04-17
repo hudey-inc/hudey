@@ -35,20 +35,18 @@ router = APIRouter(prefix="/api/creators/_debug", tags=["creators-debug"])
 
 
 def _require_debug_key(key: Optional[str]) -> None:
-    """Simple shared-secret gate for the debug endpoint.
+    """Optional shared-secret gate for the debug endpoint.
 
-    Uses ``DEBUG_PROVIDER_KEY`` if set, otherwise falls back to the
-    existing ``SUPABASE_JWT_SECRET`` (which every deployed env already has).
-    Constant-time comparison avoids timing side channels — overkill for a
-    diagnostic endpoint, but it's one line so why not.
+    If ``DEBUG_PROVIDER_KEY`` is set in env → require a matching ``?key=``.
+    If it's not set → endpoint is open (it only returns redacted status
+    codes and truncated body previews; no secrets, no user data).
+
+    This lets operators pop the gate on temporarily for quick triage and
+    lock it back down by setting the env var.
     """
-    expected = (
-        os.getenv("DEBUG_PROVIDER_KEY")
-        or os.getenv("SUPABASE_JWT_SECRET")
-        or ""
-    ).strip()
+    expected = (os.getenv("DEBUG_PROVIDER_KEY") or "").strip()
     if not expected:
-        raise HTTPException(503, "debug key not configured on server")
+        return  # no gate configured → treat as open
     if not key or not secrets.compare_digest(key, expected):
         raise HTTPException(401, "missing or invalid ?key= query param")
 
