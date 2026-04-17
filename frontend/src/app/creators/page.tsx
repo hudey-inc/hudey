@@ -62,18 +62,39 @@ function platformColor(platform: string): string {
 // ── Creator Avatar ───────────────────────────────────────────
 
 function CreatorAvatar({ creator }: { creator: DiscoveredCreator }) {
-  const [imgError, setImgError] = useState(false);
+  // Instagram's CDN URLs 403 cross-origin without cookies. Fall through:
+  //   backend image_url → unavatar.io proxy → letter placeholder.
+  // State tracks which source failed so we move to the next one.
+  const [attempt, setAttempt] = useState<0 | 1 | 2>(0);
   const initial = (creator.display_name || creator.username).charAt(0).toUpperCase();
 
-  if (creator.image_url && !imgError) {
+  // Build the sources list dynamically so we don't skip the unavatar path
+  // when the backend returned a direct (but likely stale) CDN URL.
+  const platformSlug =
+    creator.platform.toLowerCase() === "x"
+      ? "twitter"
+      : creator.platform.toLowerCase();
+  const unavatarUrl = creator.username
+    ? `https://unavatar.io/${platformSlug}/${encodeURIComponent(creator.username)}`
+    : null;
+
+  const sources: string[] = [];
+  if (creator.image_url) sources.push(creator.image_url);
+  if (unavatarUrl && unavatarUrl !== creator.image_url) sources.push(unavatarUrl);
+
+  const src = sources[attempt];
+
+  if (src) {
     return (
       <div className="w-14 h-14 rounded-full mx-auto mb-3 overflow-hidden bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={creator.image_url}
+          src={src}
           alt={creator.display_name || creator.username}
           className="w-full h-full object-cover"
-          onError={() => setImgError(true)}
+          onError={() =>
+            setAttempt((prev) => (prev + 1 < sources.length ? ((prev + 1) as 0 | 1 | 2) : 2))
+          }
           referrerPolicy="no-referrer"
         />
       </div>
