@@ -216,6 +216,71 @@ def _diagnose(probe: dict) -> str:
     return "OK"
 
 
+@router.get("/search_trace")
+async def trace_search(
+    category: str = Query(default="fitness", description="hashtag/keyword to probe with"),
+    key: Optional[str] = Query(default=None),
+):
+    """Run the exact Apify→parser→bridge pipeline for one term and return
+    every intermediate value. Lets us pinpoint whether missing fields are a
+    vendor-output issue or a parsing/mapping issue — no Railway logs needed.
+
+    Returns:
+      - raw_first: first raw item Apify emitted (as-is)
+      - raw_count: how many items Apify returned
+      - parsed_first: first CreatorProfile our parser produced (as dict)
+      - parsed_count: how many CreatorProfiles we built
+      - bridge_first: first creator dict the frontend would receive
+    """
+    _require_debug_key(key)
+
+    # Import lazily so this file stays cheap to import at startup.
+    from backend.api.routes._new_stack_search import _profile_to_creator_dict
+    from backend.integrations.creator_data.base import DiscoveryQuery
+    from backend.integrations.creator_data.providers.apify import (
+        ApifyProvider,
+        _parse_ig_user_search_items,
+    )
+    from dataclasses import asdict
+
+    provider = ApifyProvider()
+    if not provider.is_configured:
+        return {"error": "APIFY_TOKEN not configured"}
+
+    # Mirror what ``_ig_user_search_run`` would send — one term, small limit.
+    actor_input = {
+        "search": category,
+        "searchType": "user",
+        "searchLimit": 5,
+        "resultsType": "details",
+        "resultsLimit": 5,
+    }
+    try:
+        raw = await provider._run_actor(provider.ig_search_actor, actor_input)
+    except Exception as e:
+        return {
+            "stage": "actor_run",
+            "error": str(e),
+            "actor_id": provider.ig_search_actor,
+            "actor_input": actor_input,
+        }
+    finally:
+        await provider.close()
+
+    parsed = _parse_ig_user_search_items(raw or [])
+
+    report: dict = {
+        "actor_id": provider.ig_search_actor,
+        "actor_input": actor_input,
+        "raw_count": len(raw) if isinstance(raw, list) else 0,
+        "raw_first": raw[0] if raw else None,
+        "parsed_count": len(parsed),
+        "parsed_first": asdict(parsed[0]) if parsed else None,
+        "bridge_first": _profile_to_creator_dict(parsed[0]) if parsed else None,
+    }
+    return report
+
+
 @router.get("/providers")
 async def diagnose_providers(key: Optional[str] = Query(default=None)):
     """Hit each provider with a cheap probe and return a structured report.
