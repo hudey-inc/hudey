@@ -61,15 +61,27 @@ function platformColor(platform: string): string {
 
 // ── Creator Avatar ───────────────────────────────────────────
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+/**
+ * Instagram / TikTok CDN URLs 403 cross-origin without cookies, so we
+ * always route through our backend proxy. Unavatar.io has some coverage
+ * gaps for mid-size creators and falls back to a generic platform logo
+ * that looks broken. Our backend proxy fetches the real CDN URL
+ * server-side and streams the image back from our domain.
+ */
+function proxifyImageUrl(url: string): string {
+  // Don't proxy our own proxy; don't proxy unavatar either (it works cross-origin).
+  if (url.startsWith(API_URL) || url.includes("/api/image/proxy")) return url;
+  if (url.includes("unavatar.io")) return url;
+  return `${API_URL}/api/image/proxy?url=${encodeURIComponent(url)}`;
+}
+
 function CreatorAvatar({ creator }: { creator: DiscoveredCreator }) {
-  // Instagram's CDN URLs 403 cross-origin without cookies. Fall through:
-  //   backend image_url → unavatar.io proxy → letter placeholder.
-  // State tracks which source failed so we move to the next one.
+  // Fall-through chain: proxied CDN URL → unavatar.io → letter placeholder.
   const [attempt, setAttempt] = useState<0 | 1 | 2>(0);
   const initial = (creator.display_name || creator.username).charAt(0).toUpperCase();
 
-  // Build the sources list dynamically so we don't skip the unavatar path
-  // when the backend returned a direct (but likely stale) CDN URL.
   const platformSlug =
     creator.platform.toLowerCase() === "x"
       ? "twitter"
@@ -79,8 +91,8 @@ function CreatorAvatar({ creator }: { creator: DiscoveredCreator }) {
     : null;
 
   const sources: string[] = [];
-  if (creator.image_url) sources.push(creator.image_url);
-  if (unavatarUrl && unavatarUrl !== creator.image_url) sources.push(unavatarUrl);
+  if (creator.image_url) sources.push(proxifyImageUrl(creator.image_url));
+  if (unavatarUrl && !sources.includes(unavatarUrl)) sources.push(unavatarUrl);
 
   const src = sources[attempt];
 
