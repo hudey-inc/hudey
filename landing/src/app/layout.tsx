@@ -39,9 +39,9 @@ export const metadata: Metadata = {
     "AI influencer agent",
     "influencer campaign tracking",
   ],
-  authors: [{ name: "Hudey" }],
-  creator: "Hudey",
-  publisher: "Hudey",
+  authors: [{ name: "Hudey Inc." }],
+  creator: "Hudey Inc.",
+  publisher: "Hudey Inc.",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -103,9 +103,37 @@ export default function RootLayout({
               creator: {
                 "@type": "Organization",
                 name: "Hudey",
+                legalName: "Hudey Inc.",
                 url: "https://hudey.co",
                 logo: "https://hudey.co/icon.png",
               },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Hudey",
+              legalName: "Hudey Inc.",
+              url: "https://hudey.co",
+              logo: "https://hudey.co/icon.png",
+              foundingDate: "2025-01-27",
+              founder: {
+                "@type": "Person",
+                name: "Harry Otuechere",
+              },
+              address: {
+                "@type": "PostalAddress",
+                addressRegion: "DE",
+                addressCountry: "US",
+              },
+              sameAs: [
+                "https://x.com/hudeyco",
+                "https://linkedin.com/company/hudey",
+              ],
             }),
           }}
         />

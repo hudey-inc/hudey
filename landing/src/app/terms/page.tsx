@@ -23,7 +23,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Agreement to Terms</h2>
             <p>
-              By accessing or using Hudey (&quot;the Service&quot;), operated by Hudey (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.
+              By accessing or using Hudey (&quot;the Service&quot;), operated by Hudey Inc., a Delaware corporation incorporated 27 January 2025 (&quot;Hudey&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service.
             </p>
           </section>
 

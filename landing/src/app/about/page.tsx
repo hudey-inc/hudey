@@ -97,6 +97,18 @@ export default function AboutPage() {
               result: campaigns that launch in days, with creators who genuinely
               fit.
             </p>
+            <p>
+              Hudey was founded by{" "}
+              <a
+                href="https://linkedin.com/company/hudey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-4 hover:decoration-gray-900 transition-colors"
+              >
+                Harry Otuechere
+              </a>{" "}
+              in January 2025. Hudey Inc. is a Delaware corporation.
+            </p>
           </div>
         </div>
       </section>

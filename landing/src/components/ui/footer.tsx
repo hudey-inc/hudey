@@ -197,7 +197,8 @@ function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col justify-between gap-4 border-t border-white/10 pt-8 text-xs text-white/40 sm:flex-row sm:items-center">
           <p>
-            &copy; {new Date().getFullYear()} Hudey. All rights reserved.
+            &copy; {new Date().getFullYear()} Hudey Inc., a Delaware
+            corporation incorporated 27 January 2025. All rights reserved.
           </p>
           <ul className="flex gap-4 sm:gap-6">
             <li>

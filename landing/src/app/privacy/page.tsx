@@ -21,6 +21,15 @@ export default function PrivacyPage() {
 
         <div className="prose prose-gray prose-sm max-w-none space-y-8 text-gray-700 leading-relaxed">
           <section>
+            <p>
+              This Privacy Policy describes how Hudey Inc., a Delaware
+              corporation incorporated 27 January 2025 (&quot;Hudey&quot;,
+              &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), collects, uses,
+              and protects your information when you use the Service.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Information We Collect</h2>
             <p>We collect the following types of information when you use Hudey:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1.5">
