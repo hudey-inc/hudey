@@ -1,8 +1,9 @@
 import { MetadataRoute } from "next";
 import { posts } from "@/lib/blog";
+import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://hudey.co";
+  const baseUrl = SITE_URL;
 
   const blogEntries: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
@@ -51,19 +52,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/terms`,
-      lastModified: new Date("2025-01-01"),
+      lastModified: new Date("2026-04-19"),
       changeFrequency: "monthly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: new Date("2025-01-01"),
+      lastModified: new Date("2026-04-19"),
       changeFrequency: "monthly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/refund`,
-      lastModified: new Date("2025-01-01"),
+      lastModified: new Date("2026-04-19"),
       changeFrequency: "monthly",
       priority: 0.3,
     },

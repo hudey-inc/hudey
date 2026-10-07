@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
@@ -20,7 +21,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hudey.co"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Hudey — AI-Powered Influencer Marketing Agent",
     template: "%s | Hudey",
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://hudey.co",
+    url: SITE_URL,
     siteName: "Hudey",
     title: "Hudey — AI-Powered Influencer Marketing Agent",
     description:
@@ -70,7 +71,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://hudey.co",
+    canonical: SITE_URL,
   },
 };
 
@@ -91,7 +92,7 @@ export default function RootLayout({
               name: "Hudey",
               applicationCategory: "BusinessApplication",
               operatingSystem: "Web",
-              url: "https://hudey.co",
+              url: SITE_URL,
               description:
                 "AI-powered influencer marketing platform that automates creator discovery, outreach, negotiation, and campaign tracking for sustainable brands.",
               offers: {
@@ -104,8 +105,8 @@ export default function RootLayout({
                 "@type": "Organization",
                 name: "Hudey",
                 legalName: "Hudey Inc.",
-                url: "https://hudey.co",
-                logo: "https://hudey.co/icon.png",
+                url: SITE_URL,
+                logo: `${SITE_URL}/icon.png`,
               },
             }),
           }}
@@ -118,8 +119,8 @@ export default function RootLayout({
               "@type": "Organization",
               name: "Hudey",
               legalName: "Hudey Inc.",
-              url: "https://hudey.co",
-              logo: "https://hudey.co/icon.png",
+              url: SITE_URL,
+              logo: `${SITE_URL}/icon.png`,
               foundingDate: "2025-01-27",
               founder: {
                 "@type": "Person",

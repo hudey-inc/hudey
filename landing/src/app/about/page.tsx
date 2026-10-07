@@ -5,9 +5,10 @@ import { Heart, Shield, Target, Zap } from "lucide-react";
 import { Footer } from "@/components/ui/footer";
 
 export const metadata = {
-  title: "About | Hudey",
+  title: "About",
   description:
     "Hudey helps sustainable brands run influencer campaigns in days instead of weeks. Learn why we built it and who it's for.",
+  alternates: { canonical: "/about" },
 };
 
 const APP_URL = "https://app.hudey.co";

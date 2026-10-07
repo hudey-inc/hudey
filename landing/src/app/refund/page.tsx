@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Refund Policy | Hudey",
+  title: "Refund Policy",
   description: "Hudey Refund Policy",
+  alternates: { canonical: "/refund" },
 };
 
 export default function RefundPage() {

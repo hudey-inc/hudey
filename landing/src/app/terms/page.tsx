@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms of Service | Hudey",
+  title: "Terms of Service",
   description: "Hudey Terms of Service",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

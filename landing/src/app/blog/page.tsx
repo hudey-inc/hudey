@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: "Blog",
   description:
     "Insights on influencer marketing, sustainable brand growth, and product updates from the Hudey team.",
+  alternates: { canonical: "/blog" },
   openGraph: {
     title: "Blog | Hudey",
     description:

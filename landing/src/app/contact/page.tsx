@@ -5,9 +5,10 @@ import { Mail, MessageSquare, Clock } from "lucide-react";
 import { Footer } from "@/components/ui/footer";
 
 export const metadata = {
-  title: "Contact | Hudey",
+  title: "Contact",
   description:
     "Questions about Hudey? Email us at hello@hudey.co. We respond within one business day.",
+  alternates: { canonical: "/contact" },
 };
 
 const APP_URL = "https://app.hudey.co";

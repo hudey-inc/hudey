@@ -5,9 +5,10 @@ import { PricingComparison } from "@/components/ui/pricing-comparison";
 import { Footer } from "@/components/ui/footer";
 
 export const metadata = {
-  title: "Pricing | Hudey",
+  title: "Pricing",
   description:
     "Per-campaign pricing for AI-powered influencer marketing. Pay only when you launch.",
+  alternates: { canonical: "/pricing" },
 };
 
 const APP_URL = "https://app.hudey.co";
