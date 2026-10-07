@@ -331,6 +331,13 @@ export default function CreatorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  // Captured per search so the zero-results state can explain *why* —
+  // discovery is hashtag-driven, so a search without categories is the
+  // most common cause of an empty result set.
+  const [searchMeta, setSearchMeta] = useState<{
+    withoutCategories: boolean;
+    providerError: string | null;
+  }>({ withoutCategories: false, providerError: null });
 
   const togglePlatform = (id: string) => {
     setSelectedPlatforms((prev) =>
@@ -366,6 +373,10 @@ export default function CreatorsPage() {
       const data = await searchCreators(params);
       setResults(data.creators);
       setHasSearched(true);
+      setSearchMeta({
+        withoutCategories: selectedCategories.length === 0,
+        providerError: data.error?.message ?? null,
+      });
       if (!data.configured) setNotConfigured(true);
 
       // Auto-enrich top 10 with brand fit scores (non-blocking)
@@ -607,10 +618,13 @@ export default function CreatorsPage() {
           {notConfigured && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center mb-6">
               <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-1">InsightIQ Not Configured</h3>
+              <h3 className="font-semibold text-gray-900 mb-1">Creator Search Not Configured</h3>
               <p className="text-sm text-gray-600">
-                Add your <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs">PHYLLO_API_KEY</code> to the
-                environment to enable real creator search.
+                The backend has no creator-data provider keys set. Add{" "}
+                <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs">APIFY_TOKEN</code>,{" "}
+                <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs">ENSEMBLEDATA_API_TOKEN</code> or{" "}
+                <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs">SCRAPECREATORS_API_KEY</code>{" "}
+                to the backend environment to enable search.
               </p>
             </div>
           )}
@@ -657,9 +671,24 @@ export default function CreatorsPage() {
             <div className="text-center py-16">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="font-semibold text-gray-700 mb-1">No creators found</h3>
-              <p className="text-sm text-gray-500">
-                Try adjusting your filters or broadening your search criteria.
-              </p>
+              {searchMeta.withoutCategories ? (
+                <p className="text-sm text-gray-500 max-w-md mx-auto">
+                  Add at least one{" "}
+                  <span className="font-medium text-gray-700">category</span> and search
+                  again — discovery uses categories as topic seeds, so searches without
+                  one usually come back empty.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 max-w-md mx-auto">
+                  Try broadening the follower range, removing the location filter, or
+                  picking a different category.
+                </p>
+              )}
+              {searchMeta.providerError && (
+                <p className="text-xs text-gray-400 mt-3 max-w-md mx-auto">
+                  Data provider reported: {searchMeta.providerError}
+                </p>
+              )}
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { captureError } from "@/lib/errors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -40,7 +41,21 @@ async function authFetch(
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers });
+
+  // Many callers degrade silently on failure (`if (!res.ok) return []`),
+  // which hides real outages. Capture server-side failures here once so
+  // they reach Sentry even when the UI falls back to empty data. 4xx is
+  // deliberately excluded — auth expiry and validation noise would drown
+  // the signal.
+  if (res.status >= 500) {
+    captureError(new Error(`API ${options.method || "GET"} ${url} → ${res.status}`), {
+      endpoint: url.replace(API_URL, ""),
+      status: String(res.status),
+    });
+  }
+
+  return res;
 }
 
 // ── Types ────────────────────────────────────────────────────
@@ -1141,6 +1156,14 @@ export type CreatorSearchResult = {
   creators: DiscoveredCreator[];
   total: number;
   configured: boolean;
+  provider?: { name: string; env?: string };
+  diagnostics?: Record<string, unknown>;
+  error?: {
+    source?: string;
+    status_code?: number | null;
+    message?: string;
+    body_snippet?: string;
+  };
 };
 
 export async function searchCreators(

@@ -7,6 +7,7 @@ import uuid
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
@@ -100,6 +101,11 @@ app.add_middleware(
     max_age=600,
 )
 
+# Compress JSON responses over 1KB. Creator-search payloads carry heavy
+# profile_data blobs and shrink ~5-10x over the wire. Added after CORS so
+# GZip wraps outermost and compresses CORS-decorated responses too.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
 app.include_router(analytics.router)
 app.include_router(approvals.router)
 app.include_router(brands.router)
@@ -142,13 +148,21 @@ def _stop_campaign_worker():
 
 @app.get("/health")
 def health():
-    """Health check with cache stats."""
+    """Health check with cache stats and provider configuration."""
+    from backend.api.routes._new_stack_search import _new_stack_env_keys
     from backend.cache import content_cache, search_cache
+    from services.phyllo_client import PhylloClient
 
     return {
         "status": "ok",
         "cache": {
             "search": search_cache.stats(),
             "content": content_cache.stats(),
+        },
+        # Which creator-data providers this deployment can actually use —
+        # the first thing to check when search returns nothing.
+        "providers": {
+            "new_stack": _new_stack_env_keys(),
+            "insightiq_configured": PhylloClient().is_configured,
         },
     }
